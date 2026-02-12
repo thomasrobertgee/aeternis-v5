@@ -1,0 +1,89 @@
+{
+  "id": "altona_scavenger",
+  "nodes": {
+    "start": {
+      "text": "A figure in soot-stained overalls looks up from a heap of scrap. His goggles pulse with a faint orange light. 'Hold there, Traveller. This sector is designated Cogwheel Salvage. What's your business in the Rust Fields?'",
+      "options": [
+        {
+          "text": "I'm just exploring the fracture.",
+          "next": "exploring"
+        },
+        {
+          "text": "Who are 'The Cogwheel' exactly?",
+          "next": "about_faction"
+        },
+        {
+          "text": "[Intimidate] Move aside. I'm taking what I need.",
+          "next": "hostile"
+        }
+      ]
+    },
+    "exploring": {
+      "text": "He grunts, lowering a heavy wrench. 'Exploring? Dangerous hobby. The Imaginum is thick here. Stay on the marked paths if you want to keep your skin from turning to glass.'",
+      "options": [
+        {
+          "text": "Thanks for the tip.",
+          "next": "end"
+        }
+      ]
+    },
+    "about_faction": {
+      "text": "We're the grease in the gears of what's left. While others pray to trees or hide in holes, we salvage the past to build a future. Order, efficiency, and cold hard iron.",
+      "options": [
+        {
+          "text": "A noble goal. I respect the grind.",
+          "next": "respect"
+        },
+        {
+          "text": "Sounds like you're just hoarding junk.",
+          "next": "insult"
+        }
+      ]
+    },
+    "respect": {
+      "text": "A rare flicker of a smile crosses his face. 'Someone who understands. Here—take this. A spare filter. Might keep the soot out of your lungs.'",
+      "actions": [
+        { "type": "UPDATE_REPUTATION", "factionId": "the-cogwheel", "value": 15 }
+      ],
+      "options": [
+        {
+          "text": "Thank you.",
+          "next": "end"
+        }
+      ]
+    },
+    "insult": {
+      "text": "His posture stiffens. 'Junk? This 'junk' is the only thing keeping the lights on. Move on, before I decide you're just more scrap to be processed.'",
+      "actions": [
+        { "type": "UPDATE_REPUTATION", "factionId": "the-cogwheel", "value": -10 }
+      ],
+      "options": [
+        {
+          "text": "Leave.",
+          "next": "end"
+        }
+      ]
+    },
+    "hostile": {
+      "text": "He grips his wrench with both hands. 'Try it. You'll find out that Cogwheel iron is harder than it looks.'",
+      "options": [
+        {
+          "text": "Back off.",
+          "next": "start"
+        },
+        {
+          "text": "[Battle] Let's see about that.",
+          "next": "battle_start"
+        }
+      ]
+    },
+    "battle_start": {
+      "text": "The scavenger readies his tool for combat!",
+      "isEnd": true
+    },
+    "end": {
+      "text": "The scavenger returns to his work, ignoring you.",
+      "isEnd": true
+    }
+  }
+}
