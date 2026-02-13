@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { BiomeType } from './BiomeMapper';
 
 export interface CombatLog {
   id: string;
@@ -17,6 +18,7 @@ interface CombatState {
   enemyName: string;
   sourceId?: string; // Track which map signal this enemy belongs to
   damageModifier: number; // For weather effects
+  biome?: BiomeType;
   
   // State
   isInCombat: boolean;
@@ -25,7 +27,7 @@ interface CombatState {
   combatLogs: CombatLog[];
 
   // Actions
-  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, playerMana: number, sourceId?: string, damageModifier?: number) => void;
+  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, playerMana: number, sourceId?: string, damageModifier?: number, biome?: BiomeType) => void;
   updateHp: (target: 'player' | 'enemy', amount: number) => void;
   updateMana: (amount: number) => void;
   nextTurn: () => void;
@@ -43,13 +45,14 @@ export const useCombatStore = create<CombatState>((set) => ({
   enemyName: '',
   sourceId: undefined,
   damageModifier: 1.0,
+  biome: undefined,
   
   isInCombat: false,
   isPlayerTurn: true,
   turnCount: 1,
   combatLogs: [],
 
-  initiateCombat: (enemyName, enemyMaxHp, playerHp, playerMana, sourceId, damageModifier = 1.0) => set({
+  initiateCombat: (enemyName, enemyMaxHp, playerHp, playerMana, sourceId, damageModifier = 1.0, biome) => set({
     enemyName,
     enemyHp: enemyMaxHp,
     maxEnemyHp: enemyMaxHp,
@@ -59,6 +62,7 @@ export const useCombatStore = create<CombatState>((set) => ({
     maxPlayerMana: playerMana,
     sourceId,
     damageModifier,
+    biome,
     isInCombat: true,
     isPlayerTurn: true,
     turnCount: 1,
@@ -101,6 +105,7 @@ export const useCombatStore = create<CombatState>((set) => ({
     enemyHp: 0,
     combatLogs: [],
     sourceId: undefined,
-    damageModifier: 1.0
+    damageModifier: 1.0,
+    biome: undefined
   }),
 }));

@@ -4,6 +4,7 @@
  */
 
 import { Item } from './usePlayerStore';
+import { BiomeType } from './BiomeMapper';
 
 export const LOOT_ITEMS: Record<string, Item> = {
   SCRAP_METAL: {
@@ -48,6 +49,13 @@ export const LOOT_ITEMS: Record<string, Item> = {
     rarity: 'Legendary',
     description: 'An artifact from the pre-Collapse era, imbued with impossible energy.',
   },
+  SUNKEN_RELIC: {
+    id: 'loot-sunken-relic',
+    name: 'Sunken Relic',
+    category: 'Utility',
+    rarity: 'Rare',
+    description: 'An object encrusted with barnacles and salt, pulled from the depths of the coastal fracture.',
+  },
   SCAVENGED_BOOTS: {
     id: 'loot-scavenged-boots',
     name: 'Scavenged Boots',
@@ -67,9 +75,9 @@ export const LOOT_ITEMS: Record<string, Item> = {
 };
 
 /**
- * Determines loot dropped by an enemy based on its name/type and roll.
+ * Determines loot dropped by an enemy based on its name/type, biome, and roll.
  */
-export const getLootForEnemy = (enemyName: string): Item | null => {
+export const getLootForEnemy = (enemyName: string, biome?: BiomeType): Item | null => {
   const roll = Math.random();
   
   // 70% chance to drop something
@@ -84,8 +92,16 @@ export const getLootForEnemy = (enemyName: string): Item | null => {
   else if (subRoll < 0.35) selectedRarity = 'Rare';
 
   // Filter items by rarity
-  const possibleItems = Object.values(LOOT_ITEMS).filter(item => item.rarity === selectedRarity);
+  let possibleItems = Object.values(LOOT_ITEMS).filter(item => item.rarity === selectedRarity);
   
+  // Add Biome-specific filtering
+  if (biome === BiomeType.MISTY_WHARFS) {
+    // Coastal zones get Sunken Relics added to the Rare pool
+    if (selectedRarity === 'Rare') {
+      possibleItems.push(LOOT_ITEMS.SUNKEN_RELIC);
+    }
+  }
+
   if (possibleItems.length === 0) return LOOT_ITEMS.SCRAP_METAL; // Fallback
 
   return possibleItems[Math.floor(Math.random() * possibleItems.length)];

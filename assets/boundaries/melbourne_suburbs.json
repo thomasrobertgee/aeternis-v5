@@ -1,0 +1,62 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Altona North",
+        "postcode": "3025"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [144.825, -37.815],
+            [144.870, -37.815],
+            [144.870, -37.845],
+            [144.825, -37.845],
+            [144.825, -37.815]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Melbourne CBD",
+        "postcode": "3000"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [144.945, -37.805],
+            [144.980, -37.805],
+            [144.980, -37.825],
+            [144.945, -37.825],
+            [144.945, -37.805]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Footscray",
+        "postcode": "3011"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [144.885, -37.795],
+            [144.915, -37.795],
+            [144.915, -37.815],
+            [144.885, -37.815],
+            [144.885, -37.795]
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useCombatStore } from '../../utils/useCombatStore';
 import { usePlayerStore } from '../../utils/usePlayerStore';
+import { useUIStore } from '../../utils/useUIStore';
 import { getLootForEnemy } from '../../utils/LootTable';
 import { Sword, Zap, Briefcase, Footprints, ShieldAlert, Skull, Package, Activity, Navigation, Radar } from 'lucide-react-native';
 import Animated, { 
@@ -23,6 +24,7 @@ import SoundService from '../../utils/SoundService';
 export default function BattleScreen() {
   const router = useRouter();
   const player = usePlayerStore();
+  const { activeWorldEvent } = useUIStore();
   const { hostileSignals, removeSignal, recordEncounter, recordDefeat } = player;
   
   const { 
@@ -43,7 +45,8 @@ export default function BattleScreen() {
     endCombat,
     initiateCombat,
     sourceId,
-    damageModifier
+    damageModifier,
+    biome
   } = useCombatStore();
 
   const setGlobalStats = usePlayerStore((state) => state.setStats);
@@ -127,7 +130,10 @@ export default function BattleScreen() {
       }
 
       // Calculate Aetium loot
-      const goldLoot = 25 + Math.floor(Math.random() * 50);
+      let goldLoot = 25 + Math.floor(Math.random() * 50);
+      if (activeWorldEvent?.lootMultiplier['Aetium']) {
+        goldLoot = Math.floor(goldLoot * activeWorldEvent.lootMultiplier['Aetium']);
+      }
       addLog(`Recovered ${goldLoot} Aetium from the remains.`, 'system');
 
       // Calculate XP
@@ -135,10 +141,17 @@ export default function BattleScreen() {
       addLog(`Synchronization improved (+${xpGained} XP)`, 'system');
       
       // Calculate Item loot
-      const itemLoot = getLootForEnemy(enemyName);
+      const itemLoot = getLootForEnemy(enemyName, biome);
       if (itemLoot) {
-        addItem(itemLoot);
-        addLog(`Acquired: ${itemLoot.name}`, 'system');
+        let finalItem = itemLoot;
+        if (activeWorldEvent?.lootMultiplier[itemLoot.name]) {
+          addLog(`EVENT BONUS: Extra ${itemLoot.name} recovered!`, 'system');
+          // For now, "doubling" just means we give it to them. 
+          // Future: actually add 2 to inventory if we update addItem to support counts
+          addItem(itemLoot); 
+        }
+        addItem(finalItem);
+        addLog(`Acquired: ${finalItem.name}`, 'system');
       }
       
       setTimeout(() => {
@@ -231,15 +244,17 @@ export default function BattleScreen() {
     if (!isPlayerTurn && isInCombat && !isResolving) {
       const timer = setTimeout(() => {
         const baseDamage = 15 + Math.floor(Math.random() * 8);
-        const damage = Math.max(1, baseDamage - player.defense);
+        const eventMult = activeWorldEvent?.difficultyMultiplier || 1.0;
+        const damage = Math.max(1, Math.floor(baseDamage * eventMult) - player.defense);
+        
         triggerScreenFlash();
         updateHp('player', -damage);
-        addLog(`The ${enemyName} retaliates! ${damage} damage received (${player.defense} blocked).`, 'enemy');
+        addLog(`The ${enemyName} retaliates! ${damage} damage received (${player.defense} blocked).${eventMult > 1 ? ' (Event Boost)' : ''}`, 'enemy');
         nextTurn();
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [isPlayerTurn, isInCombat, isResolving, player.defense]);
+  }, [isPlayerTurn, isInCombat, isResolving, player.defense, activeWorldEvent]);
 
   if (!isInCombat) {
     return (

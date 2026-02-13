@@ -2,11 +2,27 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ReputationState } from './FactionManager';
-import { BiomeType } from './BiomeMapper';
+import { BiomeType, FactionType } from './BiomeMapper';
 import { LOOT_ITEMS } from './LootTable';
 import { useUIStore } from './useUIStore';
+import { ZoneSynthesis, ZoneNPC } from './ZoneSynthesizer';
 
 interface Coords {
+  latitude: number;
+  longitude: number;
+}
+
+export interface ZoneProfile {
+  suburb: string;
+  biome: BiomeType;
+  faction: FactionType;
+  synthesis: ZoneSynthesis;
+  npc: ZoneNPC;
+  wikiSummary: string;
+  discoveryDate: number;
+}
+
+export interface Item {
   latitude: number;
   longitude: number;
 }
@@ -82,7 +98,7 @@ interface PlayerState {
   };
   inventory: Item[];
   reputation: ReputationState;
-  discoveredZones: string[];
+  discoveredZones: Record<string, ZoneProfile>;
   activeQuests: Quest[];
   hostileSignals: Signal[];
   resourceNodes: ResourceNode[];
@@ -101,7 +117,7 @@ interface PlayerState {
   removeItem: (itemId: string) => void;
   equipItem: (item: Item) => void;
   updateReputation: (factionId: string, delta: number) => void;
-  discoverZone: (suburb: string) => void;
+  saveZoneProfile: (profile: ZoneProfile) => void;
   rest: () => void;
   updateQuestProgress: (id: string, amount: number) => void;
   completeQuest: (id: string) => void;
@@ -176,106 +192,106 @@ export const usePlayerStore = create<PlayerState>()(
       gold: 150,
       attack: BASE_ATTACK + (STARTING_WEAPON.stats?.attack || 0),
       defense: BASE_DEFENSE + (STARTING_ARMOR.stats?.defense || 0),
-      equipment: {
-        weapon: STARTING_WEAPON,
-        armor: STARTING_ARMOR,
-        boots: null,
-      },
-      inventory: [STARTING_WEAPON, STARTING_ARMOR],
-      reputation: INITIAL_REPUTATION,
-      discoveredZones: [],
-      activeQuests: [STARTING_QUEST],
-      hostileSignals: [],
-      resourceNodes: [],
-      bestiary: {},
-      enrolledFaction: null,
-      specialization: null,
-      setBonus: null,
-            globalNotification: null,
-                  hasSetHomeCity: false,
-                  homeCityName: "",
-                  sanctuaryLocation: null,
-            
-                  setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
-      gainXp: (amount) => set((state) => {
-        let newXp = state.xp + amount;
-        let newLevel = state.level;
-        let newMaxXp = state.maxXp;
-        let newMaxHp = state.maxHp;
-        let newMaxMana = state.maxMana;
-        let newHp = state.hp;
-        let newMana = state.mana;
-
-        while (newXp >= newMaxXp) {
-          newXp -= newMaxXp;
-          newLevel += 1;
-          newMaxXp = Math.floor(newMaxXp * 1.5);
-          newMaxHp += 20;
-          newMaxMana += 10;
-          newHp = newMaxHp; 
-          newMana = newMaxMana; 
-        }
-
-        return { 
-          xp: newXp, 
-          level: newLevel, 
-          maxXp: newMaxXp, 
-          maxHp: newMaxHp, 
-          maxMana: newMaxMana,
-          hp: newHp,
-          mana: newMana
-        };
-      }),
-      addItem: (item) => set((state) => ({ 
-        inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }] 
-      })),
-      removeItem: (itemId) => set((state) => ({
-        inventory: state.inventory.filter(i => i.id !== itemId)
-      })),
-      equipItem: (item) => set((state) => {
-        const newEquipment = { ...state.equipment };
-        if (item.category === 'Weapon') newEquipment.weapon = item;
-        if (item.category === 'Armor') {
-          if (item.name.toLowerCase().includes('boots')) {
-            newEquipment.boots = item;
-          } else {
-            newEquipment.armor = item;
-          }
-        }
-        
-        let weaponBonus = newEquipment.weapon?.stats?.attack || 0;
-        let armorBonus = (newEquipment.armor?.stats?.defense || 0) + (newEquipment.boots?.stats?.defense || 0);
-        
-        let activeSetBonus = null;
-        if (newEquipment.armor?.name.includes('Plasteel') && 
-            newEquipment.boots?.name.includes('Plasteel')) {
-          armorBonus += 5;
-          activeSetBonus = { name: 'Plasteel Reinforcement', bonus: { defense: 5 } };
-        }
-        
-        return { 
-          equipment: newEquipment,
-          attack: BASE_ATTACK + weaponBonus,
-          defense: BASE_DEFENSE + armorBonus,
-          setBonus: activeSetBonus
-        };
-      }),
-      updateReputation: (factionId, delta) => set((state) => ({
-        reputation: {
-          ...state.reputation,
-          [factionId]: (state.reputation[factionId] || 0) + delta,
-        },
-      })),
-      discoverZone: (suburb) => set((state) => ({
-        discoveredZones: state.discoveredZones.includes(suburb) 
-          ? state.discoveredZones 
-          : [...state.discoveredZones, suburb]
-      })),
-      rest: () => set((state) => ({
-        hp: state.maxHp,
-        mana: state.maxMana
-      })),
-      updateQuestProgress: (id, amount) => set((state) => {
+            equipment: {
+              weapon: STARTING_WEAPON,
+              armor: STARTING_ARMOR,
+              boots: null,
+            },
+            inventory: [STARTING_WEAPON, STARTING_ARMOR],
+            reputation: INITIAL_REPUTATION,
+            discoveredZones: {},
+            activeQuests: [STARTING_QUEST],
+            hostileSignals: [],
+            resourceNodes: [],
+            bestiary: {},
+            enrolledFaction: null,
+            specialization: null,
+            setBonus: null,
+                  globalNotification: null,
+                        hasSetHomeCity: false,
+                        homeCityName: "",
+                        sanctuaryLocation: null,
+      
+                        setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+            gainXp: (amount) => set((state) => {
+              let newXp = state.xp + amount;
+              let newLevel = state.level;
+              let newMaxXp = state.maxXp;
+              let newMaxHp = state.maxHp;
+              let newMaxMana = state.maxMana;
+              let newHp = state.hp;
+              let newMana = state.mana;
+      
+              while (newXp >= newMaxXp) {
+                newXp -= newMaxXp;
+                newLevel += 1;
+                newMaxXp = Math.floor(newMaxXp * 1.5);
+                newMaxHp += 20;
+                newMaxMana += 10;
+                newHp = newMaxHp; 
+                newMana = newMaxMana; 
+              }
+      
+              return { 
+                xp: newXp, 
+                level: newLevel, 
+                maxXp: newMaxXp, 
+                maxHp: newMaxHp, 
+                maxMana: newMaxMana,
+                hp: newHp,
+                mana: newMana
+              };
+            }),
+            addItem: (item) => set((state) => ({ 
+              inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }] 
+            })),
+            removeItem: (itemId) => set((state) => ({
+              inventory: state.inventory.filter(i => i.id !== itemId)
+            })),
+            equipItem: (item) => set((state) => {
+              const newEquipment = { ...state.equipment };
+              if (item.category === 'Weapon') newEquipment.weapon = item;
+              if (item.category === 'Armor') {
+                if (item.name.toLowerCase().includes('boots')) {
+                  newEquipment.boots = item;
+                } else {
+                  newEquipment.armor = item;
+                }
+              }
+              
+              let weaponBonus = newEquipment.weapon?.stats?.attack || 0;
+              let armorBonus = (newEquipment.armor?.stats?.defense || 0) + (newEquipment.boots?.stats?.defense || 0);
+              
+              let activeSetBonus = null;
+              if (newEquipment.armor?.name.includes('Plasteel') && 
+                  newEquipment.boots?.name.includes('Plasteel')) {
+                armorBonus += 5;
+                activeSetBonus = { name: 'Plasteel Reinforcement', bonus: { defense: 5 } };
+              }
+              
+              return { 
+                equipment: newEquipment,
+                attack: BASE_ATTACK + weaponBonus,
+                defense: BASE_DEFENSE + armorBonus,
+                setBonus: activeSetBonus
+              };
+            }),
+            updateReputation: (factionId, delta) => set((state) => ({
+              reputation: {
+                ...state.reputation,
+                [factionId]: (state.reputation[factionId] || 0) + delta,
+              },
+            })),
+            saveZoneProfile: (profile) => set((state) => ({
+              discoveredZones: {
+                ...state.discoveredZones,
+                [profile.suburb]: profile
+              }
+            })),
+            rest: () => set((state) => ({
+              hp: state.maxHp,
+              mana: state.maxMana
+            })),      updateQuestProgress: (id, amount) => set((state) => {
         const updatedQuests = state.activeQuests.map(q => {
           if (q.id === id && !q.isCompleted) {
             const newCount = Math.min(q.targetCount, q.currentCount + amount);

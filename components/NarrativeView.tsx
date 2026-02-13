@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Dimensions, StyleSheet } from 'react-native';
-import { ChevronRight, Sparkles, MessageCircle, ArrowLeft, Footprints, Sword, Cloud } from 'lucide-react-native';
+import { ChevronRight, Sparkles, MessageCircle, ArrowLeft, Footprints, Sword, Cloud, User, Activity } from 'lucide-react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
@@ -16,7 +16,8 @@ import enrollmentDialogue from '../assets/dialogue/faction_enrollment.json';
 import specializationDialogue from '../assets/dialogue/specialization_choice.json';
 
 import { useCombatStore } from '../utils/useCombatStore';
-import { usePlayerStore } from '../utils/usePlayerStore';
+import { usePlayerStore, ZoneProfile } from '../utils/usePlayerStore';
+import { useUIStore } from '../utils/useUIStore';
 import { useRouter } from 'expo-router';
 import { BiomeType } from '../utils/BiomeMapper';
 import { getDeterministicEnemy } from '../utils/EnemyFactory';
@@ -28,12 +29,14 @@ interface NarrativeViewProps {
   category: string;
   biome: BiomeType;
   description: string;
+  profile?: ZoneProfile;
   onExit: () => void;
 }
 
-const NarrativeView = ({ suburb, loreName, category, biome, description, onExit }: NarrativeViewProps) => {
+const NarrativeView = ({ suburb, loreName, category, biome, description, profile, onExit }: NarrativeViewProps) => {
   const [activeDialogue, setActiveDialogue] = useState<any>(null);
   const { level, enrolledFaction, specialization } = usePlayerStore();
+  const { activeWorldEvent } = useUIStore();
   const { initiateCombat } = useCombatStore();
   const router = useRouter();
   const opacity = useSharedValue(0);
@@ -108,6 +111,22 @@ const NarrativeView = ({ suburb, loreName, category, biome, description, onExit 
         contentContainerStyle={{ paddingTop: 64, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
+        {activeWorldEvent && (
+          <Animated.View 
+            entering={FadeInDown.duration(600)}
+            className="bg-amber-950/30 border border-amber-500/40 p-5 rounded-3xl mb-8 flex-row items-center"
+          >
+            <View className="bg-amber-500 p-2 rounded-xl mr-4 shadow-lg shadow-amber-500/50">
+              <Activity size={20} color="#451a03" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-amber-500 font-black text-[10px] uppercase tracking-[4px] mb-1">Active Sector Event</Text>
+              <Text className="text-white font-bold text-lg">{activeWorldEvent.name}</Text>
+              <Text className="text-amber-200/70 text-xs italic mt-1 leading-4">{activeWorldEvent.description}</Text>
+            </View>
+          </Animated.View>
+        )}
+
         <Animated.View entering={FadeInDown.duration(600)}>
           <View className="flex-row justify-between items-start">
             <View>
@@ -140,13 +159,51 @@ const NarrativeView = ({ suburb, loreName, category, biome, description, onExit 
           className="bg-zinc-900/40 border-l-2 border-cyan-500/30 p-8 rounded-tr-3xl rounded-br-3xl mb-8 shadow-inner"
         >
           <Text className="text-cyan-50/90 text-xl leading-[38px] font-serif italic">
-            {description}
+            {profile?.wikiSummary || description}
           </Text>
           
           <View className="mt-6 flex-row justify-end">
             <Sparkles size={16} color="#164e63" />
           </View>
         </Animated.View>
+
+        {/* Synthesis Data */}
+        {profile && (
+          <Animated.View 
+            entering={FadeInDown.delay(400).duration(600)}
+            className="flex-row flex-wrap gap-3 mb-8"
+          >
+            <View className="bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-2xl">
+              <Text className="text-zinc-500 font-black text-[7px] uppercase tracking-widest mb-0.5">Primary Alignment</Text>
+              <Text className="text-cyan-400 font-bold text-xs">{profile.faction}</Text>
+            </View>
+            <View className="bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-2xl">
+              <Text className="text-zinc-500 font-black text-[7px] uppercase tracking-widest mb-0.5">Resonance Level</Text>
+              <Text className="text-red-400 font-bold text-xs">Diff: {profile.synthesis.difficultyLevel}/10</Text>
+            </View>
+            <View className="bg-zinc-900 border border-zinc-800 px-4 py-2.5 rounded-2xl">
+              <Text className="text-zinc-500 font-black text-[7px] uppercase tracking-widest mb-0.5">Residual Loot</Text>
+              <Text className="text-amber-500 font-bold text-xs">{profile.synthesis.lootQuality}</Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Unique NPC Card */}
+        {profile && profile.npc && (
+          <Animated.View 
+            entering={FadeInDown.delay(500).duration(600)}
+            className="bg-zinc-900/60 border border-zinc-800 p-5 rounded-3xl mb-8 flex-row items-center"
+          >
+            <View className="w-12 h-12 bg-zinc-800 rounded-full items-center justify-center mr-4 border border-zinc-700">
+              <User size={24} color="#e4e4e7" />
+            </View>
+            <View className="flex-1">
+              <Text className="text-zinc-500 font-black text-[8px] uppercase tracking-widest mb-0.5">Sector Contact</Text>
+              <Text className="text-white font-bold text-lg leading-6">{profile.npc.title} {profile.npc.name}</Text>
+              <Text className="text-zinc-400 text-xs italic mt-1 leading-4">"{profile.npc.description}"</Text>
+            </View>
+          </Animated.View>
+        )}
 
         {/* Environmental Modifiers */}
         <Animated.View 

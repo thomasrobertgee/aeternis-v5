@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, MapPressEvent, Marker, Circle } from 'react-native-maps';
+import MapView, { PROVIDER_GOOGLE, MapPressEvent, Marker, Circle, Polygon } from 'react-native-maps';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useCombatStore } from '../../utils/useCombatStore';
 import { geocodeCity, reverseGeocode } from '../../utils/GeoService';
@@ -8,8 +8,13 @@ import { getBiomeFromKeyword, getFactionForZone, BiomeType, FactionType } from '
 import { getProceduralZone, generateAtmosphericIntro } from '../../utils/ProceduralEngine';
 import { getDeterministicEnemy, getBossByBiome } from '../../utils/EnemyFactory';
 import { getWeatherForSuburb, WEATHER_EFFECTS } from '../../utils/WorldStateManager';
+import WikipediaService from '../../utils/WikipediaService';
+import ZoneSynthesizer from '../../utils/ZoneSynthesizer';
+import ZoneEventManager from '../../utils/ZoneEventManager';
 import ZoneCard from '../../components/ZoneCard';
 import NarrativeView from '../../components/NarrativeView';
+import DiscoveryOverlay from '../../components/DiscoveryOverlay';
+import TransitView from '../../components/TransitView';
 import QuestTracker from '../../components/QuestTracker';
 import DialogueView from '../../components/DialogueView';
 import enrollmentDialogue from '../../assets/dialogue/faction_enrollment.json';
@@ -25,6 +30,16 @@ import Animated, {
 } from 'react-native-reanimated';
 import { getDistance } from '../../utils/MathUtils';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import BoundaryService from '../../utils/BoundaryService';
+import { useTravelStore } from '../../utils/useTravelStore';
+
+const WORLD_BOUNDARY = [
+  { latitude: -85, longitude: -180 },
+  { latitude: -85, longitude: 180 },
+  { latitude: 85, longitude: 180 },
+  { latitude: 85, longitude: -180 },
+];
 
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
@@ -51,9 +66,12 @@ export default function ExploreScreen() {
   } = usePlayerStore();
 
   const { initiateCombat } = useCombatStore();
+  const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName } = useTravelStore();
 
   const [currentSuburb, setCurrentSuburb] = useState<string>("");
+  const [currentSuburbPolygon, setCurrentSuburbPolygon] = useState<{latitude: number, longitude: number}[] | null>(null);
   const [isInEncounter, setIsInEncounter] = useState(false);
+  const [showDiscovery, setShowDiscovery] = useState(false);
   const [activeDialogue, setActiveDialogue] = useState<any>(null);
   const [cityInput, setCityInput] = useState("");
   const [isSettingHome, setIsSettingHome] = useState(false);
@@ -88,6 +106,31 @@ export default function ExploreScreen() {
     return () => clearInterval(interval);
   }, [respawnSignals]);
 
+  // Travel Ticking
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTraveling) {
+      interval = setInterval(() => {
+        tickTravel();
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTraveling, tickTravel]);
+
+  // Travel Completion / Coordinate Shift
+  useEffect(() => {
+    if (!isTraveling && destinationCoords) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setPlayerLocation(destinationCoords);
+      mapRef.current?.animateToRegion({
+        ...destinationCoords,
+        latitudeDelta: 0.02,
+        longitudeDelta: 0.02,
+      }, 1500);
+      completeTravel();
+    }
+  }, [isTraveling, destinationCoords]);
+
   // Force markers to redraw once after mount to prevent clipping on Android
   useEffect(() => {
     const timer = setTimeout(() => setTracksViewChanges(false), 3000);
@@ -105,26 +148,93 @@ export default function ExploreScreen() {
     }
   }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
-  useEffect(() => {
-    const resolveCurrentSuburb = async () => {
-      if (!hasSetHomeCity) return;
+  const handleRegionChange = async (region: any) => {
+    setMapRegion(region);
+    if (!hasSetHomeCity) return;
+
+    const coords = { latitude: region.latitude, longitude: region.longitude };
+    
+    // 1. Resolve Suburb Name
+    let resolvedName = BoundaryService.getSuburbAtPoint(coords);
+    if (!resolvedName) {
       try {
-        const result = await reverseGeocode(playerLocation);
-        if (result) {
-          setCurrentSuburb(result.suburb);
-        }
+        const result = await reverseGeocode(coords);
+        if (result) resolvedName = result.suburb;
       } catch (e) {
-        console.error("Failed to resolve current suburb", e);
+        console.error("Geocoding failed during region change", e);
       }
-    };
-    resolveCurrentSuburb();
-  }, [playerLocation, hasSetHomeCity]);
+    }
+
+    if (resolvedName) {
+      setCurrentSuburb(resolvedName);
+      
+      // 2. Resolve Polygon for UI highlighting
+      const feature = BoundaryService.getSuburbFeature(resolvedName);
+      if (feature && feature.geometry) {
+        if (feature.geometry.type === 'Polygon') {
+          setCurrentSuburbPolygon(feature.geometry.coordinates[0].map((coord: number[]) => ({
+            longitude: coord[0],
+            latitude: coord[1],
+          })));
+        } else if (feature.geometry.type === 'MultiPolygon') {
+          setCurrentSuburbPolygon(feature.geometry.coordinates[0][0].map((coord: number[]) => ({
+            longitude: coord[0],
+            latitude: coord[1],
+          })));
+        }
+      } else {
+        setCurrentSuburbPolygon(null);
+      }
+    }
+  };
 
   const isSafeZone = useMemo(() => {
     if (!currentSuburb || !homeCityName) return false;
     return currentSuburb.toLowerCase().includes(homeCityName.toLowerCase()) ||
            homeCityName.toLowerCase().includes(currentSuburb.toLowerCase());
   }, [currentSuburb, homeCityName]);
+
+  const homeCityHoles = useMemo(() => {
+    if (!homeCityName) return [];
+    const feature = BoundaryService.getSuburbFeature(homeCityName);
+    if (!feature || !feature.geometry) return [];
+
+    if (feature.geometry.type === 'Polygon') {
+      return [feature.geometry.coordinates[0].map((coord: number[]) => ({
+        longitude: coord[0],
+        latitude: coord[1],
+      }))];
+    }
+    if (feature.geometry.type === 'MultiPolygon') {
+      return feature.geometry.coordinates.map((poly: any) => 
+        poly[0].map((coord: number[]) => ({
+          longitude: coord[0],
+          latitude: coord[1],
+        }))
+      );
+    }
+    return [];
+  }, [homeCityName]);
+
+  const biomeColors = useMemo(() => {
+    const biome = getBiomeFromKeyword(currentSuburb || "");
+    switch (biome) {
+      case BiomeType.RUST_FIELDS:
+        return { fill: 'rgba(249, 115, 22, 0.2)', stroke: 'rgba(249, 115, 22, 0.5)' };
+      case BiomeType.VERDANT_GROVE:
+        return { fill: 'rgba(16, 185, 129, 0.2)', stroke: 'rgba(16, 185, 129, 0.5)' };
+      case BiomeType.SILICON_SPIRES:
+        return { fill: 'rgba(6, 182, 212, 0.2)', stroke: 'rgba(6, 182, 212, 0.5)' };
+      case BiomeType.MISTY_WHARFS:
+        return { fill: 'rgba(59, 130, 246, 0.2)', stroke: 'rgba(59, 130, 246, 0.5)' };
+      case BiomeType.VOID_PROMENADE:
+        return { fill: 'rgba(168, 85, 247, 0.2)', stroke: 'rgba(168, 85, 247, 0.5)' };
+      case BiomeType.ANCIENT_ARCHIVES:
+        return { fill: 'rgba(245, 158, 11, 0.2)', stroke: 'rgba(245, 158, 11, 0.5)' };
+      default:
+        return { fill: 'rgba(113, 113, 122, 0.2)', stroke: 'rgba(113, 113, 122, 0.5)' };
+    }
+  }, [currentSuburb]);
 
   useEffect(() => {
     if (hasSetHomeCity && (!hostileSignals || hostileSignals.length === 0)) {
@@ -324,23 +434,65 @@ export default function ExploreScreen() {
       const weather = getWeatherForSuburb(currentSuburb || "Static Sector");
       const modifier = WEATHER_EFFECTS[weather].damageModifier;
 
-      initiateCombat(enemy.name, enemy.maxHp, usePlayerStore.getState().hp, usePlayerStore.getState().mana, selectedZone.signalId, modifier);
+      initiateCombat(enemy.name, enemy.maxHp, usePlayerStore.getState().hp, usePlayerStore.getState().mana, selectedZone.signalId, modifier, selectedZone.biome);
       router.push('/battle');
       setSelectedZone(null);
     } else {
-      discoverZone(selectedZone.suburb);
+      // --- ZONE DISCOVERY & SYNTHESIS ---
+      const { discoveredZones, saveZoneProfile } = usePlayerStore.getState();
+      
+      if (!discoveredZones[selectedZone.suburb]) {
+        setIsGeocoding(true); // Re-use geocoding indicator for synthesis
+        const wikiData = await WikipediaService.getSuburbSummary(selectedZone.suburb);
+        
+        const fallbackSummary = "The Imaginum is unusually dense here, manifesting as a generic wasteland of shifting gray sands and static-charged air. No historical records of the old world have survived the fracture in this sector.";
+        const finalSummary = wikiData?.extract || selectedZone.description || fallbackSummary;
+        
+        const synthesis = ZoneSynthesizer.synthesize(finalSummary);
+        
+        saveZoneProfile({
+          suburb: selectedZone.suburb,
+          biome: selectedZone.biome,
+          faction: synthesis.dominantFaction,
+          synthesis: synthesis,
+          npc: synthesis.npc,
+          wikiSummary: finalSummary,
+          discoveryDate: Date.now(),
+        });
+        setIsGeocoding(false);
+        setShowDiscovery(true);
+      }
+
       setIsInEncounter(true);
+
+      // --- WORLD EVENT ROLL ---
+      const event = ZoneEventManager.triggerRoll(selectedZone.suburb, selectedZone.biome);
+      if (event) {
+        ZoneEventManager.addEvent(event);
+        useUIStore.getState().setWorldEvent(event);
+      } else {
+        // Clear any previous zone events if no new one triggered
+        useUIStore.getState().setWorldEvent(null);
+      }
     }
   };
 
   const handleFastTravel = () => {
     if (!selectedZone) return;
-    setPlayerLocation(selectedZone.coords);
-    mapRef.current?.animateToRegion({
-      ...selectedZone.coords,
-      latitudeDelta: 0.02,
-      longitudeDelta: 0.02,
-    }, 1000);
+
+    // --- LEVEL-BASED TRAVEL RESTRICTION ---
+    if (level < 10) {
+      const targetSuburb = selectedZone.suburb;
+      const isTargetHome = targetSuburb.toLowerCase().includes(homeCityName.toLowerCase()) || 
+                           homeCityName.toLowerCase().includes(targetSuburb.toLowerCase());
+      
+      if (!isTargetHome) {
+        alert(`The Fracture instability is too high to leave ${homeCityName}. Reach Level 10 to stabilize your Aether-Link.`);
+        return;
+      }
+    }
+
+    startTravel(selectedZone.suburb, selectedZone.coords, 15);
     setSelectedZone(null);
   };
 
@@ -355,6 +507,8 @@ export default function ExploreScreen() {
 
   if (isInEncounter && selectedZone) {
     const proceduralData = getProceduralZone(selectedZone.suburb);
+    const profile = usePlayerStore.getState().discoveredZones[selectedZone.suburb];
+    
     return (
       <NarrativeView
         suburb={selectedZone.suburb}
@@ -362,6 +516,7 @@ export default function ExploreScreen() {
         category={proceduralData.category}
         biome={selectedZone.biome}
         description={selectedZone.description}
+        profile={profile}
         onExit={() => setIsInEncounter(false)}
       />
     );
@@ -369,6 +524,14 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-zinc-950">
+      <TransitView />
+      {showDiscovery && selectedZone && (
+        <DiscoveryOverlay 
+          suburb={selectedZone.suburb} 
+          fracturedTitle={getProceduralZone(selectedZone.suburb).loreName}
+          onComplete={() => setShowDiscovery(false)}
+        />
+      )}
       <QuestTracker />
 
       <View className="absolute top-16 right-6 z-50 flex-col gap-3">
@@ -394,10 +557,30 @@ export default function ExploreScreen() {
         provider={PROVIDER_GOOGLE}
         style={StyleSheet.absoluteFillObject}
         initialRegion={mapRegion}
-        onRegionChangeComplete={setMapRegion}
+        onRegionChangeComplete={handleRegionChange}
         customMapStyle={fantasyMapStyle}
         onPress={handleMapPress}
       >
+        {currentSuburbPolygon && (
+          <Polygon
+            coordinates={currentSuburbPolygon}
+            fillColor={biomeColors.fill}
+            strokeColor={biomeColors.stroke}
+            strokeWidth={2}
+          />
+        )}
+
+        {level < 10 && (
+          <Polygon
+            coordinates={WORLD_BOUNDARY}
+            holes={homeCityHoles}
+            fillColor="rgba(0, 0, 0, 0.7)"
+            strokeColor="transparent"
+            strokeWidth={0}
+            tappable={false}
+          />
+        )}
+
         <Circle 
           center={playerLocation}
           radius={pulseScale.value * 5000}
