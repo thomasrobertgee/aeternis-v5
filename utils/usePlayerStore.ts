@@ -136,8 +136,8 @@ interface PlayerState {
 }
 
 const INITIAL_LOCATION = {
-  latitude: -37.8286,
-  longitude: 144.8475,
+  latitude: -37.8298,
+  longitude: 144.8485,
 };
 
 const BASE_ATTACK = 5;

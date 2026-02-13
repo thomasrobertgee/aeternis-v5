@@ -137,6 +137,18 @@ export default function ExploreScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  // Initial Suburb Resolution on Mount
+  useEffect(() => {
+    if (hasSetHomeCity && playerLocation) {
+      handleRegionChange({
+        latitude: playerLocation.latitude,
+        longitude: playerLocation.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      });
+    }
+  }, [hasSetHomeCity]);
+
   // Check for Level-based Story Events
   useEffect(() => {
     if (hasSetHomeCity) {
@@ -567,6 +579,7 @@ export default function ExploreScreen() {
             fillColor={biomeColors.fill}
             strokeColor={biomeColors.stroke}
             strokeWidth={2}
+            zIndex={1}
           />
         )}
 
@@ -578,6 +591,7 @@ export default function ExploreScreen() {
             strokeColor="transparent"
             strokeWidth={0}
             tappable={false}
+            zIndex={2}
           />
         )}
 

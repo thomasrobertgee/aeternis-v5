@@ -35,7 +35,11 @@ Manages real-time turn-based encounters.
 ## 3. RPG Systems
 
 ### 3.1 Geospatial Intelligence
-*   **BoundaryService**: Loads GeoJSON polygons of Melbourne suburbs for precise, offline-capable location detection.
+*   **BoundaryService**: Loads high-fidelity GeoJSON polygons (sourced from official OSM administrative data) for precise, offline-capable location detection.
+*   **Visual Layering (z-index)**: Implements a strict rendering hierarchy to ensure UI clarity:
+    *   **Z-Index 10**: Traveller (Player) Marker.
+    *   **Z-Index 2**: Instability Fog (Level 10 restriction).
+    *   **Z-Index 1**: Suburb Boundary Highlight (Biome-tinted).
 *   **WikipediaService**: Fetches real-world historical and industrial summaries for the current suburb via MediaWiki API.
 *   **ZoneSynthesizer**: An "AI" layer that analyzes Wikipedia text to deterministically generate:
     *   **Dominant Faction**: Based on industry/nature keywords.
