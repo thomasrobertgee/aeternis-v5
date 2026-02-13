@@ -11,7 +11,7 @@ export interface EnemyTemplate {
   description: string;
 }
 
-const ENEMY_DATABASE: Record<string, EnemyTemplate[]> = {
+export const ENEMY_DATABASE: Record<string, EnemyTemplate[]> = {
   [BiomeType.RUST_FIELDS]: [
     { name: 'Steam-Drone', maxHp: 50, description: 'A small, spherical bot venting high-pressure steam through rusted valves.' },
     { name: 'Scrapyard Golem', maxHp: 120, description: 'A lumbering mass of discarded iron and magnetic sludge.' },
@@ -49,10 +49,23 @@ const ENEMY_DATABASE: Record<string, EnemyTemplate[]> = {
   ]
 };
 
+export const BOSS_DATABASE: Record<string, EnemyTemplate[]> = {
+  [BiomeType.RUST_FIELDS]: [
+    { name: 'The Iron Sovereign', maxHp: 500, description: 'A massive industrial engine given malevolent life. It vents scorching steam and crushing pressure.' }
+  ],
+  [BiomeType.VERDANT_GROVE]: [
+    { name: 'Primordial Root', maxHp: 450, description: 'The sentient core of the grove. Its vines can reach across the fracture to crush the unaligned.' }
+  ],
+  [BiomeType.SILICON_SPIRES]: [
+    { name: 'Mainframe Overlord', maxHp: 400, description: 'A digital consciousness that has fully manifested in the physical realm. It controls the local data streams.' }
+  ],
+  [BiomeType.SHATTERED_SUBURBIA]: [
+    { name: 'The Suburb Nightmare', maxHp: 350, description: 'A haunting collective of lost domestic memories, merged into a towering, weeping entity.' }
+  ]
+};
+
 /**
  * Generates a random enemy based on the provided biome.
- * @param biome The biome to generate an enemy for.
- * @returns An EnemyTemplate object.
  */
 export const getRandomEnemyByBiome = (biome: BiomeType): EnemyTemplate => {
   const templates = ENEMY_DATABASE[biome] || ENEMY_DATABASE[BiomeType.SHATTERED_SUBURBIA];
@@ -62,12 +75,17 @@ export const getRandomEnemyByBiome = (biome: BiomeType): EnemyTemplate => {
 
 /**
  * Generates a deterministic enemy for a specific suburb in a biome.
- * @param suburb The name of the suburb.
- * @param biome The biome of the suburb.
- * @returns An EnemyTemplate object.
  */
 export const getDeterministicEnemy = (suburb: string, biome: BiomeType): EnemyTemplate => {
   const templates = ENEMY_DATABASE[biome] || ENEMY_DATABASE[BiomeType.SHATTERED_SUBURBIA];
   const hash = suburb.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return templates[hash % templates.length];
+};
+
+/**
+ * Generates a boss for a specific biome.
+ */
+export const getBossByBiome = (biome: BiomeType): EnemyTemplate => {
+  const templates = BOSS_DATABASE[biome] || BOSS_DATABASE[BiomeType.SHATTERED_SUBURBIA];
+  return templates[0];
 };

@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ReputationState } from './FactionManager';
+import { BiomeType } from './BiomeMapper';
+import { LOOT_ITEMS } from './LootTable';
+import { useUIStore } from './useUIStore';
 
 interface Coords {
   latitude: number;
@@ -12,6 +15,7 @@ export interface Item {
   id: string;
   name: string;
   category: 'Weapon' | 'Armor' | 'Utility';
+  rarity: 'Common' | 'Rare' | 'Fractured' | 'Legendary';
   description: string;
   stats?: Record<string, number>;
 }
@@ -28,6 +32,37 @@ export interface Quest {
   rewardGold: number;
 }
 
+export interface Signal {
+  id: string;
+  coords: Coords;
+  biome: BiomeType;
+  type?: 'Standard' | 'Boss';
+  expiresAt?: number;
+  respawnAt?: number;
+}
+
+export interface ResourceNode {
+  id: string;
+  coords: Coords;
+  materialName: string;
+  amount: number;
+  isHarvested: boolean;
+}
+
+export interface GlobalNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'Info' | 'Warning' | 'Rift';
+}
+
+export interface BestiaryEntry {
+  encounters: number;
+  defeats: number;
+}
+
+export type SpecializationID = 'aether-bumper' | 'wildfire-mage' | 'search-and-rescue';
+
 interface PlayerState {
   playerLocation: Coords;
   level: number;
@@ -43,13 +78,22 @@ interface PlayerState {
   equipment: {
     weapon: Item | null;
     armor: Item | null;
+    boots: Item | null;
   };
   inventory: Item[];
   reputation: ReputationState;
   discoveredZones: string[];
   activeQuests: Quest[];
+  hostileSignals: Signal[];
+  resourceNodes: ResourceNode[];
+  bestiary: Record<string, BestiaryEntry>;
+  enrolledFaction: string | null;
+  specialization: SpecializationID | null;
+  setBonus: { name: string; bonus: Record<string, number> } | null;
+  globalNotification: GlobalNotification | null;
   hasSetHomeCity: boolean;
   homeCityName: string;
+  sanctuaryLocation: Coords | null;
   setPlayerLocation: (location: Coords) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
   gainXp: (amount: number) => void;
@@ -60,10 +104,21 @@ interface PlayerState {
   discoverZone: (suburb: string) => void;
   rest: () => void;
   updateQuestProgress: (id: string, amount: number) => void;
+  completeQuest: (id: string) => void;
+  enrollInFaction: (factionId: string) => void;
+  setSpecialization: (specId: SpecializationID) => void;
+  recordEncounter: (enemyName: string) => void;
+  recordDefeat: (enemyName: string) => void;
+  removeSignal: (id: string) => void;
+  respawnSignals: () => void;
+  setHostileSignals: (signals: Signal[]) => void;
+  setResourceNodes: (nodes: ResourceNode[]) => void;
+  harvestNode: (id: string) => void;
+  triggerRift: (coords: Coords, biome: BiomeType) => void;
+  setNotification: (notif: GlobalNotification | null) => void;
   setHomeCity: (city: string, location: Coords) => void;
 }
 
-// Initial position (Altona North as per explore.tsx)
 const INITIAL_LOCATION = {
   latitude: -37.8286,
   longitude: 144.8475,
@@ -81,6 +136,7 @@ const STARTING_WEAPON: Item = {
   id: 'starting-axe',
   name: 'Heavy Iron Axe',
   category: 'Weapon',
+  rarity: 'Common',
   description: 'A weighted tool of survival, blunt but effective against the horrors of the fracture.',
   stats: { attack: 12 },
 };
@@ -89,6 +145,7 @@ const STARTING_ARMOR: Item = {
   id: 'starting-armor',
   name: 'Reflective Turnout Gear',
   category: 'Armor',
+  rarity: 'Common',
   description: 'High-visibility firefighter gear, repurposed to offer protection against both heat and spectral corruption.',
   stats: { defense: 8 },
 };
@@ -122,16 +179,24 @@ export const usePlayerStore = create<PlayerState>()(
       equipment: {
         weapon: STARTING_WEAPON,
         armor: STARTING_ARMOR,
+        boots: null,
       },
       inventory: [STARTING_WEAPON, STARTING_ARMOR],
       reputation: INITIAL_REPUTATION,
       discoveredZones: [],
       activeQuests: [STARTING_QUEST],
-      hasSetHomeCity: false,
-      homeCityName: "",
-      
-      setPlayerLocation: (location) => set({ playerLocation: location }),
-      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+      hostileSignals: [],
+      resourceNodes: [],
+      bestiary: {},
+      enrolledFaction: null,
+      specialization: null,
+      setBonus: null,
+            globalNotification: null,
+                  hasSetHomeCity: false,
+                  homeCityName: "",
+                  sanctuaryLocation: null,
+            
+                  setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
       gainXp: (amount) => set((state) => {
         let newXp = state.xp + amount;
         let newLevel = state.level;
@@ -170,15 +235,29 @@ export const usePlayerStore = create<PlayerState>()(
       equipItem: (item) => set((state) => {
         const newEquipment = { ...state.equipment };
         if (item.category === 'Weapon') newEquipment.weapon = item;
-        if (item.category === 'Armor') newEquipment.armor = item;
+        if (item.category === 'Armor') {
+          if (item.name.toLowerCase().includes('boots')) {
+            newEquipment.boots = item;
+          } else {
+            newEquipment.armor = item;
+          }
+        }
         
-        const weaponBonus = newEquipment.weapon?.stats?.attack || 0;
-        const armorBonus = newEquipment.armor?.stats?.defense || 0;
+        let weaponBonus = newEquipment.weapon?.stats?.attack || 0;
+        let armorBonus = (newEquipment.armor?.stats?.defense || 0) + (newEquipment.boots?.stats?.defense || 0);
+        
+        let activeSetBonus = null;
+        if (newEquipment.armor?.name.includes('Plasteel') && 
+            newEquipment.boots?.name.includes('Plasteel')) {
+          armorBonus += 5;
+          activeSetBonus = { name: 'Plasteel Reinforcement', bonus: { defense: 5 } };
+        }
         
         return { 
           equipment: newEquipment,
           attack: BASE_ATTACK + weaponBonus,
-          defense: BASE_DEFENSE + armorBonus
+          defense: BASE_DEFENSE + armorBonus,
+          setBonus: activeSetBonus
         };
       }),
       updateReputation: (factionId, delta) => set((state) => ({
@@ -207,15 +286,181 @@ export const usePlayerStore = create<PlayerState>()(
         });
         return { activeQuests: updatedQuests };
       }),
+      completeQuest: (id) => set((state) => {
+        const quest = state.activeQuests.find(q => q.id === id);
+        if (!quest || !quest.isCompleted) return state;
+
+        let itemReward: Item | null = null;
+        if (state.enrolledFaction === 'the-cogwheel') {
+          itemReward = Math.random() > 0.5 ? LOOT_ITEMS.SCRAP_METAL : LOOT_ITEMS.AETHER_SHARDS;
+        } else if (state.enrolledFaction === 'the-verdant') {
+          itemReward = Math.random() > 0.5 ? LOOT_ITEMS.RATIONS : LOOT_ITEMS.FOCUS_POTION;
+        }
+
+        const updatedInventory = itemReward 
+          ? [...state.inventory, { ...itemReward, id: `${itemReward.id}-${Math.random().toString(36).substr(2, 9)}` }]
+          : state.inventory;
+
+        let newXp = state.xp + quest.rewardXp;
+        let newLevel = state.level;
+        let newMaxXp = state.maxXp;
+        let newMaxHp = state.maxHp;
+        let newMaxMana = state.maxMana;
+        let newHp = state.hp;
+        let newMana = state.mana;
+
+        while (newXp >= newMaxXp) {
+          newXp -= newMaxXp;
+          newLevel += 1;
+          newMaxXp = Math.floor(newMaxXp * 1.5);
+          newMaxHp += 20;
+          newMaxMana += 10;
+          newHp = newMaxHp;
+          newMana = newMaxMana;
+        }
+
+        return {
+          gold: state.gold + quest.rewardGold,
+          inventory: updatedInventory,
+          xp: newXp,
+          level: newLevel,
+          maxXp: newMaxXp,
+          maxHp: newMaxHp,
+          maxMana: newMaxMana,
+          hp: newHp,
+          mana: newMana,
+          activeQuests: state.activeQuests.filter(q => q.id !== id)
+        };
+      }),
+      enrollInFaction: (factionId) => set((state) => {
+        if (state.enrolledFaction) return state;
+        
+        let bonusStats = {};
+        if (factionId === 'the-cogwheel') {
+          bonusStats = { attack: Math.floor(state.attack * 1.15) };
+        } else if (factionId === 'the-verdant') {
+          bonusStats = { defense: Math.floor(state.defense * 1.15) };
+        }
+
+        return { 
+          enrolledFaction: factionId,
+          ...bonusStats
+        };
+      }),
+      setSpecialization: (specId) => set((state) => {
+        if (state.specialization) return state;
+
+        let bonusStats = {};
+        if (specId === 'aether-bumper') {
+          bonusStats = { maxHp: state.maxHp + 50, hp: state.hp + 50, defense: Math.floor(state.defense * 1.2) };
+        } else if (specId === 'wildfire-mage') {
+          bonusStats = { maxMana: state.maxMana + 50, mana: state.mana + 50, attack: Math.floor(state.attack * 1.2) };
+        } else if (specId === 'search-and-rescue') {
+          bonusStats = { maxHp: state.maxHp + 25, hp: state.hp + 25, maxMana: state.maxMana + 25, mana: state.mana + 25 };
+        }
+
+        return {
+          specialization: specId,
+          ...bonusStats
+        };
+      }),
+      recordEncounter: (enemyName) => set((state) => {
+        const entry = state.bestiary[enemyName] || { encounters: 0, defeats: 0 };
+        return {
+          bestiary: {
+            ...state.bestiary,
+            [enemyName]: { ...entry, encounters: entry.encounters + 1 }
+          }
+        };
+      }),
+      recordDefeat: (enemyName) => set((state) => {
+        const entry = state.bestiary[enemyName] || { encounters: 1, defeats: 0 };
+        return {
+          bestiary: {
+            ...state.bestiary,
+            [enemyName]: { ...entry, defeats: entry.defeats + 1 }
+          }
+        };
+      }),
+      removeSignal: (id) => set((state) => ({
+        hostileSignals: state.hostileSignals.filter(s => s.id !== id || s.expiresAt)
+          .map(s => s.id === id ? { ...s, respawnAt: Date.now() + 5 * 60 * 1000 } : s)
+      })),
+      respawnSignals: () => set((state) => {
+        const now = Date.now();
+        const updated = state.hostileSignals.filter(s => !s.expiresAt || now < s.expiresAt).map(s => {
+          if (s.respawnAt && now > s.respawnAt) {
+            return {
+              ...s,
+              respawnAt: undefined,
+              coords: {
+                latitude: s.coords.latitude + (Math.random() - 0.5) * 0.002,
+                longitude: s.coords.longitude + (Math.random() - 0.5) * 0.002,
+              }
+            };
+          }
+          return s;
+        });
+        return { hostileSignals: updated };
+      }),
+      setHostileSignals: (signals) => set({ hostileSignals: signals }),
+      setResourceNodes: (nodes) => set({ resourceNodes: nodes }),
+      harvestNode: (id) => set((state) => {
+        const node = state.resourceNodes.find(n => n.id === id);
+        if (!node || node.isHarvested) return state;
+
+        const material: Item = {
+          id: `mat-${node.materialName.toLowerCase()}`,
+          name: node.materialName,
+          category: 'Utility',
+          rarity: 'Common',
+          description: `A raw material used for crafting and faction projects. Amount: ${node.amount}`,
+        };
+
+        return {
+          resourceNodes: state.resourceNodes.map(n => n.id === id ? { ...n, isHarvested: true } : n),
+          inventory: [...state.inventory, { ...material, id: `${material.id}-${Math.random().toString(36).substr(2, 9)}` }]
+        };
+      }),
+      triggerRift: (coords, biome) => set((state) => {
+        const riftSignal: Signal = {
+          id: `rift-${Date.now()}`,
+          coords,
+          biome,
+          type: 'Boss',
+          expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
+        };
+        
+        const riftNotif: GlobalNotification = {
+          id: `rift-notif-${Date.now()}`,
+          title: 'FRACTURE RIFT DETECTED',
+          message: 'A massive energy spike has manifested nearby. A high-level entity is crossing over. Duration: 15m.',
+          type: 'Rift'
+        };
+
+        return {
+          hostileSignals: [...state.hostileSignals, riftSignal],
+          globalNotification: riftNotif
+        };
+      }),
+      setNotification: (notif) => set({ globalNotification: notif }),
       setHomeCity: (city, location) => set({ 
         homeCityName: city, 
         playerLocation: location, 
+        sanctuaryLocation: location,
         hasSetHomeCity: true 
       }),
     }),
     {
       name: 'aeternis-player-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => ({
+        getItem: (name) => AsyncStorage.getItem(name),
+        setItem: (name, value) => {
+          useUIStore.getState().triggerSaving();
+          return AsyncStorage.setItem(name, value);
+        },
+        removeItem: (name) => AsyncStorage.removeItem(name),
+      })),
     }
   )
 );

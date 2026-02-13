@@ -1,13 +1,27 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { usePlayerStore } from '../utils/usePlayerStore';
-import { Scroll, CheckCircle2 } from 'lucide-react-native';
+import { Scroll, CheckCircle2, Gift } from 'lucide-react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 
 const QuestTracker = () => {
-  const { activeQuests } = usePlayerStore();
+  const { activeQuests, completeQuest, enrolledFaction } = usePlayerStore();
 
   if (activeQuests.length === 0) return null;
+
+  const handleComplete = (id: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    completeQuest(id);
+  };
+
+  const getRewardHint = () => {
+    if (enrolledFaction === 'the-cogwheel') return 'Tech/Scrap Reward';
+    if (enrolledFaction === 'the-verdant') return 'Organic/Healing Reward';
+    return null;
+  };
+
+  const rewardHint = getRewardHint();
 
   return (
     <View className="absolute top-48 right-4 w-48 z-10">
@@ -29,7 +43,15 @@ const QuestTracker = () => {
             {quest.description}
           </Text>
 
-          {!quest.isCompleted && (
+          {rewardHint && (
+            <Text className={`text-[7px] font-black uppercase tracking-widest mb-2 ${
+              enrolledFaction === 'the-cogwheel' ? 'text-amber-500' : 'text-emerald-500'
+            }`}>
+              + {rewardHint}
+            </Text>
+          )}
+
+          {!quest.isCompleted ? (
             <View>
               <View className="flex-row justify-between items-center mb-1">
                 <Text className="text-zinc-400 text-[8px] font-bold">Progress</Text>
@@ -42,12 +64,15 @@ const QuestTracker = () => {
                 />
               </View>
             </View>
-          )}
-
-          {quest.isCompleted && (
-            <View className="bg-emerald-500/10 border border-emerald-500/20 py-1 rounded-lg items-center">
-              <Text className="text-emerald-500 font-black text-[8px] uppercase tracking-widest">Ready to Turn In</Text>
-            </View>
+          ) : (
+            <TouchableOpacity 
+              onPress={() => handleComplete(quest.id)}
+              activeOpacity={0.7}
+              className="bg-emerald-500/20 border border-emerald-500/40 py-2 rounded-xl flex-row items-center justify-center"
+            >
+              <Gift size={10} color="#10b981" className="mr-2" />
+              <Text className="text-emerald-500 font-black text-[8px] uppercase tracking-widest">Turn In</Text>
+            </TouchableOpacity>
           )}
         </Animated.View>
       ))}

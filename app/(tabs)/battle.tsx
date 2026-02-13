@@ -3,10 +3,11 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-nati
 import { useCombatStore } from '../../utils/useCombatStore';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { getLootForEnemy } from '../../utils/LootTable';
-import { Sword, Zap, Briefcase, Footprints, ShieldAlert, Skull, Package } from 'lucide-react-native';
+import { Sword, Zap, Briefcase, Footprints, ShieldAlert, Skull, Package, Activity, Navigation, Radar } from 'lucide-react-native';
 import Animated, { 
   FadeIn, 
-  SlideInUp, 
+  FadeInDown,
+  SlideInDown, 
   useSharedValue, 
   useAnimatedStyle, 
   withSequence, 
@@ -15,14 +16,15 @@ import Animated, {
   interpolateColor
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
+import { getDistance, formatDistance } from '../../utils/MathUtils';
+import * as Haptics from 'expo-haptics';
+import SoundService from '../../utils/SoundService';
 
 export default function BattleScreen() {
   const router = useRouter();
   const player = usePlayerStore();
-  const setGlobalStats = usePlayerStore((state) => state.setStats);
-  const addItem = usePlayerStore((state) => state.addItem);
-  const gainXp = usePlayerStore((state) => state.gainXp);
-  const updateQuestProgress = usePlayerStore((state) => state.updateQuestProgress);
+  const { hostileSignals, removeSignal, recordEncounter, recordDefeat } = player;
+  
   const { 
     isInCombat, 
     enemyName, 
@@ -38,10 +40,43 @@ export default function BattleScreen() {
     updateMana,
     addLog,
     nextTurn,
-    endCombat
+    endCombat,
+    initiateCombat,
+    sourceId,
+    damageModifier
   } = useCombatStore();
 
+  const setGlobalStats = usePlayerStore((state) => state.setStats);
+  const addItem = usePlayerStore((state) => state.addItem);
+  const gainXp = usePlayerStore((state) => state.gainXp);
+  const updateQuestProgress = usePlayerStore((state) => state.updateQuestProgress);
+
   const [isResolving, setIsResolving] = useState(false);
+
+  // Filter and sort nearby threats (within 10km) that are NOT on cooldown
+  const nearbyThreats = (hostileSignals || [])
+    .filter(s => !s.respawnAt) // Only show active signals
+    .map(signal => ({
+      ...signal,
+      distance: getDistance(player.playerLocation, signal.coords)
+    }))
+    .filter(signal => signal.distance <= 10)
+    .sort((a, b) => a.distance - b.distance);
+
+  const handleEngage = (signal: any) => {
+    // This is for direct engage from the scanner list
+    initiateCombat('Fracture Manifestation', 60, player.hp, player.mana, signal.id);
+  };
+
+  // Record encounter and switch music when combat starts
+  useEffect(() => {
+    if (isInCombat && enemyName) {
+      recordEncounter(enemyName);
+      SoundService.playBattle();
+    } else if (!isInCombat) {
+      SoundService.playAmbient();
+    }
+  }, [isInCombat, enemyName]);
 
   // Animations
   const enemyShake = useSharedValue(0);
@@ -80,8 +115,16 @@ export default function BattleScreen() {
       setIsResolving(true);
       addLog(`${enemyName} has been purged from the Fracture.`, 'system');
       
+      // Bestiary Update
+      recordDefeat(enemyName);
+
       // Update Quest Progress
       updateQuestProgress('q-secure-the-west', 1);
+
+      // Remove from map/list and trigger respawn timer
+      if (sourceId) {
+        removeSignal(sourceId);
+      }
 
       // Calculate Aetium loot
       const goldLoot = 25 + Math.floor(Math.random() * 50);
@@ -127,10 +170,22 @@ export default function BattleScreen() {
   // Player Actions
   const handleAttack = () => {
     if (!isPlayerTurn || isResolving) return;
-    const damage = player.attack + Math.floor(Math.random() * 5);
+    
+    const isCrit = Math.random() < 0.15;
+    const critMult = isCrit ? 1.75 : 1;
+    
+    const baseDmg = player.attack + Math.floor(Math.random() * 5);
+    const damage = Math.floor(baseDmg * (damageModifier || 1.0) * critMult);
+    
+    if (isCrit) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      SoundService.playCrit();
+      addLog(`CRITICAL HIT!`, 'player');
+    }
+
     triggerEnemyShake();
     updateHp('enemy', -damage);
-    addLog(`You strike the ${enemyName} for ${damage} damage.`, 'player');
+    addLog(`You strike the ${enemyName} for ${damage} damage.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
       setTimeout(nextTurn, 800);
@@ -138,12 +193,24 @@ export default function BattleScreen() {
   };
 
   const handleSkill = () => {
-    if (!isPlayerTurn || playerMana < 20 || isResolving) return;
-    const damage = (player.attack * 2) + Math.floor(Math.random() * 10);
+    if (!isPlayerTurn || playerMana < 15 || isResolving) return;
+    
+    const isCrit = Math.random() < 0.15;
+    const critMult = isCrit ? 1.75 : 1;
+    
+    const baseDmg = Math.floor(player.attack * 1.5) + Math.floor(Math.random() * 5);
+    const damage = Math.floor(baseDmg * (damageModifier || 1.0) * critMult);
+    
+    if (isCrit) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      SoundService.playCrit();
+      addLog(`CRITICAL HIT!`, 'player');
+    }
+
     triggerEnemyShake();
-    updateMana(-20);
+    updateMana(-15);
     updateHp('enemy', -damage);
-    addLog(`You unleash a Pulse Burst! ${damage} damage dealt.`, 'player');
+    addLog(`You perform an Axe Sweep! ${damage} damage dealt.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
       setTimeout(nextTurn, 800);
@@ -176,21 +243,71 @@ export default function BattleScreen() {
 
   if (!isInCombat) {
     return (
-      <View className="flex-1 bg-zinc-950 items-center justify-center p-10">
-        <ShieldAlert size={48} color="#3f3f46" />
-        <Text className="text-zinc-500 font-bold uppercase tracking-widest mt-4">
-          No Threats Detected
-        </Text>
-        <Text className="text-zinc-700 text-xs mt-2 text-center mb-8">
-          The area is calm. Scan the map for fractures to engage in combat.
-        </Text>
-        <TouchableOpacity 
-          onPress={() => router.push('/explore')}
-          className="bg-zinc-900 px-8 py-4 rounded-2xl border border-zinc-800"
-        >
-          <Text className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Return to Map</Text>
-        </TouchableOpacity>
-      </View>
+      <ScrollView className="flex-1 bg-zinc-950 px-6 pt-16">
+        <View className="mb-8">
+          <View className="flex-row items-center mb-2">
+            <Radar size={24} color="#ef4444" className="mr-2" />
+            <Text className="text-red-500 font-bold uppercase tracking-[4px] text-xs">
+              Scanner: Operational
+            </Text>
+          </View>
+          <Text className="text-white text-4xl font-black tracking-tight">Nearby Threats</Text>
+          <Text className="text-zinc-500 text-sm font-medium uppercase tracking-[2px]">
+            Hostile signals detected in your perimeter
+          </Text>
+        </View>
+
+        {nearbyThreats.length > 0 ? (
+          <View className="space-y-4">
+            {nearbyThreats.map((signal, index) => (
+              <Animated.View 
+                key={signal.id} 
+                entering={FadeInDown.delay(index * 100).duration(500)}
+                className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4"
+              >
+                <View className="flex-row justify-between items-center mb-4">
+                  <View className="flex-row items-center flex-1">
+                    <View className="bg-red-500/10 p-3 rounded-2xl mr-4 border border-red-500/20">
+                      <Activity size={20} color="#ef4444" />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-white font-bold text-lg">Fracture Signal</Text>
+                      <View className="flex-row items-center mt-0.5">
+                        <Navigation size={10} color="#71717a" className="mr-1" />
+                        <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                          Distance: {formatDistance(signal.distance)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => handleEngage(signal)}
+                    className="bg-red-600 px-5 py-2.5 rounded-xl shadow-lg shadow-red-900/40"
+                  >
+                    <Text className="text-white font-black text-[10px] uppercase">Engage</Text>
+                  </TouchableOpacity>
+                </View>
+                
+                <Text className="text-zinc-500 text-[10px] italic">
+                  Signal strength is stable. Manifestation confirmed in this sector.
+                </Text>
+              </Animated.View>
+            ))}
+          </View>
+        ) : (
+          <View className="items-center justify-center py-20 bg-zinc-900/30 rounded-[40px] border border-dashed border-zinc-800">
+            <ShieldAlert size={48} color="#3f3f46" />
+            <Text className="text-zinc-500 font-bold uppercase tracking-widest mt-4">
+              Clear Perimeter
+            </Text>
+            <Text className="text-zinc-700 text-xs mt-2 text-center px-10">
+              No hostile manifestations within 10km. Travel to new sectors to locate targets.
+            </Text>
+          </View>
+        )}
+        
+        <View className="h-20" />
+      </ScrollView>
     );
   }
 
@@ -237,7 +354,7 @@ export default function BattleScreen() {
       </View>
 
       {/* Action Menu */}
-      <Animated.View entering={SlideInUp.duration(500)} className="flex-row flex-wrap gap-3 pb-12">
+      <Animated.View entering={SlideInDown.duration(500)} className="flex-row flex-wrap gap-3 pb-12">
         {isResolving && enemyHp <= 0 ? (
           <View className="w-full bg-emerald-950/20 border border-emerald-900/30 p-8 rounded-[32px] items-center">
              <Text className="text-emerald-400 font-black text-xl uppercase tracking-[6px] mb-2">Victory</Text>
@@ -264,15 +381,15 @@ export default function BattleScreen() {
 
             <TouchableOpacity 
               onPress={handleSkill}
-              disabled={!isPlayerTurn || playerMana < 20}
+              disabled={!isPlayerTurn || playerMana < 15}
               className={`flex-1 min-w-[45%] h-16 rounded-2xl flex-row items-center justify-center border ${
-                isPlayerTurn && playerMana >= 20 ? 'bg-cyan-950/30 border-cyan-800' : 'bg-zinc-950 border-zinc-900 opacity-30'
+                isPlayerTurn && playerMana >= 15 ? 'bg-cyan-950/30 border-cyan-800' : 'bg-zinc-950 border-zinc-900 opacity-30'
               }`}
             >
-              <Zap size={18} color={playerMana >= 20 ? "#06b6d4" : "#3f3f46"} className="mr-2" />
+              <Zap size={18} color={playerMana >= 15 ? "#06b6d4" : "#3f3f46"} className="mr-2" />
               <View>
-                <Text className={`font-bold uppercase tracking-widest text-xs ${playerMana >= 20 ? 'text-cyan-400' : 'text-zinc-600'}`}>Skill</Text>
-                <Text className="text-[8px] text-cyan-700 font-bold">-20 MP</Text>
+                <Text className={`font-bold uppercase tracking-widest text-[10px] ${playerMana >= 15 ? 'text-cyan-400' : 'text-zinc-600'}`}>Axe Sweep</Text>
+                <Text className="text-[8px] text-cyan-700 font-bold">-15 MP</Text>
               </View>
             </TouchableOpacity>
 

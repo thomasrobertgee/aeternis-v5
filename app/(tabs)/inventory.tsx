@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-nati
 import { usePlayerStore, Item } from '../../utils/usePlayerStore';
 import { Package, Sword, Shield, Zap, X } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
+import { getRarityColor } from './social';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 64) / 3;
@@ -15,7 +16,6 @@ export default function InventoryScreen() {
     if (!selectedItem) return;
 
     if (selectedItem.category === 'Utility') {
-      // Logic for using utility items
       if (selectedItem.name.includes('Rations')) {
         const restoreAmount = Math.floor(maxHp * 0.2);
         setStats({ hp: Math.min(maxHp, hp + restoreAmount) });
@@ -26,22 +26,24 @@ export default function InventoryScreen() {
       removeItem(selectedItem.id);
       setSelectedItem(null);
     } else {
-      // Logic for equipping
       equipItem(selectedItem);
       setSelectedItem(null);
     }
   };
 
-  const getItemIcon = (category: string) => {
+  const getItemIcon = (category: string, rarity: string) => {
+    const color = getRarityColor(rarity);
     switch (category) {
-      case 'Weapon': return <Sword size={24} color="#f59e0b" />;
-      case 'Armor': return <Shield size={24} color="#3b82f6" />;
-      default: return <Package size={24} color="#71717a" />;
+      case 'Weapon': return <Sword size={24} color={color} />;
+      case 'Armor': return <Shield size={24} color={color} />;
+      default: return <Package size={24} color={color} />;
     }
   };
 
   const isEquipped = (item: Item) => {
-    return equipment.weapon?.id === item.id || equipment.armor?.id === item.id;
+    return equipment.weapon?.id === item.id || 
+           equipment.armor?.id === item.id || 
+           equipment.boots?.id === item.id;
   };
 
   return (
@@ -53,50 +55,57 @@ export default function InventoryScreen() {
         </Text>
       </View>
 
-      {/* Item Grid */}
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}
       >
-        {inventory.map((item, index) => (
-          <Animated.View 
-            key={item.id} 
-            entering={FadeInDown.delay(index * 50).duration(400)}
-          >
-            <TouchableOpacity 
-              onPress={() => setSelectedItem(item)}
-              activeOpacity={0.7}
-              style={{ width: ITEM_SIZE, height: ITEM_SIZE }}
-              className={`bg-zinc-900 border ${
-                selectedItem?.id === item.id ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-zinc-800'
-              } rounded-2xl items-center justify-center relative overflow-hidden`}
+        {inventory.map((item, index) => {
+          const rColor = getRarityColor(item.rarity);
+          return (
+            <Animated.View 
+              key={item.id} 
+              entering={FadeInDown.delay(index * 50).duration(400)}
             >
-              {getItemIcon(item.category)}
-              
-              {isEquipped(item) && (
-                <View className="absolute top-1 right-1 bg-emerald-500/20 px-1.5 py-0.5 rounded-md border border-emerald-500/30">
-                  <Text className="text-emerald-500 text-[6px] font-black uppercase">Equipped</Text>
-                </View>
-              )}
+              <TouchableOpacity 
+                onPress={() => setSelectedItem(item)}
+                activeOpacity={0.7}
+                style={{ width: ITEM_SIZE, height: ITEM_SIZE }}
+                className={`bg-zinc-900 border ${
+                  selectedItem?.id === item.id ? 'border-cyan-500 shadow-lg shadow-cyan-500/20' : 'border-zinc-800'
+                } rounded-2xl items-center justify-center relative overflow-hidden`}
+              >
+                {getItemIcon(item.category, item.rarity)}
+                
+                {/* Rarity Indicator Line */}
+                <View 
+                  className="absolute top-0 left-0 right-0 h-1" 
+                  style={{ backgroundColor: rColor, opacity: 0.6 }} 
+                />
 
-              <View className="absolute bottom-2 px-2">
-                <Text className="text-white text-[8px] font-bold text-center" numberOfLines={1}>
-                  {item.name}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
+                {isEquipped(item) && (
+                  <View className="absolute top-2 right-1 bg-emerald-500/20 px-1.5 py-0.5 rounded-md border border-emerald-500/30">
+                    <Text className="text-emerald-500 text-[6px] font-black uppercase">Equipped</Text>
+                  </View>
+                )}
+
+                <View className="absolute bottom-2 px-2">
+                  <Text className="text-white text-[8px] font-bold text-center" numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          );
+        })}
 
         {inventory.length === 0 && (
           <View className="w-full items-center py-20">
             <Package size={48} color="#18181b" />
-            <Text className="text-zinc-700 font-bold uppercase tracking-widest mt-4">Empty Pack</Text>
+            <Text className="text-zinc-700 font-bold uppercase trackingwidest mt-4">Empty Pack</Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Selection Overlay */}
       {selectedItem && (
         <Animated.View 
           entering={SlideInUp.duration(300)}
@@ -105,12 +114,20 @@ export default function InventoryScreen() {
           <View className="flex-row justify-between items-start mb-4">
             <View className="flex-row items-center">
               <View className="bg-zinc-800 p-3 rounded-2xl mr-4 border border-zinc-700">
-                {getItemIcon(selectedItem.category)}
+                {getItemIcon(selectedItem.category, selectedItem.rarity)}
               </View>
               <View>
-                <Text className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mb-1">
-                  {selectedItem.category}
-                </Text>
+                <View className="flex-row items-center">
+                  <Text className="text-zinc-500 font-bold uppercase tracking-widest text-[10px] mr-2">
+                    {selectedItem.category}
+                  </Text>
+                  <View 
+                    className="px-1.5 py-0.5 rounded-md border" 
+                    style={{ borderColor: `${getRarityColor(selectedItem.rarity)}40`, backgroundColor: `${getRarityColor(selectedItem.rarity)}10` }}
+                  >
+                    <Text style={{ color: getRarityColor(selectedItem.rarity) }} className="text-[6px] font-black uppercase tracking-widest">{selectedItem.rarity}</Text>
+                  </View>
+                </View>
                 <Text className="text-white text-xl font-bold">{selectedItem.name}</Text>
               </View>
             </View>

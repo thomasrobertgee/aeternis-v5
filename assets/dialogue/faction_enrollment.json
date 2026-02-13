@@ -1,0 +1,46 @@
+{
+  "id": "faction_enrollment",
+  "nodes": {
+    "start": {
+      "text": "A massive surge of Imaginum energy ripples through your connection to the world. A spectral presence manifests—two distinct voices echo in your mind. You have reached a level of synchronization where a choice must be made. Which ideology will you anchor your soul to?",
+      "options": [
+        {
+          "text": "The Cogwheel: Order and Iron.",
+          "next": "cogwheel_path"
+        },
+        {
+          "text": "The Verdant: Harmony and Growth.",
+          "next": "verdant_path"
+        }
+      ]
+    },
+    "cogwheel_path": {
+      "text": "You embrace the path of reconstruction. The Cogwheel's essence flows into you, sharpening your resolve and reinforcing your strikes. (Permanent +15% Attack Bonus)",
+      "actions": [
+        { "type": "ENROLL_FACTION", "factionId": "the-cogwheel" }
+      ],
+      "options": [
+        {
+          "text": "Accept the burden of Order.",
+          "next": "end"
+        }
+      ]
+    },
+    "verdant_path": {
+      "text": "You embrace the path of the world-tree. The Verdant's essence flows into you, toughening your skin and grounding your physical form. (Permanent +15% Defense Bonus)",
+      "actions": [
+        { "type": "ENROLL_FACTION", "factionId": "the-verdant" }
+      ],
+      "options": [
+        {
+          "text": "Accept the gift of the Grove.",
+          "next": "end"
+        }
+      ]
+    },
+    "end": {
+      "text": "The spectral presence fades, leaving you fundamentally changed. Your odyssey continues.",
+      "isEnd": true
+    }
+  }
+}

@@ -15,6 +15,8 @@ interface CombatState {
   enemyHp: number;
   maxEnemyHp: number;
   enemyName: string;
+  sourceId?: string; // Track which map signal this enemy belongs to
+  damageModifier: number; // For weather effects
   
   // State
   isInCombat: boolean;
@@ -23,7 +25,7 @@ interface CombatState {
   combatLogs: CombatLog[];
 
   // Actions
-  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, playerMana: number) => void;
+  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, playerMana: number, sourceId?: string, damageModifier?: number) => void;
   updateHp: (target: 'player' | 'enemy', amount: number) => void;
   updateMana: (amount: number) => void;
   nextTurn: () => void;
@@ -39,13 +41,15 @@ export const useCombatStore = create<CombatState>((set) => ({
   enemyHp: 0,
   maxEnemyHp: 0,
   enemyName: '',
+  sourceId: undefined,
+  damageModifier: 1.0,
   
   isInCombat: false,
   isPlayerTurn: true,
   turnCount: 1,
   combatLogs: [],
 
-  initiateCombat: (enemyName, enemyMaxHp, playerHp, playerMana) => set({
+  initiateCombat: (enemyName, enemyMaxHp, playerHp, playerMana, sourceId, damageModifier = 1.0) => set({
     enemyName,
     enemyHp: enemyMaxHp,
     maxEnemyHp: enemyMaxHp,
@@ -53,6 +57,8 @@ export const useCombatStore = create<CombatState>((set) => ({
     maxPlayerHp: playerHp,
     playerMana: playerMana,
     maxPlayerMana: playerMana,
+    sourceId,
+    damageModifier,
     isInCombat: true,
     isPlayerTurn: true,
     turnCount: 1,
@@ -94,5 +100,7 @@ export const useCombatStore = create<CombatState>((set) => ({
     enemyName: '',
     enemyHp: 0,
     combatLogs: [],
+    sourceId: undefined,
+    damageModifier: 1.0
   }),
 }));

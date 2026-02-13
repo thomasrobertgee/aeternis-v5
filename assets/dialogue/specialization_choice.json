@@ -1,0 +1,62 @@
+{
+  "id": "specialization_choice",
+  "nodes": {
+    "start": {
+      "text": "Your connection to the Imaginum has reached a critical resonance. The raw energy of the fracture no longer just flows through you—it is beginning to take a permanent shape based on your survival instincts. How will you channel this power?",
+      "options": [
+        {
+          "text": "Aether-Bumper (Tank): Durable and unyielding.",
+          "next": "tank_path"
+        },
+        {
+          "text": "Wildfire-Mage (DPS): Volatile and destructive.",
+          "next": "dps_path"
+        },
+        {
+          "text": "Search-and-Rescue (Support): Balanced and resourceful.",
+          "next": "support_path"
+        }
+      ]
+    },
+    "tank_path": {
+      "text": "You manifest the Aether-Bumper resonance. Your physical form densifies, creating a kinetic shield that absorbs impacts. (Permanent +50 Max Vitality, +20% Defense)",
+      "actions": [
+        { "type": "SET_SPECIALIZATION", "specId": "aether-bumper" }
+      ],
+      "options": [
+        {
+          "text": "I am the shield.",
+          "next": "end"
+        }
+      ]
+    },
+    "dps_path": {
+      "text": "You manifest the Wildfire-Mage resonance. Your mind becomes a conduit for spectral heat, incinerating hostiles with ease. (Permanent +50 Max Imaginum, +20% Attack)",
+      "actions": [
+        { "type": "SET_SPECIALIZATION", "specId": "wildfire-mage" }
+      ],
+      "options": [
+        {
+          "text": "I am the flame.",
+          "next": "end"
+        }
+      ]
+    },
+    "support_path": {
+      "text": "You manifest the Search-and-Rescue resonance. You find harmony in the chaos, sustaining your vitals and mental clarity under pressure. (Permanent +25 Max Vitality, +25 Max Imaginum)",
+      "actions": [
+        { "type": "SET_SPECIALIZATION", "specId": "search-and-rescue" }
+      ],
+      "options": [
+        {
+          "text": "I am the balance.",
+          "next": "end"
+        }
+      ]
+    },
+    "end": {
+      "text": "The resonance stabilizes. Your identity as a Traveller has been forged.",
+      "isEnd": true
+    }
+  }
+}
