@@ -55,6 +55,7 @@ export default function BattleScreen() {
   const updateQuestProgress = usePlayerStore((state) => state.updateQuestProgress);
 
   const [isResolving, setIsResolving] = useState(false);
+  const [isActionProcessing, setIsActionProcessing] = useState(false);
 
   // Filter and sort nearby threats (within 10km) that are NOT on cooldown
   const nearbyThreats = (hostileSignals || [])
@@ -182,7 +183,8 @@ export default function BattleScreen() {
 
   // Player Actions
   const handleAttack = () => {
-    if (!isPlayerTurn || isResolving) return;
+    if (!isPlayerTurn || isResolving || isActionProcessing) return;
+    setIsActionProcessing(true);
     
     const isCrit = Math.random() < 0.15;
     const critMult = isCrit ? 1.75 : 1;
@@ -201,12 +203,16 @@ export default function BattleScreen() {
     addLog(`You strike the ${enemyName} for ${damage} damage.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
-      setTimeout(nextTurn, 800);
+      setTimeout(() => {
+        setIsActionProcessing(false);
+        nextTurn();
+      }, 800);
     }
   };
 
   const handleSkill = () => {
-    if (!isPlayerTurn || playerMana < 15 || isResolving) return;
+    if (!isPlayerTurn || playerMana < 15 || isResolving || isActionProcessing) return;
+    setIsActionProcessing(true);
     
     const isCrit = Math.random() < 0.15;
     const critMult = isCrit ? 1.75 : 1;
@@ -226,7 +232,10 @@ export default function BattleScreen() {
     addLog(`You perform an Axe Sweep! ${damage} damage dealt.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
-      setTimeout(nextTurn, 800);
+      setTimeout(() => {
+        setIsActionProcessing(false);
+        nextTurn();
+      }, 800);
     }
   };
 

@@ -52,6 +52,9 @@ Manages real-time turn-based encounters.
 *   **ZoneEventManager**: Periodically triggers biome-specific events (e.g., **Industrial Steam Leak**) that modify combat difficulty and loot drops (Double Scrap).
 *   **Biome-Specific Loot**: Adds locality-accurate items (e.g., **Sunken Relics** in Coastal zones) to the drop pool.
 
+### 3.4 Combat Integrity
+*   **Action Locking**: Implements an `isActionProcessing` state to debounce player inputs. This prevents rapid multi-click exploits, ensuring the turn-based logic remains synchronized with animations.
+
 ## 4. Completed Milestones
 - [x] Initial Expo + NativeWind scaffolding.
 - [x] Web-based geocoding (GeoService) with procedural fallback.
@@ -65,3 +68,4 @@ Manages real-time turn-based encounters.
 - [x] **Sector-specific Unique NPC generation.**
 - [x] **Dynamic Zone Events (Steam Leak) and Biome-specific loot.**
 - [x] **Visual "Fog of War" restriction for Level-gated areas.**
+- [x] **Exploit Prevention: Combat Action Locking.**
