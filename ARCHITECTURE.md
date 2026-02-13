@@ -44,6 +44,7 @@ Manages real-time turn-based encounters.
 *   **Instability Fog**: Visually restricts players under Level 10 to their Home City polygon using inverted `Polygon` holes.
 
 ### 3.2 Immersive Transit & Discovery
+*   **Title Screen**: A cinematic entry point (`app/index.tsx`) featuring pulsing animations and atmospheric FX, acting as the primary synchronization portal.
 *   **TransitView**: A full-screen tactical overlay during Fast Travel. Features a wireframe map animation, scrolling technical terminal logs, and a progress bar.
 *   **DiscoveryOverlay**: A cinematic, full-screen notification triggered upon first entry into a new suburb polygon, displaying its synthesized "Fractured" title.
 *   **Aether-Link Check**: Level-based movement restriction (Lvl 10 required to leave the Home Sanctuary).
@@ -62,6 +63,7 @@ Manages real-time turn-based encounters.
 - [x] Animated Battle Arena with Enemy AI and Stat Scaling.
 - [x] Global Sound System (Ambient & Battle tracks).
 - [x] Haptic Feedback integration (Combat & Quests).
+- [x] **Cinematic Title Screen and Entry Flow.**
 - [x] **GeoJSON Boundary detection (BoundaryService).**
 - [x] **Wikipedia-driven Zone Synthesis & Lore generation.**
 - [x] **Timed Fast Travel (Transit System) with technical log readout.**
