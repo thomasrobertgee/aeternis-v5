@@ -133,11 +133,14 @@ interface PlayerState {
   triggerRift: (coords: Coords, biome: BiomeType) => void;
   setNotification: (notif: GlobalNotification | null) => void;
   setHomeCity: (city: string, location: Coords) => void;
+  triggerSaving: () => void;
+  cleanupZones: () => void;
+  resetStore: () => void;
 }
 
 const INITIAL_LOCATION = {
-  latitude: -37.8298,
-  longitude: 144.8485,
+  latitude: -37.8291,
+  longitude: 144.8488,
 };
 
 const BASE_ATTACK = 5;
@@ -205,14 +208,15 @@ export const usePlayerStore = create<PlayerState>()(
             resourceNodes: [],
             bestiary: {},
             enrolledFaction: null,
-            specialization: null,
-            setBonus: null,
-                  globalNotification: null,
-                        hasSetHomeCity: false,
-                        homeCityName: "",
-                        sanctuaryLocation: null,
-      
-                        setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+                  specialization: null,
+                  setBonus: null,
+                        globalNotification: null,
+                              hasSetHomeCity: true,
+                              homeCityName: "Altona North",
+                              sanctuaryLocation: INITIAL_LOCATION,
+                              isSaving: false,
+            
+                              setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
             gainXp: (amount) => set((state) => {
               let newXp = state.xp + amount;
               let newLevel = state.level;
@@ -465,6 +469,43 @@ export const usePlayerStore = create<PlayerState>()(
         playerLocation: location, 
         sanctuaryLocation: location,
         hasSetHomeCity: true 
+      }),
+      cleanupZones: () => set({
+        discoveredZones: {},
+        hostileSignals: [],
+        resourceNodes: []
+      }),
+      resetStore: () => set({
+        playerLocation: INITIAL_LOCATION,
+        level: 1,
+        xp: 0,
+        maxXp: 100,
+        hp: 100,
+        maxHp: 100,
+        mana: 50,
+        maxMana: 50,
+        gold: 150,
+        attack: BASE_ATTACK + (STARTING_WEAPON.stats?.attack || 0),
+        defense: BASE_DEFENSE + (STARTING_ARMOR.stats?.defense || 0),
+        equipment: {
+          weapon: STARTING_WEAPON,
+          armor: STARTING_ARMOR,
+          boots: null,
+        },
+        inventory: [STARTING_WEAPON, STARTING_ARMOR],
+        reputation: INITIAL_REPUTATION,
+        discoveredZones: {},
+        activeQuests: [STARTING_QUEST],
+        hostileSignals: [],
+        resourceNodes: [],
+        bestiary: {},
+        enrolledFaction: null,
+        specialization: null,
+        setBonus: null,
+        globalNotification: null,
+        hasSetHomeCity: true,
+        homeCityName: "Altona North",
+        sanctuaryLocation: INITIAL_LOCATION,
       }),
     }),
     {

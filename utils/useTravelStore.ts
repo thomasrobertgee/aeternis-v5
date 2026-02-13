@@ -3,6 +3,7 @@ import { create } from 'zustand';
 interface TravelState {
   isTraveling: boolean;
   travelTimeRemaining: number; // in seconds
+  totalTravelDuration: number; // for progress bars
   destinationName: string | null;
   destinationCoords: { latitude: number; longitude: number } | null;
   
@@ -15,12 +16,14 @@ interface TravelState {
 export const useTravelStore = create<TravelState>((set, get) => ({
   isTraveling: false,
   travelTimeRemaining: 0,
+  totalTravelDuration: 0,
   destinationName: null,
   destinationCoords: null,
 
   startTravel: (destination, coords, durationSeconds) => set({
     isTraveling: true,
     travelTimeRemaining: durationSeconds,
+    totalTravelDuration: durationSeconds,
     destinationName: destination,
     destinationCoords: coords
   }),
@@ -40,6 +43,7 @@ export const useTravelStore = create<TravelState>((set, get) => ({
   completeTravel: () => set({
     isTraveling: false,
     travelTimeRemaining: 0,
+    totalTravelDuration: 0,
     destinationName: null,
     destinationCoords: null
   }),

@@ -9,24 +9,33 @@ import Animated, {
   runOnJS 
 } from 'react-native-reanimated';
 import { getWeatherForSuburb } from '../utils/WorldStateManager';
+import { getDistance, formatDuration } from '../utils/MathUtils';
+import { usePlayerStore } from '../utils/usePlayerStore';
 
 interface ZoneCardProps {
   suburb: string;
   loreName: string;
   description: string;
+  coords: { latitude: number; longitude: number };
   isHostile?: boolean;
   isResourceNode?: boolean;
   resourceData?: { materialName: string; amount: number; distance: number };
   onClose: () => void;
   onExplore: () => void;
-  onFastTravel: () => void;
+  onFastTravel: (duration: number) => void;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const ZoneCard = ({ suburb, loreName, description, isHostile, isResourceNode, resourceData, onClose, onExplore, onFastTravel }: ZoneCardProps) => {
+const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResourceNode, resourceData, onClose, onExplore, onFastTravel }: ZoneCardProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const weather = useMemo(() => getWeatherForSuburb(suburb), [suburb]);
+  const playerLocation = usePlayerStore((state) => state.playerLocation);
+
+  const travelDuration = useMemo(() => {
+    const dist = getDistance(playerLocation, coords);
+    return Math.max(1, Math.ceil(dist)); // 1 sec per 1km
+  }, [playerLocation, coords]);
 
   useEffect(() => {
     // Slide up when component mounts
@@ -149,26 +158,29 @@ const ZoneCard = ({ suburb, loreName, description, isHostile, isResourceNode, re
       <View className="flex-row gap-3">
         {!isHostile && !isResourceNode && (
           <TouchableOpacity 
-            onPress={onFastTravel}
+            onPress={() => onFastTravel(travelDuration)}
             activeOpacity={0.8}
-            className="flex-1 bg-zinc-900 h-16 rounded-2xl items-center justify-center border border-zinc-800"
+            className="flex-[1.8] bg-zinc-900 h-16 rounded-2xl items-center justify-center border border-zinc-800"
           >
             <Text className="text-zinc-400 font-bold text-xs uppercase tracking-widest">
               Fast Travel
             </Text>
+            <Text className="text-zinc-600 font-mono text-[8px] uppercase mt-0.5">
+              [ETA {formatDuration(travelDuration)}]
+            </Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={onExplore}
           activeOpacity={0.8}
-          className={`flex-[1.5] h-16 rounded-2xl items-center justify-center shadow-lg border-t border-white/10 ${
+          className={`flex-1 h-16 rounded-2xl items-center justify-center shadow-lg border-t border-white/10 ${
             isHostile ? 'bg-red-600 shadow-red-900/40' : 
             isResourceNode ? (isWithinHarvestRange ? 'bg-emerald-600 shadow-emerald-900/40' : 'bg-zinc-800 opacity-50') :
             'bg-cyan-600 shadow-cyan-900/40'
           }`}
         >
           <Text className="text-white font-black text-sm uppercase tracking-[4px]">
-            {isHostile ? 'Engage Threat' : 
+            {isHostile ? 'Engage' : 
              isResourceNode ? 'Harvest' :
              'Explore'}
           </Text>

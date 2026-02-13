@@ -1,18 +1,57 @@
-import React from 'react';
-import { View, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
+import { User, X, Trash2, ShieldAlert, LogOut } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Updates from 'expo-updates';
+import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
 
 const PlayerHeader = () => {
   const player = usePlayerStore();
   const combat = useCombatStore();
+  const resetStore = usePlayerStore((state) => state.resetStore);
+  const [showProfile, setShowProfile] = useState(false);
 
   // Use combat stats if in battle, otherwise use global player stats
   const currentHp = combat.isInCombat ? combat.playerHp : player.hp;
   const maxHp = combat.isInCombat ? combat.maxPlayerHp : player.maxHp;
   const currentMana = combat.isInCombat ? combat.playerMana : player.mana;
   const maxMana = combat.isInCombat ? combat.maxPlayerMana : player.maxMana;
+
+  const handleWipeData = () => {
+    Alert.alert(
+      "Purge Synchronization",
+      "This will permanently delete all character progress and reload the Fracture from Altona North.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Wipe All Data", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // 1. Clear persistence first
+              await AsyncStorage.clear();
+              
+              // 2. Force reload immediately
+              // We skip manual resetStore() here because the reload will re-initialize
+              // the store from scratch with empty storage, avoiding UI thread conflicts.
+              DevSettings.reload();
+              
+              try {
+                await Updates.reloadAsync();
+              } catch (e) {
+                setShowProfile(false);
+              }
+            } catch (e) {
+              console.error("Wipe failed", e);
+            }
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <SafeAreaView className="bg-zinc-950 border-b border-zinc-900">
@@ -22,11 +61,75 @@ const PlayerHeader = () => {
       </View>
 
       <View className="px-4 py-3 flex-row justify-between items-center">
-        {/* Level & Profile */}
-        <View className="mr-4 items-center justify-center bg-zinc-900 w-10 h-10 rounded-xl border border-zinc-800">
+        {/* Level & Profile Button */}
+        <TouchableOpacity 
+          onPress={() => setShowProfile(true)}
+          activeOpacity={0.7}
+          className="mr-4 items-center justify-center bg-zinc-900 w-10 h-10 rounded-xl border border-zinc-800"
+        >
           <Text className="text-zinc-500 text-[8px] font-black uppercase">LVL</Text>
           <Text className="text-white font-black text-sm">{player.level}</Text>
-        </View>
+        </TouchableOpacity>
+
+        {/* Profile Modal Overlay */}
+        <Modal
+          visible={showProfile}
+          transparent={true}
+          animationType="none"
+          onRequestClose={() => setShowProfile(false)}
+        >
+          <View style={StyleSheet.absoluteFill} className="bg-black/80 items-center justify-center p-6">
+            <Animated.View 
+              entering={FadeIn.duration(300)}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-[40px] p-8 shadow-2xl"
+            >
+              <View className="flex-row justify-between items-start mb-8">
+                <View className="bg-cyan-500/10 p-4 rounded-3xl border border-cyan-500/20">
+                  <User size={32} color="#06b6d4" />
+                </View>
+                <TouchableOpacity 
+                  onPress={() => setShowProfile(false)}
+                  className="bg-zinc-800 p-2 rounded-full"
+                >
+                  <X size={20} color="#71717a" />
+                </TouchableOpacity>
+              </View>
+
+              <Text className="text-white text-3xl font-black mb-1">Traveller Profile</Text>
+              <Text className="text-zinc-500 font-bold uppercase tracking-[4px] text-[10px] mb-8">
+                Fracture Synchronization Active
+              </Text>
+
+              <View className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 mb-8">
+                <View className="flex-row justify-between mb-4">
+                  <Text className="text-zinc-500 font-bold">Current Sector</Text>
+                  <Text className="text-white font-black">{player.homeCityName}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-zinc-500 font-bold">Aether-Level</Text>
+                  <Text className="text-cyan-400 font-black">Grade {player.level}</Text>
+                </View>
+              </View>
+
+              <View className="space-y-3">
+                <TouchableOpacity 
+                  onPress={handleWipeData}
+                  className="bg-red-950/20 border border-red-500/40 h-16 rounded-2xl flex-row items-center justify-center mb-3"
+                >
+                  <Trash2 size={18} color="#ef4444" className="mr-3" />
+                  <Text className="text-red-500 font-black text-xs uppercase tracking-[4px]">Reset All Data</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={() => setShowProfile(false)}
+                  className="bg-zinc-800 h-16 rounded-2xl items-center justify-center"
+                >
+                  <Text className="text-zinc-400 font-black text-xs uppercase tracking-[4px]">Close Console</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </View>
+        </Modal>
 
         {/* Health */}
         <View className="flex-1">

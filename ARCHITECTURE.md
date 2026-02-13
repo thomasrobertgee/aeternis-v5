@@ -47,11 +47,18 @@ Manages real-time turn-based encounters.
     *   **Unique NPC**: Generates a persistent "Sector Contact" with a lore-accurate name and title.
 *   **Instability Fog**: Visually restricts players under Level 10 to their Home City polygon using inverted `Polygon` holes.
 
-### 3.2 Immersive Transit & Discovery
-*   **Title Screen**: A cinematic entry point (`app/index.tsx`) featuring pulsing animations and atmospheric FX, acting as the primary synchronization portal.
-*   **TransitView**: A full-screen tactical overlay during Fast Travel. Features a wireframe map animation, scrolling technical terminal logs, and a progress bar.
-*   **DiscoveryOverlay**: A cinematic, full-screen notification triggered upon first entry into a new suburb polygon, displaying its synthesized "Fractured" title.
-*   **Aether-Link Check**: Level-based movement restriction (Lvl 10 required to leave the Home Sanctuary).
+### 3.2 Tactical Map & Combat
+*   **Player Representation**: Represented by a **50m radius Circle** and a high-z-index **Traveller Marker**, ensuring visibility over all terrain layers.
+*   **Active Zone Highlight**: The current suburb is rendered with a **Light Grey** overlay (`rgba(212, 212, 216, 0.25)`) using high-fidelity OSM polygons.
+*   **Hostile Signal Manifestation**: Enemies appear as scaling red markers within the zone. Spawning is restricted to the interior of the current polygon via **Rejection Sampling**.
+*   **Manual Radar**: "Scan Area" action generates new manifestations around the player's current location.
+*   **Combat Loop**: Automated AI turn cycle with visual feedback and **Critical Hit** logic (15% chance for 1.75x damage).
+*   **Haptic Feedback**: Heavy impact haptics on critical hits; success notifications on quest turn-ins.
+*   **Sound System**: `SoundService` manages low-drone ambient world music and high-tension battle tracks.
+*   **UI Layout**:
+    *   **Safe Zone Banner**: Positioned at the bottom (`bottom: 100`) for clear visibility.
+    *   **Recenter Control**: Floating button in the bottom-right corner.
+    *   **Quest Tracker**: Interactive side-panel at `top: 40%` with a detailed modal view.
 
 ### 3.3 Dynamic World
 *   **ZoneEventManager**: Periodically triggers biome-specific events (e.g., **Industrial Steam Leak**) that modify combat difficulty and loot drops (Double Scrap).

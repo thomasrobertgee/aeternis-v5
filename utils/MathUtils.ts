@@ -37,3 +37,21 @@ export const formatDistance = (km: number): string => {
   }
   return `${km.toFixed(1)}km`;
 };
+
+/**
+ * Formats a duration in seconds into a human-readable ETA string.
+ */
+export const formatDuration = (seconds: number): string => {
+  if (seconds < 60) return `${seconds}s`;
+  
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+
+  const parts = [];
+  if (h > 0) parts.push(`${h}hrs`);
+  if (m > 0) parts.push(`${m}min`);
+  if (s > 0 || parts.length === 0) parts.push(`${s}sec`);
+
+  return parts.join(', ');
+};

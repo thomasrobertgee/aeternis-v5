@@ -17,10 +17,9 @@ import { Navigation, Loader2 } from 'lucide-react-native';
 const { width, height } = Dimensions.get('window');
 
 const TransitView = () => {
-  const { travelTimeRemaining, destinationName, isTraveling } = useTravelStore();
-  const totalTime = 15; // We know it's hardcoded to 15s for now
+  const { travelTimeRemaining, destinationName, isTraveling, totalTravelDuration } = useTravelStore();
   
-  const progress = (totalTime - travelTimeRemaining) / totalTime;
+  const progress = totalTravelDuration > 0 ? (totalTravelDuration - travelTimeRemaining) / totalTravelDuration : 0;
   const pulse = useSharedValue(1);
 
   const [logs, setLogs] = React.useState<string[]>([]);
