@@ -41,7 +41,7 @@ import SoundService from '../../utils/SoundService';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
 
-const CHERRY_LAKE_DEPTHS_COORDS = { latitude: -37.8285, longitude: 144.8625 };
+const MILLERS_JUNCTION_DEPTHS_COORDS = { latitude: -37.84405, longitude: 144.84356 };
 
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
@@ -141,10 +141,10 @@ export default function ExploreScreen() {
         updateTutorial({ isTutorialActive: true });
       }
 
-      // Auto-trigger tutorial if arriving at Cherry Lake Depths during correct step
+      // Auto-trigger tutorial if arriving at Millers Junction Depths during correct step
       if (tutorialProgress.currentStep === 40 &&
-          Math.abs(destinationCoords.latitude - CHERRY_LAKE_DEPTHS_COORDS.latitude) < 0.0001 && 
-          Math.abs(destinationCoords.longitude - CHERRY_LAKE_DEPTHS_COORDS.longitude) < 0.0001) {
+          Math.abs(destinationCoords.latitude - MILLERS_JUNCTION_DEPTHS_COORDS.latitude) < 0.0001 && 
+          Math.abs(destinationCoords.longitude - MILLERS_JUNCTION_DEPTHS_COORDS.longitude) < 0.0001) {
         updateTutorial({ currentStep: 41, isTutorialActive: true });
       }
     } 
@@ -156,7 +156,7 @@ export default function ExploreScreen() {
       const zoomTimer = setTimeout(() => { 
         if (tutorialProgress.currentStep === 40) {
           mapRef.current?.animateToRegion({
-            ...CHERRY_LAKE_DEPTHS_COORDS,
+            ...MILLERS_JUNCTION_DEPTHS_COORDS,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005
           }, 1500);
@@ -483,18 +483,18 @@ export default function ExploreScreen() {
 
         {tutorialProgress.currentStep >= 40 && (
           <Marker 
-            coordinate={CHERRY_LAKE_DEPTHS_COORDS} 
+            coordinate={MILLERS_JUNCTION_DEPTHS_COORDS} 
             anchor={{ x: 0.5, y: 0.5 }} 
             zIndex={70} 
             tracksViewChanges={true} 
             onPress={(e) => { 
               e.stopPropagation(); 
               setSelectedZone({ 
-                suburb: "CHERRY LAKE DEPTHS", 
+                suburb: "MILLERS JUNCTION DEPTHS", 
                 biome: BiomeType.SHATTERED_SUBURBIA, 
                 faction: FactionType.IRON_CONSORTIUM, 
-                description: "The water is murky black, and a stone platform leads deep underground. The air here is heavy with resonance.", 
-                coords: CHERRY_LAKE_DEPTHS_COORDS, 
+                description: "The buildings are crumbling, and a dark wide pit leads deep underground. The air here is heavy with resonance.", 
+                coords: MILLERS_JUNCTION_DEPTHS_COORDS, 
                 isHostile: false 
               }); 
             }}

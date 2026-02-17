@@ -323,7 +323,7 @@ export default function CharacterScreen() {
                 {quest.isCompleted && <Zap size={12} color="#10b981" />}
               </View>
             </View>
-            {quest.id === 'q-cherry-lake-depths' && (
+            {quest.id === 'q-millers-junction-depths' && (
               <TouchableOpacity 
                 onPress={() => router.replace('/(tabs)/explore')}
                 className="mt-4 bg-purple-600/20 border border-purple-500/40 p-4 rounded-2xl flex-row items-center justify-center"

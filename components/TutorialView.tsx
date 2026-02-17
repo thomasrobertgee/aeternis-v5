@@ -255,17 +255,17 @@ const TUTORIAL_STEPS = [
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "the notification says 'dungeon CHERRY LAKE DEPTHS unlocked'. you hear another 'ding', this time its for a new quest",
+    text: "the notification says 'dungeon MILLERS JUNCTION DEPTHS unlocked'. you hear another 'ding', this time its for a new quest",
     choices: [{ label: "check quests", isQuestTrigger: true, nextStep: 41 }],
     icon: <Scroll size={32} color="#f59e0b" />
   },
   {
-    text: "you arrive at Cherry Lake, however it is completely different from how you remember it.",
+    text: "you arrive at Millers Junction, however it is completely different from how you remember it.",
     choices: [{ label: "take a look around", nextStep: 42 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "the paths have been taken over by nature, the water is a murky black colour, and in the centre of the lake appears to be a large stone platform, with steps that seem to go down into darkness. you assume that is the entrance to the depths",
+    text: "the paths have been taken over by nature, the buildings are crumbling, and where the roundabout used to be that connected the buildings is a dark wide pit, with stairs leading downwards. you assume that is the entrance to the depths",
     choices: [{ label: "proceed", updates: { isTutorialActive: false, currentStep: 43 } }],
     icon: <Sparkles size={32} color="#06b6d4" />
   }
@@ -382,8 +382,8 @@ const TutorialView = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       if (currentStep === 40) {
         startQuest({
-          id: 'q-cherry-lake-depths',
-          title: 'Clear Cherry Lake Depths',
+          id: 'q-millers-junction-depths',
+          title: 'Clear Millers Junction Depths',
           description: 'Descend into the darkness of the murky depths and purge the anomaly.',
           targetCount: 1,
           currentCount: 0,
