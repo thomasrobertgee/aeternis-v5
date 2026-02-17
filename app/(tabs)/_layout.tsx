@@ -15,7 +15,7 @@ export default function TabLayout() {
   // Hide tabs until specific milestones
   const hideHero = currentStep < 17;
   const hideBag = currentStep < 23;
-  const hideOthers = currentStep < 35;
+  const hideOthers = currentStep < 38; // Marketplace unlocks at step 38
 
   // Interaction restrictions for specific overworld steps
   const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (currentStep === 6 || currentStep === 7 || currentStep === 8 || currentStep === 22 || currentStep === 34);

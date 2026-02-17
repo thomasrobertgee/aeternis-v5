@@ -7,9 +7,12 @@ import { getRarityColor } from '../../utils/Constants';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { ENEMY_DATABASE, BOSS_DATABASE } from '../../utils/EnemyFactory';
 
+import { useRouter } from 'expo-router';
+
 type HeroTab = 'Stats' | 'Skills' | 'Quests' | 'Codex';
 
 export default function CharacterScreen() {
+  const router = useRouter();
   const { heroTab: activeTab, setHeroTab: setActiveTab } = useUIStore();
   const { 
     hp, maxHp, mana, maxMana, attack, defense, level, xp, maxXp, gold,
@@ -320,6 +323,15 @@ export default function CharacterScreen() {
                 {quest.isCompleted && <Zap size={12} color="#10b981" />}
               </View>
             </View>
+            {quest.id === 'q-cherry-lake-depths' && (
+              <TouchableOpacity 
+                onPress={() => router.replace('/(tabs)/explore')}
+                className="mt-4 bg-purple-600/20 border border-purple-500/40 p-4 rounded-2xl flex-row items-center justify-center"
+              >
+                <Navigation size={14} color="#a855f7" className="mr-2" />
+                <Text className="text-purple-400 font-black text-[10px] uppercase tracking-widest">Take me there</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ))
       )}

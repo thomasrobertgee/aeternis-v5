@@ -41,6 +41,8 @@ import SoundService from '../../utils/SoundService';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
 
+const CHERRY_LAKE_DEPTHS_COORDS = { latitude: -37.8285, longitude: 144.8625 };
+
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
@@ -62,7 +64,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -138,10 +140,33 @@ export default function ExploreScreen() {
           Math.abs(destinationCoords.longitude - tutorialMarker.coords.longitude) < 0.0001) {
         updateTutorial({ isTutorialActive: true });
       }
+
+      // Auto-trigger tutorial if arriving at Cherry Lake Depths during correct step
+      if (tutorialProgress.currentStep === 40 &&
+          Math.abs(destinationCoords.latitude - CHERRY_LAKE_DEPTHS_COORDS.latitude) < 0.0001 && 
+          Math.abs(destinationCoords.longitude - CHERRY_LAKE_DEPTHS_COORDS.longitude) < 0.0001) {
+        updateTutorial({ currentStep: 41, isTutorialActive: true });
+      }
     } 
-  }, [isTraveling, destinationCoords, tutorialMarker]);
+  }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
   useEffect(() => { const timer = setTimeout(() => setTracksViewChanges(false), 3000); return () => clearTimeout(timer); }, []);
-  useEffect(() => { if (hasSetHomeCity && playerLocation) { handleRegionChange({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }); const zoomTimer = setTimeout(() => { handleRecenter(); }, 1000); return () => clearTimeout(zoomTimer); } }, [hasSetHomeCity]);
+  useEffect(() => { 
+    if (hasSetHomeCity && playerLocation) { 
+      handleRegionChange({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }); 
+      const zoomTimer = setTimeout(() => { 
+        if (tutorialProgress.currentStep === 40) {
+          mapRef.current?.animateToRegion({
+            ...CHERRY_LAKE_DEPTHS_COORDS,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005
+          }, 1500);
+        } else {
+          handleRecenter(); 
+        }
+      }, 1000); 
+      return () => clearTimeout(zoomTimer); 
+    } 
+  }, [hasSetHomeCity, tutorialProgress.currentStep]);
   useEffect(() => { if (hasSetHomeCity) { if (level >= 5 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 10 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
   // Force markers to redraw once when they change
@@ -159,7 +184,7 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
-    const checkpoints = [18, 23, 29, 33, 35];
+    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 39, 41, 43];
     if (isFocused && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
       // Add a small delay to ensure navigation has completed before resuming overlay
       const timer = setTimeout(() => {
@@ -454,6 +479,32 @@ export default function ExploreScreen() {
               </View>
             </Marker>
           </React.Fragment>
+        )}
+
+        {tutorialProgress.currentStep >= 40 && (
+          <Marker 
+            coordinate={CHERRY_LAKE_DEPTHS_COORDS} 
+            anchor={{ x: 0.5, y: 0.5 }} 
+            zIndex={70} 
+            tracksViewChanges={true} 
+            onPress={(e) => { 
+              e.stopPropagation(); 
+              setSelectedZone({ 
+                suburb: "CHERRY LAKE DEPTHS", 
+                biome: BiomeType.SHATTERED_SUBURBIA, 
+                faction: FactionType.IRON_CONSORTIUM, 
+                description: "The water is murky black, and a stone platform leads deep underground. The air here is heavy with resonance.", 
+                coords: CHERRY_LAKE_DEPTHS_COORDS, 
+                isHostile: false 
+              }); 
+            }}
+          >
+            <View style={markerStyles.container}>
+              <View className="w-8 h-8 bg-purple-900/40 rounded-full items-center justify-center border-2 border-purple-500 shadow-lg shadow-purple-500">
+                <Flame size={18} color="#a855f7" />
+              </View>
+            </View>
+          </Marker>
         )}
 
         <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={shouldTrackMarkers}><View style={markerStyles.container}><View className="w-5 h-5 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-2 h-2 bg-cyan-400 rounded-full" /></View></View></Marker>

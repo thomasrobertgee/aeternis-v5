@@ -231,8 +231,43 @@ const TUTORIAL_STEPS = [
   },
   {
     text: "you've done it. the perimeter is clear. the Fracture has recognized your presence. your journey has truly begun.\n\nwelcome to the fracture, traveller.",
-    choices: [{ label: "finish tutorial", updates: { currentStep: 36, isTutorialActive: false } }],
+    choices: [{ label: "finish tutorial", nextStep: 36 }],
     icon: <Sparkles size={32} color="#10b981" />
+  },
+  {
+    text: "you collapse on the ground, now truly exhausted",
+    choices: [{ label: "catch your breath, again", nextStep: 37 }],
+    icon: <Activity size={32} color="#06b6d4" />
+  },
+  {
+    text: "you hear another 'ding', and notice you have a new notification",
+    choices: [{ label: "read the new notification", nextStep: 38 }],
+    icon: <Sparkles size={32} color="#06b6d4" />
+  },
+  {
+    text: "it reads 'you have unlocked the marketplace'",
+    choices: [{ label: "marketplace..?", isMarketTrigger: true, nextStep: 39 }],
+    icon: <Briefcase size={32} color="#06b6d4" />
+  },
+  {
+    text: "after browsing through the marketplace, you hear another 'ding'.",
+    choices: [{ label: "look at the notification", nextStep: 40 }],
+    icon: <Sparkles size={32} color="#06b6d4" />
+  },
+  {
+    text: "the notification says 'dungeon CHERRY LAKE DEPTHS unlocked'. you hear another 'ding', this time its for a new quest",
+    choices: [{ label: "check quests", isQuestTrigger: true, nextStep: 41 }],
+    icon: <Scroll size={32} color="#f59e0b" />
+  },
+  {
+    text: "you arrive at Cherry Lake, however it is completely different from how you remember it.",
+    choices: [{ label: "take a look around", nextStep: 42 }],
+    icon: <Eye size={32} color="#06b6d4" />
+  },
+  {
+    text: "the paths have been taken over by nature, the water is a murky black colour, and in the centre of the lake appears to be a large stone platform, with steps that seem to go down into darkness. you assume that is the entrance to the depths",
+    choices: [{ label: "proceed", updates: { isTutorialActive: false, currentStep: 43 } }],
+    icon: <Sparkles size={32} color="#06b6d4" />
   }
 ];
 
@@ -336,19 +371,39 @@ const TutorialView = () => {
       return;
     }
 
+    if (choice.isMarketTrigger) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
+      router.replace('/(tabs)/social');
+      return;
+    }
+
     if (choice.isQuestTrigger) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      startQuest({
-        id: 'q-tutorial-dogs',
-        title: 'Defeat Mutated Dogs',
-        description: 'Cleanse the perimeter of the remaining 5 mutated manifestations.',
-        targetCount: 5,
-        currentCount: 0,
-        biomeRequirement: 'Shattered Suburbia',
-        isCompleted: false,
-        rewardXp: 200,
-        rewardGold: 5,
-      });
+      if (currentStep === 40) {
+        startQuest({
+          id: 'q-cherry-lake-depths',
+          title: 'Clear Cherry Lake Depths',
+          description: 'Descend into the darkness of the murky depths and purge the anomaly.',
+          targetCount: 1,
+          currentCount: 0,
+          isCompleted: false,
+          rewardXp: 1000,
+          rewardGold: 5000,
+        });
+      } else {
+        startQuest({
+          id: 'q-tutorial-dogs',
+          title: 'Defeat Mutated Dogs',
+          description: 'Cleanse the perimeter of the remaining 5 mutated manifestations.',
+          targetCount: 5,
+          currentCount: 0,
+          biomeRequirement: 'Shattered Suburbia',
+          isCompleted: false,
+          rewardXp: 200,
+          rewardGold: 5,
+        });
+      }
       setHeroTab('Quests');
       // Set the step but DON'T activate the tutorial overlay yet.
       updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
