@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
@@ -6,13 +6,37 @@ import { useCombatStore } from '../utils/useCombatStore';
 import { User, X, Trash2, ShieldAlert } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
-import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
+import Animated, { FadeIn, SlideInDown, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
+import { useRouter, usePathname } from 'expo-router';
 
 const PlayerHeader = () => {
+  const router = useRouter();
+  const pathname = usePathname();
   const player = usePlayerStore();
   const combat = useCombatStore();
   const resetStore = usePlayerStore((state) => state.resetStore);
   const [showProfile, setShowProfile] = useState(false);
+
+  const isInBattleScreen = pathname === '/battle';
+  const showBackToBattle = combat.isInCombat && !isInBattleScreen;
+
+  const battlePulse = useSharedValue(1);
+  useEffect(() => {
+    if (showBackToBattle) {
+      battlePulse.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 800 }),
+          withTiming(1, { duration: 800 })
+        ),
+        -1,
+        true
+      );
+    }
+  }, [showBackToBattle]);
+
+  const battleButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: battlePulse.value }],
+  }));
 
   // Use combat stats if in battle, otherwise use global player stats
   const currentHp = combat.isInCombat ? combat.playerHp : player.hp;
@@ -72,6 +96,18 @@ const PlayerHeader = () => {
           <Text className="text-zinc-500 text-[8px] font-black uppercase">LVL</Text>
           <Text className="text-white font-black text-sm">{player.level}</Text>
         </TouchableOpacity>
+
+        {showBackToBattle && (
+          <Animated.View entering={FadeIn} style={battleButtonStyle} className="mr-4">
+            <TouchableOpacity 
+              onPress={() => router.replace('/battle')}
+              className="bg-red-600 px-3 py-2 rounded-xl border border-red-400 shadow-lg shadow-red-900/40 flex-row items-center"
+            >
+              <ShieldAlert size={12} color="#fff" className="mr-1.5" />
+              <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Battle</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Profile Modal Overlay */}
         <Modal

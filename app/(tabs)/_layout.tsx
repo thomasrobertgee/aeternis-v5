@@ -4,21 +4,24 @@ import PlayerHeader from '../../components/PlayerHeader';
 import GlobalNotification from '../../components/GlobalNotification';
 import SaveIndicator from '../../components/SaveIndicator';
 import { usePlayerStore } from '../../utils/usePlayerStore';
+import { useCombatStore } from '../../utils/useCombatStore';
+import TutorialView from '../../components/TutorialView';
 
 export default function TabLayout() {
   const { tutorialProgress } = usePlayerStore();
+  const { isInCombat } = useCombatStore();
   const currentStep = tutorialProgress.currentStep;
   
   // Hide tabs until specific milestones
   const hideHero = currentStep < 17;
+  const hideBag = currentStep < 23;
   const hideOthers = currentStep < 35;
-
-  console.log('TabLayout State - Step:', currentStep, 'hideHero:', hideHero, 'hideOthers:', hideOthers);
 
   // Interaction restrictions for specific overworld steps
   const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (currentStep === 6 || currentStep === 7 || currentStep === 8 || currentStep === 22 || currentStep === 34);
 
   return (
+    <>
     <Tabs
       screenOptions={{
         headerShown: true,
@@ -49,6 +52,11 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => (
             <Map size={size} color={color} strokeWidth={2.5} />
           ),
+        }}
+        listeners={{
+          tabPress: (e) => {
+            if (isInCombat) e.preventDefault();
+          },
         }}
       />
       <Tabs.Screen
@@ -81,7 +89,7 @@ export default function TabLayout() {
           tabPress: (e) => {
             const ALLOWED_HERO_STEPS = [17, 27, 28, 29, 32, 33]; 
             if (tutorialProgress.isTutorialActive && ALLOWED_HERO_STEPS.includes(currentStep)) return;
-            if (isTutorialRestricted || hideHero) e.preventDefault();
+            if (hideHero) e.preventDefault();
           },
         }}
       />
@@ -89,15 +97,15 @@ export default function TabLayout() {
         name="inventory"
         options={{
           title: 'Bag',
-          href: hideOthers ? null : undefined,
-          display: hideOthers ? 'none' : 'flex',
+          href: hideBag ? null : undefined,
+          display: hideBag ? 'none' : 'flex',
           tabBarIcon: ({ color, size }) => (
             <Briefcase size={size} color={color} strokeWidth={2.5} />
           ),
         }}
         listeners={{
           tabPress: (e) => {
-            if (isTutorialRestricted || hideOthers) e.preventDefault();
+            if (hideBag) e.preventDefault();
           },
         }}
       />
@@ -113,7 +121,7 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: (e) => {
-            if (isTutorialRestricted || hideOthers) e.preventDefault();
+            if (hideOthers) e.preventDefault();
           },
         }}
       />
@@ -130,5 +138,7 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    <TutorialView />
+    </>
   );
 }

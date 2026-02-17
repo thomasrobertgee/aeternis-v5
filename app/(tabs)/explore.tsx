@@ -143,6 +143,15 @@ export default function ExploreScreen() {
   useEffect(() => { if (hasSetHomeCity && playerLocation) { handleRegionChange({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }); const zoomTimer = setTimeout(() => { handleRecenter(); }, 1000); return () => clearTimeout(zoomTimer); } }, [hasSetHomeCity]);
   useEffect(() => { if (hasSetHomeCity) { if (level >= 5 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 10 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
+  // Force markers to redraw once when they change
+  const [shouldTrackMarkers, setShouldTrackMarkers] = useState(true);
+  useEffect(() => {
+    if (shouldTrackMarkers) {
+      const timer = setTimeout(() => setShouldTrackMarkers(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hostileSignals, tutorialMarker, shouldTrackMarkers]);
+
   // Resume tutorial if at narrative checkpoints
   useEffect(() => {
     const checkpoints = [18, 23, 29, 33, 35];
@@ -426,7 +435,7 @@ export default function ExploreScreen() {
         
         {tutorialMarker && (
           <React.Fragment key="tutorial-marker">
-            <Marker coordinate={tutorialMarker.coords} anchor={{ x: 0.5, y: 0.5 }} zIndex={60} onPress={(e) => { e.stopPropagation(); setSelectedZone({ suburb: "Glowing Blue Orb", biome: BiomeType.SHATTERED_SUBURBIA, faction: FactionType.IRON_CONSORTIUM, description: "A floating sphere of pure Imaginum energy. It seems to be responding to your presence.", coords: tutorialMarker.coords, isHostile: false, isTutorialMarker: true }); }}>
+            <Marker coordinate={tutorialMarker.coords} anchor={{ x: 0.5, y: 0.5 }} zIndex={60} tracksViewChanges={shouldTrackMarkers} onPress={(e) => { e.stopPropagation(); setSelectedZone({ suburb: "Glowing Blue Orb", biome: BiomeType.SHATTERED_SUBURBIA, faction: FactionType.IRON_CONSORTIUM, description: "A floating sphere of pure Imaginum energy. It seems to be responding to your presence.", coords: tutorialMarker.coords, isHostile: false, isTutorialMarker: true }); }}>
               <View style={markerStyles.container}>
                 <Animated.View 
                   style={[
@@ -442,7 +451,7 @@ export default function ExploreScreen() {
           </React.Fragment>
         )}
 
-        <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={tracksViewChanges}><View style={markerStyles.container}><View className="w-5 h-5 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-2 h-2 bg-cyan-400 rounded-full" /></View></View></Marker>
+        <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={shouldTrackMarkers}><View style={markerStyles.container}><View className="w-5 h-5 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-2 h-2 bg-cyan-400 rounded-full" /></View></View></Marker>
         {(hostileSignals || []).filter(s => !s.respawnAt).map((signal) => {
           const isTutorialEnemy = signal.id.startsWith('tutorial-dog');
           if (isTutorialRestricted && !isTutorialEnemy) return null;
@@ -452,7 +461,7 @@ export default function ExploreScreen() {
                 coordinate={signal.coords} 
                 anchor={{ x: 0.5, y: 0.5 }} 
                 zIndex={isTutorialEnemy ? 100 : (signal.type === 'Boss' ? 30 : 20)} 
-                tracksViewChanges={true} 
+                tracksViewChanges={shouldTrackMarkers} 
                 onPress={(e) => { if (isTutorialRestricted && !isTutorialEnemy) return; e.stopPropagation(); handleMapPress({ nativeEvent: { coordinate: signal.coords } } as any); }}
               >
                 <View style={markerStyles.container}>
@@ -468,7 +477,6 @@ export default function ExploreScreen() {
       {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { if (isTutorialRestricted && !selectedZone.isTutorialMarker) return; startTravel(selectedZone.suburb, selectedZone.coords, duration); setSelectedZone(null); }} />}
       {isGeocoding && <View className="absolute top-1/2 left-1/2 -ml-8 -mt-8 bg-zinc-900/80 p-4 rounded-2xl border border-zinc-800"><ActivityIndicator color="#06b6d4" /></View>}
       {isSafeZone && ( <Animated.View entering={SlideInDown.delay(500)} className="absolute bottom-[40px] left-6 right-6 bg-emerald-950/20 border border-emerald-500/30 p-4 rounded-3xl flex-row items-center justify-between z-50"><View className="flex-row items-center"><View className="bg-emerald-500 p-2 rounded-xl mr-3"><Home size={18} color="#064e3b" /></View><View><Text className="text-emerald-400 font-black text-[10px] uppercase tracking-widest">Safe Zone</Text><Text className="text-white font-bold">{homeCityName} Sanctuary</Text></View></View><TouchableOpacity onPress={rest} className="bg-emerald-500 px-4 py-2 rounded-xl flex-row items-center"><Coffee size={14} color="#064e3b" className="mr-2" /><Text className="text-emerald-950 font-black text-[10px] uppercase">Rest</Text></TouchableOpacity></Animated.View> )}
-      <TutorialView />
     </View>
   );
 }

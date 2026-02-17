@@ -73,14 +73,19 @@ Manages real-time turn-based encounters.
 *   **Dynamic Choice Engine**: Player decisions (e.g., choosing a makeshift weapon) are recorded in a `choicesLog` and immediately impact gameplay by granting specific items and learning corresponding skills (e.g., **Shield Bash**).
 *   **Progressive Feature Unlocking**:
     *   **Hero Tab**: Unlocks at step 17 (HUD discovery).
-    *   **Battle/Bag/Market Tabs**: Unlocked only after completing the tutorial (Step 35).
+    *   **Bag Tab**: Unlocks at step 23 (After first combat).
+    *   **Battle/Market Tabs**: Unlocked only after completing the tutorial (Step 35).
     *   **Map Controls**: Recenter is always available; Scanning/Rifts unlock after the tutorial.
 *   **State Persistence**: `tutorialProgress` is stored in the `usePlayerStore` and persisted via `AsyncStorage`, maintaining the narrative position across sessions.
 *   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`) act as mandatory interaction points to progress the story.
+*   **Combat Integration**:
+    *   **Contextual Header**: "Back to Battle" button appears when navigating away from active combat.
+    *   **Tutorial Loot**: Guaranteed Health/Mana potions and Aetium drops for tutorial encounters.
 *   **Cinematic Feedback**: 
     *   **Adaptive Typewriter**: Rhythmic text reveal with light haptic sync.
     *   **Transition Points**: Full-screen white flash transitions (`flashOpacity`) during high-resonance events (e.g., touching the orb).
     *   **Tactile UI**: All tutorial elements use `Pressable` with `scale-95` feedback for consistent responsiveness.
+    *   **Inventory UX**: Categorized, large-card layout for Bag items with intuitive "Use/Equip" actions.
 
 ## 4. Completed Milestones
 - [x] Initial Expo + NativeWind scaffolding.
@@ -93,6 +98,7 @@ Manages real-time turn-based encounters.
 - [x] **Tutorial Narrative System with persistent state and world marker.**
 - [x] **Dynamic Skill & Weapon acquisition logic.**
 - [x] **Strict Tab Locking and Milestone-based UI Unlocking.**
+- [x] **Enhanced Inventory UI and "Back to Battle" navigation.**
 - [x] **GeoJSON Boundary detection (BoundaryService).**
 - [x] **Wikipedia-driven Zone Synthesis & Lore generation.**
 - [x] **Timed Fast Travel (Transit System) with technical log readout.**

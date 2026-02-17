@@ -125,6 +125,7 @@ interface PlayerState {
   hasSetHomeCity: boolean;
   homeCityName: string;
   sanctuaryLocation: Coords | null;
+  isSaving: boolean;
   setPlayerLocation: (location: Coords) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
   gainXp: (amount: number) => void;
@@ -584,6 +585,7 @@ export const usePlayerStore = create<PlayerState>()(
         hasSetHomeCity: true,
         homeCityName: "Altona North",
         sanctuaryLocation: INITIAL_LOCATION,
+        isSaving: false,
       }),
       updateTutorial: (progress) => set((state) => ({
         tutorialProgress: { ...state.tutorialProgress, ...progress }
@@ -596,7 +598,6 @@ export const usePlayerStore = create<PlayerState>()(
       storage: createJSONStorage(() => ({
         getItem: (name) => AsyncStorage.getItem(name),
         setItem: (name, value) => {
-          useUIStore.getState().triggerSaving();
           return AsyncStorage.setItem(name, value);
         },
         removeItem: (name) => AsyncStorage.removeItem(name),

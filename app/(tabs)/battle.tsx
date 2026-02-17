@@ -138,22 +138,20 @@ export default function BattleScreen() {
         let goldLoot = 1;
         addLog(`Recovered ${goldLoot} Aetium from the remains.`, 'system');
         
+        // Guaranteed both potions for any tutorial dog
+        const hpPotion = { id: `hp-pot-${Date.now()}`, name: 'Health Potion', category: 'Utility', rarity: 'Common', description: 'Restores 50 HP.' };
+        const mpPotion = { id: `mp-pot-${Date.now()}`, name: 'Mana Potion', category: 'Utility', rarity: 'Common', description: 'Restores 30 MP.' };
+        
+        addItem(hpPotion as any);
+        addItem(mpPotion as any);
+        addLog(`Acquired: Health Potion, Mana Potion`, 'system');
+
         if (isMultiTutorialDog) {
           updateQuestProgress('q-tutorial-dogs', 1);
-          
-          // Guaranteed both potions
-          const hpPotion = { id: `hp-pot-${Date.now()}`, name: 'Health Potion', category: 'Utility', rarity: 'Common', description: 'Restores 50 HP.' };
-          const mpPotion = { id: `mp-pot-${Date.now()}`, name: 'Mana Potion', category: 'Utility', rarity: 'Common', description: 'Restores 30 MP.' };
-          
-          addItem(hpPotion as any);
-          addItem(mpPotion as any);
-          addLog(`Acquired: Health Potion, Mana Potion`, 'system');
 
           const quest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-tutorial-dogs');
           if (quest && quest.currentCount + 1 >= quest.targetCount) {
             player.updateTutorial({ currentStep: 35, isTutorialActive: false }); // Narrative checkpoint
-          } else {
-            // If they flee or somehow end combat without finishing, we don't advance the step here
           }
         } else {
           player.updateTutorial({ currentStep: 23, isTutorialActive: false }); // Narrative checkpoint
@@ -472,10 +470,20 @@ export default function BattleScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity 
-              className="flex-1 min-w-[45%] h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex-row items-center justify-center opacity-30"
+              onPress={() => {
+                if (player.tutorialProgress.currentStep < 23) {
+                  alert("Utility items are not yet synchronized with your HUD.");
+                  return;
+                }
+                router.replace('/inventory');
+              }}
+              disabled={!isPlayerTurn}
+              className={`flex-1 min-w-[45%] h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex-row items-center justify-center shadow-md shadow-black ${
+                (!isPlayerTurn || player.tutorialProgress.currentStep < 23) ? 'opacity-30' : 'active:scale-95'
+              }`}
             >
-              <Briefcase size={18} color="#3f3f46" className="mr-2" />
-              <Text className="text-zinc-600 font-bold uppercase tracking-widest text-xs">Item</Text>
+              <Briefcase size={18} color={player.tutorialProgress.currentStep < 23 ? "#3f3f46" : "#fff"} className="mr-2" />
+              <Text className={`${player.tutorialProgress.currentStep < 23 ? 'text-zinc-600' : 'text-white'} font-bold uppercase tracking-widest text-xs`}>Item</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
