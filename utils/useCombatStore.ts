@@ -27,7 +27,7 @@ interface CombatState {
   combatLogs: CombatLog[];
 
   // Actions
-  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, playerMana: number, sourceId?: string, damageModifier?: number, biome?: BiomeType) => void;
+  initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, maxPlayerHp: number, playerMana: number, maxPlayerMana: number, sourceId?: string, damageModifier?: number, biome?: BiomeType) => void;
   updateHp: (target: 'player' | 'enemy', amount: number) => void;
   updateMana: (amount: number) => void;
   nextTurn: () => void;
@@ -52,14 +52,14 @@ export const useCombatStore = create<CombatState>((set) => ({
   turnCount: 1,
   combatLogs: [],
 
-  initiateCombat: (enemyName, enemyMaxHp, playerHp, playerMana, sourceId, damageModifier = 1.0, biome) => set({
+  initiateCombat: (enemyName, enemyMaxHp, playerHp, maxPlayerHp, playerMana, maxPlayerMana, sourceId, damageModifier = 1.0, biome) => set({
     enemyName,
     enemyHp: enemyMaxHp,
     maxEnemyHp: enemyMaxHp,
     playerHp: playerHp,
-    maxPlayerHp: playerHp,
+    maxPlayerHp: maxPlayerHp,
     playerMana: playerMana,
-    maxPlayerMana: playerMana,
+    maxPlayerMana: maxPlayerMana,
     sourceId,
     damageModifier,
     biome,
@@ -106,6 +106,8 @@ export const useCombatStore = create<CombatState>((set) => ({
     combatLogs: [],
     sourceId: undefined,
     damageModifier: 1.0,
-    biome: undefined
+    biome: undefined,
+    isPlayerTurn: true,
+    turnCount: 1
   }),
 }));

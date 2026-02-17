@@ -90,6 +90,23 @@ class SoundService {
     }
   }
 
+  public async playScan() {
+    if (this.isMuted) return;
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: 'https://github.com/rafaelrinaldi/sonar/raw/master/sonar.mp3' }, // Reliable Sonar SFX
+        { shouldPlay: true, volume: 0.6 }
+      );
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.error('Failed to play scan SFX', error);
+    }
+  }
+
   public async stopAll() {
     if (this.ambientSound) await this.ambientSound.stopAsync();
     if (this.battleSound) await this.battleSound.stopAsync();

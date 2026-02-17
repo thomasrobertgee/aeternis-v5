@@ -57,6 +57,14 @@ export default function BattleScreen() {
   const [isResolving, setIsResolving] = useState(false);
   const [isActionProcessing, setIsActionProcessing] = useState(false);
 
+  // Reset local processing state when combat starts/ends
+  useEffect(() => {
+    if (isInCombat) {
+      setIsActionProcessing(false);
+      setIsResolving(false);
+    }
+  }, [isInCombat]);
+
   // Filter and sort nearby threats (within 10km) that are NOT on cooldown
   const nearbyThreats = (hostileSignals || [])
     .filter(s => !s.respawnAt) // Only show active signals
@@ -69,7 +77,7 @@ export default function BattleScreen() {
 
   const handleEngage = (signal: any) => {
     // This is for direct engage from the scanner list
-    initiateCombat('Fracture Manifestation', 60, player.hp, player.mana, signal.id);
+    initiateCombat('Fracture Manifestation', 60, player.hp, player.maxHp, player.mana, player.maxMana, signal.id);
   };
 
   // Record encounter and switch music when combat starts
@@ -119,10 +127,53 @@ export default function BattleScreen() {
       setIsResolving(true);
       addLog(`${enemyName} has been purged from the Fracture.`, 'system');
       
+      const isTutorialDog = sourceId === 'tutorial-dog-signal';
+      const isMultiTutorialDog = sourceId?.startsWith('tutorial-dog-multi');
+
       // Bestiary Update
       recordDefeat(enemyName);
 
-      // Update Quest Progress
+      if (isTutorialDog || isMultiTutorialDog) {
+        // Special Tutorial Logic
+        let goldLoot = 1;
+        addLog(`Recovered ${goldLoot} Aetium from the remains.`, 'system');
+        
+        if (isMultiTutorialDog) {
+          updateQuestProgress('q-tutorial-dogs', 1);
+          
+          // Guaranteed both potions
+          const hpPotion = { id: `hp-pot-${Date.now()}`, name: 'Health Potion', category: 'Utility', rarity: 'Common', description: 'Restores 50 HP.' };
+          const mpPotion = { id: `mp-pot-${Date.now()}`, name: 'Mana Potion', category: 'Utility', rarity: 'Common', description: 'Restores 30 MP.' };
+          
+          addItem(hpPotion as any);
+          addItem(mpPotion as any);
+          addLog(`Acquired: Health Potion, Mana Potion`, 'system');
+
+          const quest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-tutorial-dogs');
+          if (quest && quest.currentCount + 1 >= quest.targetCount) {
+            player.updateTutorial({ currentStep: 35, isTutorialActive: false }); // Narrative checkpoint
+          } else {
+            // If they flee or somehow end combat without finishing, we don't advance the step here
+          }
+        } else {
+          player.updateTutorial({ currentStep: 23, isTutorialActive: false }); // Narrative checkpoint
+        }
+        
+        setTimeout(() => {
+          const currentGold = usePlayerStore.getState().gold;
+          setGlobalStats({ 
+            hp: playerHp, 
+            mana: playerMana,
+            gold: currentGold + goldLoot
+          });
+          endCombat();
+          setIsResolving(false);
+          router.replace('/explore');
+        }, 2500);
+        return;
+      }
+
+      // Standard Combat Logic
       updateQuestProgress('q-secure-the-west', 1);
 
       // Remove from map/list and trigger respawn timer
@@ -229,7 +280,8 @@ export default function BattleScreen() {
     triggerEnemyShake();
     updateMana(-15);
     updateHp('enemy', -damage);
-    addLog(`You perform an Axe Sweep! ${damage} damage dealt.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
+    const skillName = player.skills[0]?.name || "Axe Sweep";
+    addLog(`You perform a ${skillName}! ${damage} damage dealt.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
       setTimeout(() => {
@@ -240,7 +292,7 @@ export default function BattleScreen() {
   };
 
   const handleFlee = () => {
-    if (isResolving) return;
+    if (isResolving || sourceId?.startsWith('tutorial-dog')) return;
     addLog("You attempt to slip back into the static...", "system");
     setTimeout(() => {
       setGlobalStats({ hp: playerHp, mana: playerMana });
@@ -412,7 +464,9 @@ export default function BattleScreen() {
             >
               <Zap size={18} color={playerMana >= 15 ? "#06b6d4" : "#3f3f46"} className="mr-2" />
               <View>
-                <Text className={`font-bold uppercase tracking-widest text-[10px] ${playerMana >= 15 ? 'text-cyan-400' : 'text-zinc-600'}`}>Axe Sweep</Text>
+                <Text className={`font-bold uppercase tracking-widest text-[10px] ${playerMana >= 15 ? 'text-cyan-400' : 'text-zinc-600'}`}>
+                  {player.skills[0]?.name || "Axe Sweep"}
+                </Text>
                 <Text className="text-[8px] text-cyan-700 font-bold">-15 MP</Text>
               </View>
             </TouchableOpacity>
@@ -426,10 +480,11 @@ export default function BattleScreen() {
 
             <TouchableOpacity 
               onPress={handleFlee}
-              className="flex-1 min-w-[45%] h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex-row items-center justify-center shadow-md shadow-black"
+              disabled={sourceId?.startsWith('tutorial-dog')}
+              className={`flex-1 min-w-[45%] h-16 bg-zinc-900 border border-zinc-800 rounded-2xl flex-row items-center justify-center shadow-md shadow-black ${sourceId?.startsWith('tutorial-dog') ? 'opacity-30' : ''}`}
             >
-              <Footprints size={18} color="#71717a" className="mr-2" />
-              <Text className="text-zinc-400 font-bold uppercase tracking-widest text-xs">Flee</Text>
+              <Footprints size={18} color={sourceId?.startsWith('tutorial-dog') ? "#3f3f46" : "#71717a"} className="mr-2" />
+              <Text className={`${sourceId?.startsWith('tutorial-dog') ? 'text-zinc-600' : 'text-zinc-400'} font-bold uppercase tracking-widest text-xs`}>Flee</Text>
             </TouchableOpacity>
           </>
         )}

@@ -1,19 +1,27 @@
-import React from 'react';
-import { View, Text, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { usePlayerStore } from '../../utils/usePlayerStore';
-import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart } from 'lucide-react-native';
-import { getRarityColor } from './social';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useUIStore } from '../../utils/useUIStore';
+import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity } from 'lucide-react-native';
+import { getRarityColor } from '../../utils/Constants';
+import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { ENEMY_DATABASE, BOSS_DATABASE } from '../../utils/EnemyFactory';
 
+type HeroTab = 'Stats' | 'Skills' | 'Quests' | 'Codex';
+
 export default function CharacterScreen() {
+  const { heroTab: activeTab, setHeroTab: setActiveTab } = useUIStore();
   const { 
+    hp, maxHp, mana, maxMana, attack, defense, level, xp, maxXp, gold,
     equipment, 
+    skills,
     reputation, 
     enrolledFaction, 
     specialization, 
     setBonus,
-    bestiary 
+    bestiary,
+    activeQuests,
+    discoveredZones
   } = usePlayerStore();
 
   const getFactionColor = (id: string) => {
@@ -61,14 +69,8 @@ export default function CharacterScreen() {
     }
   };
 
-  // Combine databases for the bestiary view
-  const allEnemies = [
-    ...Object.values(ENEMY_DATABASE).flat(),
-    ...Object.values(BOSS_DATABASE).flat(),
-  ];
-
-  return (
-    <ScrollView className="flex-1 bg-zinc-950 px-6 pt-16" showsVerticalScrollIndicator={false}>
+  const renderStats = () => (
+    <Animated.View entering={FadeIn} className="flex-1">
       <View className="items-center mb-10">
         <View className="w-24 h-24 bg-cyan-500/10 rounded-full items-center justify-center border-2 border-cyan-500/30 mb-4">
           <User size={48} color="#06b6d4" />
@@ -76,7 +78,7 @@ export default function CharacterScreen() {
         <Text className="text-white text-3xl font-black tracking-tight">The Traveller</Text>
         <View className="flex-row items-center mt-1">
           <Text className="text-cyan-500 font-bold uppercase tracking-[4px] text-[10px]">
-            Fracture-Linked
+            Lvl {level} Fracture-Linked
           </Text>
           {enrolledFaction && (
             <>
@@ -89,9 +91,39 @@ export default function CharacterScreen() {
         </View>
       </View>
 
+      {/* Core Stats Grid */}
+      <View className="flex-row flex-wrap gap-4 mb-8">
+        <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Vitality</Text>
+          <Text className="text-white font-bold text-lg">{hp} / {maxHp}</Text>
+          <View className="h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
+            <View className="h-full bg-red-500" style={{ width: `${(hp/maxHp)*100}%` }} />
+          </View>
+        </View>
+        <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Imaginum</Text>
+          <Text className="text-white font-bold text-lg">{mana} / {maxMana}</Text>
+          <View className="h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
+            <View className="h-full bg-cyan-500" style={{ width: `${(mana/maxMana)*100}%` }} />
+          </View>
+        </View>
+        <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Attack</Text>
+          <Text className="text-white font-bold text-lg">{attack}</Text>
+        </View>
+        <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Defense</Text>
+          <Text className="text-white font-bold text-lg">{defense}</Text>
+        </View>
+        <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Aetium</Text>
+          <Text className="text-white font-bold text-lg">{gold}</Text>
+        </View>
+      </View>
+
       {/* Set Bonus Card */}
       {setBonus && (
-        <Animated.View entering={FadeInDown} className="bg-amber-950/20 border border-amber-500/30 p-5 rounded-3xl mb-8">
+        <View className="bg-amber-950/20 border border-amber-500/30 p-5 rounded-3xl mb-8">
           <View className="flex-row items-center mb-2">
             <Zap size={16} color="#f59e0b" className="mr-2" />
             <Text className="text-amber-500 font-black text-[10px] uppercase tracking-widest">Active Set Bonus</Text>
@@ -104,7 +136,7 @@ export default function CharacterScreen() {
               </Text>
             ))}
           </View>
-        </Animated.View>
+        </View>
       )}
 
       {/* Specialization Card */}
@@ -127,27 +159,8 @@ export default function CharacterScreen() {
         </View>
       )}
 
-      {/* Enrolled Faction Buff Card */}
-      {enrolledFaction && (
-        <View className={`bg-zinc-900 border p-5 rounded-3xl mb-8 ${
-          enrolledFaction === 'the-cogwheel' ? 'border-amber-500/30' : 'border-emerald-500/30'
-        }`}>
-          <Text className={`font-black text-[10px] uppercase tracking-widest mb-2 ${getFactionColor(enrolledFaction)}`}>
-            Permanent Faction Resonance
-          </Text>
-          <Text className="text-white font-bold text-lg mb-1">
-            {enrolledFaction === 'the-cogwheel' ? 'Cogwheel Protocols' : 'Verdant Vitality'}
-          </Text>
-          <Text className="text-zinc-400 text-xs italic">
-            {enrolledFaction === 'the-cogwheel' 
-              ? "Your strikes are reinforced by industrial precision. (+15% Attack)" 
-              : "Your physical form is grounded by the world-tree. (+15% Defense)"}
-          </Text>
-        </View>
-      )}
-
       {/* Equipment Section */}
-      <View className="space-y-6 mb-10">
+      <View className="mb-10">
         <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-4 px-1">
           Current Equipment
         </Text>
@@ -167,9 +180,6 @@ export default function CharacterScreen() {
               )}
             </View>
             <Text className="text-white font-bold text-lg">{equipment.weapon?.name || 'Empty'}</Text>
-            <Text className="text-zinc-400 text-xs mt-1 italic leading-5">
-              {equipment.weapon?.description}
-            </Text>
           </View>
         </View>
 
@@ -188,9 +198,6 @@ export default function CharacterScreen() {
               )}
             </View>
             <Text className="text-white font-bold text-lg">{equipment.armor?.name || 'Empty'}</Text>
-            <Text className="text-zinc-400 text-xs mt-1 italic leading-5">
-              {equipment.armor?.description}
-            </Text>
           </View>
         </View>
 
@@ -209,84 +216,12 @@ export default function CharacterScreen() {
               )}
             </View>
             <Text className="text-white font-bold text-lg">{equipment.boots?.name || 'Empty'}</Text>
-            <Text className="text-zinc-400 text-xs mt-1 italic leading-5">
-              {equipment.boots?.description || 'No specialized footwear equipped.'}
-            </Text>
           </View>
         </View>
       </View>
 
-      {/* Bestiary Section */}
-      <View className="mb-10">
-        <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-6 px-1">
-          Manifestation Bestiary
-        </Text>
-
-        <View className="space-y-4">
-          {allEnemies.map((enemy, index) => {
-            const entry = bestiary[enemy.name];
-            const isEncountered = (entry?.encounters || 0) > 0;
-            const isDefeatedOnce = (entry?.defeats || 0) > 0;
-            const isMastered = (entry?.defeats || 0) >= 5;
-
-            if (!isEncountered) {
-              return (
-                <View key={enemy.name} className="bg-zinc-900/20 border border-zinc-900 border-dashed p-5 rounded-3xl flex-row items-center mb-4">
-                  <View className="bg-zinc-900 p-3 rounded-2xl mr-4">
-                    <Eye size={20} color="#27272a" />
-                  </View>
-                  <Text className="text-zinc-800 font-bold text-lg tracking-widest">??? ??? ???</Text>
-                </View>
-              );
-            }
-
-            return (
-              <Animated.View 
-                key={enemy.name}
-                entering={FadeInDown.delay(index * 50)}
-                className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4"
-              >
-                <View className="flex-row justify-between items-center mb-3">
-                  <View className="flex-row items-center">
-                    <View className={`p-3 rounded-2xl mr-4 border ${isMastered ? 'bg-red-500/10 border-red-500/30' : 'bg-zinc-800 border-zinc-700'}`}>
-                      <Skull size={20} color={isMastered ? "#ef4444" : "#71717a"} />
-                    </View>
-                    <View>
-                      <Text className="text-white font-bold text-lg">{enemy.name}</Text>
-                      <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                        Defeats: {entry?.defeats || 0}
-                      </Text>
-                    </View>
-                  </View>
-                  {isDefeatedOnce && (
-                    <View className="flex-row items-center bg-zinc-950 px-3 py-1 rounded-xl border border-zinc-800">
-                      <Heart size={10} color="#ef4444" className="mr-1.5" />
-                      <Text className="text-white font-mono text-[10px]">{enemy.maxHp} HP</Text>
-                    </View>
-                  )}
-                </View>
-
-                {isDefeatedOnce && (
-                  <Text className="text-zinc-400 text-xs leading-5 italic mb-2">
-                    {isMastered ? enemy.description : "A strange manifestation from the static. More data required to analyze behaviors."}
-                  </Text>
-                )}
-
-                {!isMastered && isDefeatedOnce && (
-                  <View className="bg-zinc-950/50 rounded-xl p-2 items-center border border-zinc-900">
-                    <Text className="text-zinc-600 font-black text-[7px] uppercase tracking-widest">
-                      Kill {5 - (entry?.defeats || 0)} more to unlock full analysis
-                    </Text>
-                  </View>
-                )}
-              </Animated.View>
-            );
-          })}
-        </View>
-      </View>
-
       {/* Faction Standing Section */}
-      <View className="space-y-6">
+      <View className="mb-10">
         <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-4 px-1">
           Faction Standing
         </Text>
@@ -321,8 +256,203 @@ export default function CharacterScreen() {
           </View>
         </View>
       </View>
+    </Animated.View>
+  );
 
-      <View className="h-20" />
-    </ScrollView>
+  const renderSkills = () => (
+    <Animated.View entering={FadeIn} className="flex-1">
+      <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-6 px-1">
+        Learned Skills
+      </Text>
+      {skills.length === 0 ? (
+        <View className="bg-zinc-900/20 border border-zinc-900 border-dashed p-10 rounded-3xl items-center">
+          <Text className="text-zinc-700 font-bold italic text-center">No skills manifested yet.</Text>
+        </View>
+      ) : (
+        <View className="space-y-4">
+          {skills.map((skill) => (
+            <View key={skill.id} className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl">
+              <View className="flex-row justify-between items-center mb-2">
+                <View className="flex-row items-center">
+                  <View className="bg-cyan-500/10 p-2 rounded-xl mr-3 border border-cyan-500/20">
+                    <Activity size={18} color="#06b6d4" />
+                  </View>
+                  <View>
+                    <Text className="text-white font-bold text-lg">{skill.name}</Text>
+                    <Text className="text-cyan-500/70 text-[8px] font-black uppercase tracking-widest">{skill.type}</Text>
+                  </View>
+                </View>
+                <View className="bg-zinc-950 px-3 py-1 rounded-xl border border-zinc-800">
+                  <Text className="text-cyan-400 font-mono text-[10px]">Rank {skill.level}</Text>
+                </View>
+              </View>
+              <Text className="text-zinc-400 text-xs italic leading-5">{skill.description}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </Animated.View>
+  );
+
+  const renderQuests = () => (
+    <Animated.View entering={FadeIn} className="flex-1">
+      <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-6 px-1">
+        Active Objectives
+      </Text>
+      {activeQuests.length === 0 ? (
+        <View className="bg-zinc-900/20 border border-zinc-900 border-dashed p-10 rounded-3xl items-center">
+          <Text className="text-zinc-700 font-bold italic text-center">No active quests in the log.</Text>
+        </View>
+      ) : (
+        activeQuests.map((quest) => (
+          <View key={quest.id} className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4">
+            <View className="flex-row items-center mb-3">
+              <View className="bg-amber-500/10 p-2 rounded-xl mr-3 border border-amber-500/20">
+                <Scroll size={18} color="#f59e0b" />
+              </View>
+              <Text className="text-white font-bold text-lg">{quest.title}</Text>
+            </View>
+            <Text className="text-zinc-400 text-xs mb-4 leading-5 italic">"{quest.description}"</Text>
+            <View className="flex-row justify-between items-center bg-zinc-950/50 p-3 rounded-2xl border border-zinc-900">
+              <Text className="text-zinc-500 font-black text-[8px] uppercase tracking-[2px]">Progress</Text>
+              <View className="flex-row items-center">
+                <Text className="text-cyan-400 font-mono text-xs mr-2">{quest.currentCount} / {quest.targetCount}</Text>
+                {quest.isCompleted && <Zap size={12} color="#10b981" />}
+              </View>
+            </View>
+          </View>
+        ))
+      )}
+    </Animated.View>
+  );
+
+  const renderCodex = () => {
+    const allEnemies = [
+      ...Object.values(ENEMY_DATABASE).flat(),
+      ...Object.values(BOSS_DATABASE).flat(),
+    ].map(enemy => ({
+      ...enemy,
+      lastDefeatedAt: bestiary[enemy.name]?.lastDefeatedAt || 0
+    })).sort((a, b) => b.lastDefeatedAt - a.lastDefeatedAt);
+
+    const discoveredZonesList = Object.values(discoveredZones).sort((a, b) => b.discoveryDate - a.discoveryDate);
+
+    return (
+      <Animated.View entering={FadeIn} className="flex-1">
+        <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-6 px-1">
+          Manifestation Bestiary
+        </Text>
+        <View className="space-y-4 mb-10">
+          {allEnemies.map((enemy, index) => {
+            const entry = bestiary[enemy.name];
+            const isEncountered = (entry?.encounters || 0) > 0;
+            const isDefeatedOnce = (entry?.defeats || 0) > 0;
+            const isMastered = (entry?.defeats || 0) >= 5;
+            const isNew = entry?.lastDefeatedAt && (Date.now() - entry.lastDefeatedAt < 24 * 60 * 60 * 1000);
+
+            if (!isEncountered) {
+              return (
+                <View key={enemy.name} className="bg-zinc-900/20 border border-zinc-900 border-dashed p-5 rounded-3xl flex-row items-center mb-4 opacity-40">
+                  <View className="bg-zinc-900 p-3 rounded-2xl mr-4">
+                    <Eye size={20} color="#27272a" />
+                  </View>
+                  <Text className="text-zinc-800 font-bold text-lg tracking-widest">??? ??? ???</Text>
+                </View>
+              );
+            }
+
+            return (
+              <View 
+                key={enemy.name}
+                className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4"
+              >
+                <View className="flex-row justify-between items-center mb-3">
+                  <View className="flex-row items-center">
+                    <View className={`p-3 rounded-2xl mr-4 border ${isMastered ? 'bg-red-500/10 border-red-500/30' : 'bg-zinc-800 border-zinc-700'}`}>
+                      <Skull size={20} color={isMastered ? "#ef4444" : "#71717a"} />
+                    </View>
+                    <View>
+                      <View className="flex-row items-center">
+                        <Text className="text-white font-bold text-lg">{enemy.name}</Text>
+                        {isNew && (
+                          <View className="bg-cyan-500 px-2 py-0.5 rounded-full ml-2">
+                            <Text className="text-[8px] font-black uppercase text-cyan-950">New</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+                        Defeats: {entry?.defeats || 0}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+                {isDefeatedOnce && (
+                  <Text className="text-zinc-400 text-xs leading-5 italic">
+                    {isMastered ? enemy.description : "A strange manifestation from the static. More data required to analyze behaviors."}
+                  </Text>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-6 px-1">
+          Zone Records
+        </Text>
+        {discoveredZonesList.length === 0 ? (
+          <View className="bg-zinc-900/20 border border-zinc-900 border-dashed p-10 rounded-3xl items-center">
+            <Text className="text-zinc-700 font-bold italic text-center">No zones synthesized yet.</Text>
+          </View>
+        ) : (
+          discoveredZonesList.map((zone) => {
+            const isNewZone = (Date.now() - zone.discoveryDate < 24 * 60 * 60 * 1000);
+            return (
+              <View key={zone.suburb} className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4">
+                <View className="flex-row justify-between items-center mb-2">
+                  <View className="flex-row items-center">
+                    <Text className="text-white font-bold text-lg">{zone.suburb}</Text>
+                    {isNewZone && (
+                      <View className="bg-cyan-500 px-2 py-0.5 rounded-full ml-2">
+                        <Text className="text-[8px] font-black uppercase text-cyan-950">New</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text className="text-cyan-500 font-mono text-[8px] uppercase tracking-widest">{zone.biome}</Text>
+                </View>
+                <Text className="text-zinc-500 text-[10px] mb-2 uppercase tracking-widest">Dominant: {zone.faction}</Text>
+                <Text className="text-zinc-400 text-xs italic leading-5" numberOfLines={3}>{zone.wikiSummary}</Text>
+              </View>
+            );
+          })
+        )}
+      </Animated.View>
+    );
+  };
+
+  return (
+    <View className="flex-1 bg-zinc-950 px-6 pt-16">
+      {/* Sub-Navigation Tabs */}
+      <View className="flex-row mb-8 bg-zinc-900/30 p-1 rounded-2xl border border-zinc-900">
+        {(['Stats', 'Skills', 'Quests', 'Codex'] as HeroTab[]).map((tab) => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => setActiveTab(tab)}
+            className={`flex-1 py-3 rounded-xl items-center justify-center ${activeTab === tab ? 'bg-cyan-500/10 border border-cyan-500/20' : ''}`}
+          >
+            <Text className={`font-bold text-[10px] uppercase tracking-widest ${activeTab === tab ? 'text-cyan-400' : 'text-zinc-600'}`}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
+        {activeTab === 'Stats' && renderStats()}
+        {activeTab === 'Skills' && renderSkills()}
+        {activeTab === 'Quests' && renderQuests()}
+        {activeTab === 'Codex' && renderCodex()}
+        <View className="h-24" />
+      </ScrollView>
+    </View>
   );
 }

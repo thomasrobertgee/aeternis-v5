@@ -47,7 +47,8 @@ const NarrativeView = ({ suburb, loreName, category, biome, description, profile
 
   const startSimulatedBattle = () => {
     const enemy = getDeterministicEnemy(suburb, biome);
-    initiateCombat(enemy.name, enemy.maxHp, usePlayerStore.getState().hp, usePlayerStore.getState().mana, "");
+    const playerState = usePlayerStore.getState();
+    initiateCombat(enemy.name, enemy.maxHp, playerState.hp, playerState.maxHp, playerState.mana, playerState.maxMana, "");
     router.push('/battle');
   };
 

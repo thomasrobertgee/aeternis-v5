@@ -27,7 +27,8 @@ const DialogueView = ({ dialogueData, onExit }: DialogueViewProps) => {
     
     // Check for combat trigger
     if (currentNodeId === 'battle_start') {
-      initiateCombat('Cogwheel Scavenger', 60, 100, 50);
+      const playerState = usePlayerStore.getState();
+      initiateCombat('Cogwheel Scavenger', 60, playerState.hp, playerState.maxHp, playerState.mana, playerState.maxMana);
       router.push('/battle');
     }
   }, [currentNodeId]);

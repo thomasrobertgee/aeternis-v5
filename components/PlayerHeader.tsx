@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
-import { User, X, Trash2, ShieldAlert, LogOut } from 'lucide-react-native';
+import { User, X, Trash2, ShieldAlert } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import Animated, { FadeIn, SlideInDown } from 'react-native-reanimated';
@@ -31,14 +31,16 @@ const PlayerHeader = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              // 1. Clear persistence first
+              // 1. Reset in-memory store immediately
+              resetStore();
+              
+              // 2. Clear persistence
               await AsyncStorage.clear();
               
-              // 2. Force reload immediately
-              // We skip manual resetStore() here because the reload will re-initialize
-              // the store from scratch with empty storage, avoiding UI thread conflicts.
+              // 3. Force reload using DevSettings (most reliable in development)
               DevSettings.reload();
               
+              // Fallback for standalone builds
               try {
                 await Updates.reloadAsync();
               } catch (e) {

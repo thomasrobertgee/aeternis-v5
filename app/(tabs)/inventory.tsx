@@ -3,13 +3,22 @@ import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-nati
 import { usePlayerStore, Item } from '../../utils/usePlayerStore';
 import { Package, Sword, Shield, Zap, X } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
-import { getRarityColor } from './social';
+import { getRarityColor } from '../../utils/Constants';
 
 const { width } = Dimensions.get('window');
 const ITEM_SIZE = (width - 64) / 3;
 
 export default function InventoryScreen() {
-  const { inventory, equipItem, removeItem, setStats, hp, maxHp, equipment } = usePlayerStore();
+  const inventory = usePlayerStore((state) => state.inventory);
+  const equipItem = usePlayerStore((state) => state.equipItem);
+  const removeItem = usePlayerStore((state) => state.removeItem);
+  const setStats = usePlayerStore((state) => state.setStats);
+  const hp = usePlayerStore((state) => state.hp);
+  const maxHp = usePlayerStore((state) => state.maxHp);
+  const equipment = usePlayerStore((state) => state.equipment);
+  const maxMana = usePlayerStore((state) => state.maxMana);
+  const mana = usePlayerStore((state) => state.mana);
+
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
 
   const handleAction = () => {
@@ -20,8 +29,8 @@ export default function InventoryScreen() {
         const restoreAmount = Math.floor(maxHp * 0.2);
         setStats({ hp: Math.min(maxHp, hp + restoreAmount) });
       } else if (selectedItem.name.includes('Focus Potion')) {
-        const restoreAmount = Math.floor(usePlayerStore.getState().maxMana * 0.2);
-        setStats({ mana: Math.min(usePlayerStore.getState().maxMana, usePlayerStore.getState().mana + restoreAmount) });
+        const restoreAmount = Math.floor(maxMana * 0.2);
+        setStats({ mana: Math.min(maxMana, mana + restoreAmount) });
       }
       removeItem(selectedItem.id);
       setSelectedItem(null);
@@ -76,7 +85,6 @@ export default function InventoryScreen() {
               >
                 {getItemIcon(item.category, item.rarity)}
                 
-                {/* Rarity Indicator Line */}
                 <View 
                   className="absolute top-0 left-0 right-0 h-1" 
                   style={{ backgroundColor: rColor, opacity: 0.6 }} 

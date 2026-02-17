@@ -67,6 +67,21 @@ Manages real-time turn-based encounters.
 ### 3.4 Combat Integrity
 *   **Action Locking**: Implements an `isActionProcessing` state to debounce player inputs. This prevents rapid multi-click exploits, ensuring the turn-based logic remains synchronized with animations.
 
+### 3.5 Tutorial & Narrative Flow
+*   **Zero-Start Experience**: Players begin with 0 Aetium, no equipment, and minimal Vitality/Imaginum to emphasize progression from "nothing."
+*   **Initial Narrative Overlay**: The `TutorialView` provides a high-z-index (`z-[10000]`) narrative overlay that guides the player through their first moments in the Fracture.
+*   **Dynamic Choice Engine**: Player decisions (e.g., choosing a makeshift weapon) are recorded in a `choicesLog` and immediately impact gameplay by granting specific items and learning corresponding skills (e.g., **Shield Bash**).
+*   **Progressive Feature Unlocking**:
+    *   **Hero Tab**: Unlocks at step 17 (HUD discovery).
+    *   **Battle/Bag/Market Tabs**: Unlocked only after completing the tutorial (Step 35).
+    *   **Map Controls**: Recenter is always available; Scanning/Rifts unlock after the tutorial.
+*   **State Persistence**: `tutorialProgress` is stored in the `usePlayerStore` and persisted via `AsyncStorage`, maintaining the narrative position across sessions.
+*   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`) act as mandatory interaction points to progress the story.
+*   **Cinematic Feedback**: 
+    *   **Adaptive Typewriter**: Rhythmic text reveal with light haptic sync.
+    *   **Transition Points**: Full-screen white flash transitions (`flashOpacity`) during high-resonance events (e.g., touching the orb).
+    *   **Tactile UI**: All tutorial elements use `Pressable` with `scale-95` feedback for consistent responsiveness.
+
 ## 4. Completed Milestones
 - [x] Initial Expo + NativeWind scaffolding.
 - [x] Web-based geocoding (GeoService) with procedural fallback.
@@ -75,6 +90,9 @@ Manages real-time turn-based encounters.
 - [x] Global Sound System (Ambient & Battle tracks).
 - [x] Haptic Feedback integration (Combat & Quests).
 - [x] **Cinematic Title Screen and Entry Flow.**
+- [x] **Tutorial Narrative System with persistent state and world marker.**
+- [x] **Dynamic Skill & Weapon acquisition logic.**
+- [x] **Strict Tab Locking and Milestone-based UI Unlocking.**
 - [x] **GeoJSON Boundary detection (BoundaryService).**
 - [x] **Wikipedia-driven Zone Synthesis & Lore generation.**
 - [x] **Timed Fast Travel (Transit System) with technical log readout.**

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { X, MapPin, Compass, ShieldAlert, Sword, Cloud, Package, Hammer } from 'lucide-react-native';
 import Animated, { 
   useSharedValue, 
@@ -40,8 +40,8 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
   useEffect(() => {
     // Slide up when component mounts
     translateY.value = withSpring(0, {
-      damping: 15,
-      stiffness: 90,
+      damping: 25, // Higher damping = less bounce
+      stiffness: 60, // Lower stiffness = slower motion
     });
   }, []);
 
@@ -57,17 +57,18 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
     });
   };
 
-  const isWithinHarvestRange = resourceData ? resourceData.distance <= 50 : false;
+  const isWithinHarvestRange = resourceData ? resourceData.distance <= 100 : false;
 
   return (
-    <Animated.View 
-      style={animatedStyle}
-      className={`absolute bottom-6 left-4 right-4 border p-6 rounded-[32px] shadow-2xl ${
-        isHostile ? 'bg-red-950/95 border-red-800' : 
-        isResourceNode ? 'bg-emerald-950/95 border-emerald-800' :
-        'bg-zinc-950/95 border-zinc-800'
-      }`}
-    >
+    <View style={StyleSheet.absoluteFill} className="items-center justify-center p-6 z-[2500]" pointerEvents="box-none">
+      <Animated.View 
+        style={animatedStyle}
+        className={`w-full border p-8 rounded-[40px] shadow-2xl ${
+          isHostile ? 'bg-red-950/95 border-red-800' : 
+          isResourceNode ? 'bg-emerald-950/95 border-emerald-800' :
+          'bg-zinc-950/95 border-zinc-800'
+        }`}
+      >
       {/* Glow Effect Decor */}
       <View className={`absolute -top-px left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent to-transparent ${
         isHostile ? 'via-red-500/50' : 
@@ -156,7 +157,7 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
 
       {/* Action Buttons */}
       <View className="flex-row gap-3">
-        {!isHostile && !isResourceNode && (
+        {(!isWithinHarvestRange && !isHostile) && (
           <TouchableOpacity 
             onPress={() => onFastTravel(travelDuration)}
             activeOpacity={0.8}
@@ -187,6 +188,7 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
         </TouchableOpacity>
       </View>
     </Animated.View>
+  </View>
   );
 };
 

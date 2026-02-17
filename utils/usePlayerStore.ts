@@ -23,11 +23,6 @@ export interface ZoneProfile {
 }
 
 export interface Item {
-  latitude: number;
-  longitude: number;
-}
-
-export interface Item {
   id: string;
   name: string;
   category: 'Weapon' | 'Armor' | 'Utility';
@@ -75,6 +70,22 @@ export interface GlobalNotification {
 export interface BestiaryEntry {
   encounters: number;
   defeats: number;
+  lastDefeatedAt?: number;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  level: number;
+  description: string;
+  type: 'Passive' | 'Active';
+}
+
+export interface TutorialProgress {
+  currentStep: number;
+  hasLookedAround: boolean;
+  hasTriedToRemember: boolean;
+  isTutorialActive: boolean;
 }
 
 export type SpecializationID = 'aether-bumper' | 'wildfire-mage' | 'search-and-rescue';
@@ -97,12 +108,16 @@ interface PlayerState {
     boots: Item | null;
   };
   inventory: Item[];
+  skills: Skill[];
   reputation: ReputationState;
   discoveredZones: Record<string, ZoneProfile>;
   activeQuests: Quest[];
   hostileSignals: Signal[];
   resourceNodes: ResourceNode[];
   bestiary: Record<string, BestiaryEntry>;
+  tutorialProgress: TutorialProgress;
+  tutorialMarker: { coords: Coords; label: string } | null;
+  choicesLog: string[];
   enrolledFaction: string | null;
   specialization: SpecializationID | null;
   setBonus: { name: string; bonus: Record<string, number> } | null;
@@ -116,10 +131,12 @@ interface PlayerState {
   addItem: (item: Item) => void;
   removeItem: (itemId: string) => void;
   equipItem: (item: Item) => void;
+  learnSkill: (skill: Skill) => void;
   updateReputation: (factionId: string, delta: number) => void;
   saveZoneProfile: (profile: ZoneProfile) => void;
   rest: () => void;
   updateQuestProgress: (id: string, amount: number) => void;
+  startQuest: (quest: Quest) => void;
   completeQuest: (id: string) => void;
   enrollInFaction: (factionId: string) => void;
   setSpecialization: (specId: SpecializationID) => void;
@@ -136,6 +153,9 @@ interface PlayerState {
   triggerSaving: () => void;
   cleanupZones: () => void;
   resetStore: () => void;
+  updateTutorial: (progress: Partial<TutorialProgress>) => void;
+  clearTutorialMarker: () => void;
+  logChoice: (choice: string) => void;
 }
 
 const INITIAL_LOCATION = {
@@ -178,7 +198,19 @@ const STARTING_QUEST: Quest = {
   biomeRequirement: 'Rust Fields',
   isCompleted: false,
   rewardXp: 150,
-  rewardGold: 200,
+  rewardGold: 1500,
+};
+
+const TUTORIAL_QUEST: Quest = {
+  id: 'q-tutorial-dogs',
+  title: 'Defeat Mutated Dogs',
+  description: 'Cleanse the perimeter of the remaining 5 mutated manifestations.',
+  targetCount: 5,
+  currentCount: 0,
+  biomeRequirement: 'Shattered Suburbia',
+  isCompleted: false,
+  rewardXp: 200,
+  rewardGold: 5,
 };
 
 export const usePlayerStore = create<PlayerState>()(
@@ -190,23 +222,38 @@ export const usePlayerStore = create<PlayerState>()(
       maxXp: 100,
       hp: 100,
       maxHp: 100,
-      mana: 50,
-      maxMana: 50,
-      gold: 150,
-      attack: BASE_ATTACK + (STARTING_WEAPON.stats?.attack || 0),
-      defense: BASE_DEFENSE + (STARTING_ARMOR.stats?.defense || 0),
+      mana: 20,
+      maxMana: 20,
+      gold: 0,
+      attack: BASE_ATTACK,
+      defense: BASE_DEFENSE,
             equipment: {
-              weapon: STARTING_WEAPON,
-              armor: STARTING_ARMOR,
+              weapon: null,
+              armor: null,
               boots: null,
             },
-            inventory: [STARTING_WEAPON, STARTING_ARMOR],
+            inventory: [],
+            skills: [],
             reputation: INITIAL_REPUTATION,
             discoveredZones: {},
-            activeQuests: [STARTING_QUEST],
+            activeQuests: [],
             hostileSignals: [],
             resourceNodes: [],
             bestiary: {},
+            tutorialProgress: {
+              currentStep: 0,
+              hasLookedAround: false,
+              hasTriedToRemember: false,
+              isTutorialActive: true,
+            },
+            tutorialMarker: {
+              coords: {
+                latitude: INITIAL_LOCATION.latitude + 0.00225, // approx 250m north
+                longitude: INITIAL_LOCATION.longitude
+              },
+              label: "Glowing Blue Orb"
+            },
+            choicesLog: [],
             enrolledFaction: null,
                   specialization: null,
                   setBonus: null,
@@ -280,6 +327,15 @@ export const usePlayerStore = create<PlayerState>()(
                 setBonus: activeSetBonus
               };
             }),
+            learnSkill: (skill) => set((state) => {
+              const existingIndex = state.skills.findIndex(s => s.id === skill.id);
+              if (existingIndex > -1) {
+                const newSkills = [...state.skills];
+                newSkills[existingIndex] = skill;
+                return { skills: newSkills };
+              }
+              return { skills: [...state.skills, skill] };
+            }),
             updateReputation: (factionId, delta) => set((state) => ({
               reputation: {
                 ...state.reputation,
@@ -305,6 +361,10 @@ export const usePlayerStore = create<PlayerState>()(
           return q;
         });
         return { activeQuests: updatedQuests };
+      }),
+      startQuest: (quest) => set((state) => {
+        if (state.activeQuests.find(q => q.id === quest.id)) return state;
+        return { activeQuests: [...state.activeQuests, quest] };
       }),
       completeQuest: (id) => set((state) => {
         const quest = state.activeQuests.find(q => q.id === id);
@@ -398,7 +458,11 @@ export const usePlayerStore = create<PlayerState>()(
         return {
           bestiary: {
             ...state.bestiary,
-            [enemyName]: { ...entry, defeats: entry.defeats + 1 }
+            [enemyName]: { 
+              ...entry, 
+              defeats: entry.defeats + 1,
+              lastDefeatedAt: Date.now()
+            }
           }
         };
       }),
@@ -482,23 +546,37 @@ export const usePlayerStore = create<PlayerState>()(
         maxXp: 100,
         hp: 100,
         maxHp: 100,
-        mana: 50,
-        maxMana: 50,
-        gold: 150,
-        attack: BASE_ATTACK + (STARTING_WEAPON.stats?.attack || 0),
-        defense: BASE_DEFENSE + (STARTING_ARMOR.stats?.defense || 0),
+        mana: 20,
+        maxMana: 20,
+        gold: 0,
+        attack: BASE_ATTACK,
+        defense: BASE_DEFENSE,
         equipment: {
-          weapon: STARTING_WEAPON,
-          armor: STARTING_ARMOR,
+          weapon: null,
+          armor: null,
           boots: null,
         },
-        inventory: [STARTING_WEAPON, STARTING_ARMOR],
+        inventory: [],
         reputation: INITIAL_REPUTATION,
         discoveredZones: {},
-        activeQuests: [STARTING_QUEST],
+        activeQuests: [],
         hostileSignals: [],
         resourceNodes: [],
         bestiary: {},
+        tutorialProgress: {
+          currentStep: 0,
+          hasLookedAround: false,
+          hasTriedToRemember: false,
+          isTutorialActive: true,
+        },
+        tutorialMarker: {
+          coords: {
+            latitude: INITIAL_LOCATION.latitude + 0.00225,
+            longitude: INITIAL_LOCATION.longitude
+          },
+          label: "Glowing Blue Orb"
+        },
+        choicesLog: [],
         enrolledFaction: null,
         specialization: null,
         setBonus: null,
@@ -507,6 +585,11 @@ export const usePlayerStore = create<PlayerState>()(
         homeCityName: "Altona North",
         sanctuaryLocation: INITIAL_LOCATION,
       }),
+      updateTutorial: (progress) => set((state) => ({
+        tutorialProgress: { ...state.tutorialProgress, ...progress }
+      })),
+      clearTutorialMarker: () => set({ tutorialMarker: null }),
+      logChoice: (choice) => set((state) => ({ choicesLog: [...state.choicesLog, choice] })),
     }),
     {
       name: 'aeternis-player-storage',
