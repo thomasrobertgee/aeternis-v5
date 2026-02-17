@@ -37,6 +37,7 @@ import { useIsFocused } from '@react-navigation/native';
 import BoundaryService from '../../utils/BoundaryService';
 import { useTravelStore } from '../../utils/useTravelStore';
 import { useUIStore } from '../../utils/useUIStore';
+import { useDungeonStore } from '../../utils/useDungeonStore';
 import SoundService from '../../utils/SoundService';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
@@ -348,6 +349,12 @@ export default function ExploreScreen() {
 
   const handleEnterAction = async () => {
     if (!selectedZone) return;
+    if (selectedZone.suburb === "MILLERS JUNCTION DEPTHS") {
+      useDungeonStore.getState().enterDungeon("MILLERS JUNCTION DEPTHS");
+      router.push('/dungeon');
+      setSelectedZone(null);
+      return;
+    }
     if (selectedZone.isTutorialMarker) {
       const distance = getDistance(playerLocation, selectedZone.coords) * 1000;
       if (distance <= 100) {

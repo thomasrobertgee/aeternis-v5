@@ -14,6 +14,8 @@ interface CombatState {
   maxPlayerHp: number;
   playerMana: number;
   maxPlayerMana: number;
+  playerAttack: number;
+  playerDefense: number;
   enemyHp: number;
   maxEnemyHp: number;
   enemyName: string;
@@ -41,6 +43,8 @@ export const useCombatStore = create<CombatState>((set) => ({
   maxPlayerHp: 100,
   playerMana: 50,
   maxPlayerMana: 50,
+  playerAttack: 10,
+  playerDefense: 5,
   enemyHp: 0,
   maxEnemyHp: 0,
   enemyName: '',
@@ -53,26 +57,45 @@ export const useCombatStore = create<CombatState>((set) => ({
   turnCount: 1,
   combatLogs: [],
 
-  initiateCombat: (enemyName, enemyMaxHp, playerHp, maxPlayerHp, playerMana, maxPlayerMana, sourceId, damageModifier = 1.0, biome) => set({
-    enemyName,
-    enemyHp: enemyMaxHp,
-    maxEnemyHp: enemyMaxHp,
-    playerHp: playerHp,
-    maxPlayerHp: maxPlayerHp,
-    playerMana: playerMana,
-    maxPlayerMana: maxPlayerMana,
-    sourceId,
-    damageModifier,
-    biome,
-    isInCombat: true,
-    isPlayerTurn: true,
-    turnCount: 1,
-    combatLogs: [{
-      id: Math.random().toString(),
-      message: `A ${enemyName} manifests from the static!`,
-      type: 'system'
-    }],
-  }),
+  initiateCombat: (enemyName, enemyMaxHp, playerHp, maxPlayerHp, playerMana, maxPlayerMana, sourceId, damageModifier = 1.0, biome) => {
+    const playerStore = usePlayerStore.getState();
+    const mods = playerStore.dungeonModifiers || [];
+    
+    let finalMaxHp = maxPlayerHp;
+    let finalMaxMana = maxPlayerMana;
+    let finalAttack = playerStore.attack;
+    let finalDefense = playerStore.defense;
+
+    mods.forEach(mod => {
+      if (mod.stat === 'maxHp') finalMaxHp = Math.floor(finalMaxHp * mod.value);
+      if (mod.stat === 'maxMana') finalMaxMana = Math.floor(finalMaxMana * mod.value);
+      if (mod.stat === 'attack') finalAttack = Math.floor(finalAttack * mod.value);
+      if (mod.stat === 'defense') finalDefense = Math.floor(finalDefense * mod.value);
+    });
+
+    set({
+      enemyName,
+      enemyHp: enemyMaxHp,
+      maxEnemyHp: enemyMaxHp,
+      playerHp: Math.min(playerHp, finalMaxHp),
+      maxPlayerHp: finalMaxHp,
+      playerMana: Math.min(playerMana, finalMaxMana),
+      maxPlayerMana: finalMaxMana,
+      playerAttack: finalAttack,
+      playerDefense: finalDefense,
+      sourceId,
+      damageModifier,
+      biome,
+      isInCombat: true,
+      isPlayerTurn: true,
+      turnCount: 1,
+      combatLogs: [{
+        id: Math.random().toString(),
+        message: `A ${enemyName} manifests from the static!`,
+        type: 'system'
+      }],
+    });
+  },
 
   updateHp: (target, amount) => set((state) => {
     if (target === 'player') {

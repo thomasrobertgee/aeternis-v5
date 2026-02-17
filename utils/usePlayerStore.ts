@@ -6,6 +6,7 @@ import { BiomeType, FactionType } from './BiomeMapper';
 import { LOOT_ITEMS } from './LootTable';
 import { useUIStore } from './useUIStore';
 import { ZoneSynthesis, ZoneNPC } from './ZoneSynthesizer';
+import { DungeonModifier } from './useDungeonStore';
 
 interface Coords {
   latitude: number;
@@ -126,8 +127,10 @@ interface PlayerState {
   homeCityName: string;
   sanctuaryLocation: Coords | null;
   isSaving: boolean;
+  dungeonModifiers: DungeonModifier[];
   setPlayerLocation: (location: Coords) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
+  setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
   gainXp: (amount: number) => void;
   addItem: (item: Item) => void;
   removeItem: (itemId: string) => void;
@@ -263,8 +266,10 @@ export const usePlayerStore = create<PlayerState>()(
                               homeCityName: "Altona North",
                               sanctuaryLocation: INITIAL_LOCATION,
                               isSaving: false,
+                              dungeonModifiers: [],
             
                               setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+                              setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
             gainXp: (amount) => set((state) => {
               let newXp = state.xp + amount;
               let newLevel = state.level;
@@ -590,6 +595,7 @@ export const usePlayerStore = create<PlayerState>()(
         homeCityName: "Altona North",
         sanctuaryLocation: INITIAL_LOCATION,
         isSaving: false,
+        dungeonModifiers: [],
       }),
       updateTutorial: (progress) => set((state) => ({
         tutorialProgress: { ...state.tutorialProgress, ...progress }

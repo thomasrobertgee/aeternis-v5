@@ -20,10 +20,12 @@ import { useRouter } from 'expo-router';
 import { getDistance, formatDistance } from '../../utils/MathUtils';
 import * as Haptics from 'expo-haptics';
 import SoundService from '../../utils/SoundService';
+import { useDungeonStore } from '../../utils/useDungeonStore';
 
 export default function BattleScreen() {
   const router = useRouter();
   const player = usePlayerStore();
+  const dungeon = useDungeonStore();
   const { activeWorldEvent } = useUIStore();
   const { hostileSignals, removeSignal, recordEncounter, recordDefeat } = player;
   
@@ -36,6 +38,8 @@ export default function BattleScreen() {
     maxPlayerHp, 
     playerMana, 
     maxPlayerMana,
+    playerAttack,
+    playerDefense,
     combatLogs,
     isPlayerTurn,
     updateHp,
@@ -171,7 +175,13 @@ export default function BattleScreen() {
           });
           endCombat();
           setIsResolving(false);
-          router.replace('/explore');
+          
+          if (dungeon.isInsideDungeon) {
+            dungeon.nextStage();
+            router.replace('/dungeon');
+          } else {
+            router.replace('/explore');
+          }
         }, 2500);
         return;
       }
@@ -219,6 +229,11 @@ export default function BattleScreen() {
         });
         endCombat();
         setIsResolving(false);
+
+        if (dungeon.isInsideDungeon) {
+          dungeon.nextStage();
+          router.replace('/dungeon');
+        }
       }, 2500);
     }
 
@@ -230,7 +245,13 @@ export default function BattleScreen() {
         setGlobalStats({ hp: 10, mana: 10 }); // Weakened state
         endCombat();
         setIsResolving(false);
-        router.push('/explore');
+        
+        if (dungeon.isInsideDungeon) {
+          dungeon.exitDungeon();
+          router.replace('/explore');
+        } else {
+          router.push('/explore');
+        }
       }, 3000);
     }
   }, [enemyHp, playerHp]);
@@ -243,7 +264,7 @@ export default function BattleScreen() {
     const isCrit = Math.random() < 0.15;
     const critMult = isCrit ? 1.75 : 1;
     
-    const baseDmg = player.attack + Math.floor(Math.random() * 5);
+    const baseDmg = playerAttack + Math.floor(Math.random() * 5);
     const damage = Math.floor(baseDmg * (damageModifier || 1.0) * critMult);
     
     if (isCrit) {
@@ -271,7 +292,7 @@ export default function BattleScreen() {
     const isCrit = Math.random() < 0.15;
     const critMult = isCrit ? 1.75 : 1;
     
-    const baseDmg = Math.floor(player.attack * 1.5) + Math.floor(Math.random() * 5);
+    const baseDmg = Math.floor(playerAttack * 1.5) + Math.floor(Math.random() * 5);
     const damage = Math.floor(baseDmg * (damageModifier || 1.0) * critMult);
     
     if (isCrit) {
@@ -309,16 +330,16 @@ export default function BattleScreen() {
       const timer = setTimeout(() => {
         const baseDamage = 15 + Math.floor(Math.random() * 8);
         const eventMult = activeWorldEvent?.difficultyMultiplier || 1.0;
-        const damage = Math.max(1, Math.floor(baseDamage * eventMult) - player.defense);
+        const damage = Math.max(1, Math.floor(baseDamage * eventMult) - playerDefense);
         
         triggerScreenFlash();
         updateHp('player', -damage);
-        addLog(`The ${enemyName} retaliates! ${damage} damage received (${player.defense} blocked).${eventMult > 1 ? ' (Event Boost)' : ''}`, 'enemy');
+        addLog(`The ${enemyName} retaliates! ${damage} damage received (${playerDefense} blocked).${eventMult > 1 ? ' (Event Boost)' : ''}`, 'enemy');
         nextTurn();
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [isPlayerTurn, isInCombat, isResolving, player.defense, activeWorldEvent]);
+  }, [isPlayerTurn, isInCombat, isResolving, playerDefense, activeWorldEvent]);
 
   if (!isInCombat) {
     return (
