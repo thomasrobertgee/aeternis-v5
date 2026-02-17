@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { BiomeType } from './BiomeMapper';
+import { usePlayerStore } from './usePlayerStore';
 
 export interface CombatLog {
   id: string;
@@ -76,6 +77,7 @@ export const useCombatStore = create<CombatState>((set) => ({
   updateHp: (target, amount) => set((state) => {
     if (target === 'player') {
       const newHp = Math.max(0, Math.min(state.maxPlayerHp, state.playerHp + amount));
+      usePlayerStore.getState().setStats({ hp: newHp });
       return { playerHp: newHp };
     } else {
       const newHp = Math.max(0, Math.min(state.maxEnemyHp, state.enemyHp + amount));
@@ -83,9 +85,11 @@ export const useCombatStore = create<CombatState>((set) => ({
     }
   }),
 
-  updateMana: (amount) => set((state) => ({
-    playerMana: Math.max(0, Math.min(state.maxPlayerMana, state.playerMana + amount))
-  })),
+  updateMana: (amount) => set((state) => {
+    const newMana = Math.max(0, Math.min(state.maxPlayerMana, state.playerMana + amount));
+    usePlayerStore.getState().setStats({ mana: newMana });
+    return { playerMana: newMana };
+  }),
 
   nextTurn: () => set((state) => ({
     isPlayerTurn: !state.isPlayerTurn,

@@ -5,6 +5,7 @@ import { Package, Sword, Shield, Zap, X, ChevronRight, Hammer } from 'lucide-rea
 import Animated, { FadeIn, FadeInDown, SlideInUp } from 'react-native-reanimated';
 import { getRarityColor } from '../../utils/Constants';
 import { useRouter } from 'expo-router';
+import { useCombatStore } from '../../utils/useCombatStore';
 
 const { width } = Dimensions.get('window');
 
@@ -54,25 +55,43 @@ export default function InventoryScreen() {
     const actualItem = usePlayerStore.getState().inventory.find(i => i.name === selectedItem.name);
     if (!actualItem) return;
 
+    const combat = useCombatStore.getState();
+
     if (selectedItem.category === 'Utility') {
+      let restoreHp = 0;
+      let restoreMana = 0;
+
       if (selectedItem.name.includes('Rations')) {
-        const restoreAmount = Math.floor(maxHp * 0.2);
-        setStats({ hp: Math.min(maxHp, hp + restoreAmount) });
+        restoreHp = Math.floor(maxHp * 0.2);
       } else if (selectedItem.name.includes('Focus Potion')) {
-        const restoreAmount = Math.floor(maxMana * 0.2);
-        setStats({ mana: Math.min(maxMana, mana + restoreAmount) });
+        restoreMana = Math.floor(maxMana * 0.2);
       } else if (selectedItem.name.includes('Health Potion')) {
-        setStats({ hp: Math.min(maxHp, hp + 50) });
+        restoreHp = 50;
       } else if (selectedItem.name.includes('Mana Potion')) {
-        setStats({ mana: Math.min(maxMana, mana + 30) });
+        restoreMana = 30;
       }
+
+      if (combat.isInCombat) {
+        if (restoreHp > 0) combat.updateHp('player', restoreHp);
+        if (restoreMana > 0) combat.updateMana(restoreMana);
+        combat.addLog(`Used ${selectedItem.name}.`, 'player');
+        combat.nextTurn(); // Consumes a turn in battle
+      } else {
+        if (restoreHp > 0) setStats({ hp: Math.min(maxHp, hp + restoreHp) });
+        if (restoreMana > 0) setStats({ mana: Math.min(maxMana, mana + restoreMana) });
+      }
+
       removeItem(actualItem.id);
       setSelectedItem(null);
+      
+      if (combat.isInCombat) {
+        router.replace('/battle');
+      }
     } else {
       equipItem(actualItem);
       setSelectedItem(null);
     }
-  }, [selectedItem, hp, maxHp, mana, maxMana, setStats, removeItem, equipItem]);
+  }, [selectedItem, hp, maxHp, mana, maxMana, setStats, removeItem, equipItem, router]);
 
   const getItemIcon = (category: string, rarity: string, size = 24) => {
     const color = getRarityColor(rarity);
