@@ -15,7 +15,6 @@ import ZoneCard from '../../components/ZoneCard';
 import NarrativeView from '../../components/NarrativeView';
 import DiscoveryOverlay from '../../components/DiscoveryOverlay';
 import TransitView from '../../components/TransitView';
-import TutorialView from '../../components/TutorialView';
 import QuestTracker from '../../components/QuestTracker';
 import DialogueView from '../../components/DialogueView';
 import enrollmentDialogue from '../../assets/dialogue/faction_enrollment.json';
@@ -34,6 +33,7 @@ import Animated, {
 import { getDistance } from '../../utils/MathUtils';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { useIsFocused } from '@react-navigation/native';
 import BoundaryService from '../../utils/BoundaryService';
 import { useTravelStore } from '../../utils/useTravelStore';
 import { useUIStore } from '../../utils/useUIStore';
@@ -44,6 +44,7 @@ const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, lon
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
+  const isFocused = useIsFocused();
   const { playerLocation, setPlayerLocation, rest, hasSetHomeCity, homeCityName, sanctuaryLocation, enrolledFaction, specialization, level, hostileSignals, setHostileSignals, respawnSignals, triggerRift, saveZoneProfile, cleanupZones, tutorialProgress, updateTutorial, tutorialMarker } = usePlayerStore();
   const { initiateCombat } = useCombatStore();
   const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName, totalTravelDuration } = useTravelStore();
@@ -61,7 +62,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = false; // tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 34);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -146,19 +147,27 @@ export default function ExploreScreen() {
   // Force markers to redraw once when they change
   const [shouldTrackMarkers, setShouldTrackMarkers] = useState(true);
   useEffect(() => {
+    setShouldTrackMarkers(true);
+  }, [hostileSignals, tutorialMarker]);
+
+  useEffect(() => {
     if (shouldTrackMarkers) {
       const timer = setTimeout(() => setShouldTrackMarkers(false), 1000);
       return () => clearTimeout(timer);
     }
-  }, [hostileSignals, tutorialMarker, shouldTrackMarkers]);
+  }, [shouldTrackMarkers]);
 
-  // Resume tutorial if at narrative checkpoints
+  // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
     const checkpoints = [18, 23, 29, 33, 35];
-    if (checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
-      updateTutorial({ isTutorialActive: true });
+    if (isFocused && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
+      // Add a small delay to ensure navigation has completed before resuming overlay
+      const timer = setTimeout(() => {
+        if (isFocused) updateTutorial({ isTutorialActive: true });
+      }, 500);
+      return () => clearTimeout(timer);
     }
-  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
+  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused]);
 
   // Handle step 22 (spawn tutorial enemy)
   useEffect(() => {
@@ -172,18 +181,14 @@ export default function ExploreScreen() {
         id: 'tutorial-dog-signal',
         coords: dogCoords,
         biome: BiomeType.SHATTERED_SUBURBIA,
-        type: 'Standard' // I will change the logic below to use ID instead of type for better filtering
+        type: 'Standard'
       }]);
-      
-      // No longer auto-zooming here to prevent over-zoom bug. User has manual control.
     }
   }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
 
-  // Handle step 34 (spawn 5 tutorial dogs)
+  // Handle step 33 (spawn 5 tutorial dogs)
   useEffect(() => {
-    // We trigger the spawn when isTutorialActive is FALSE and we are at step 34
-    // (This is after the 'really, five more dogs?' narrative finishes)
-    if (tutorialProgress.currentStep === 34 && !tutorialProgress.isTutorialActive) {
+    if (tutorialProgress.currentStep === 33 && !tutorialProgress.isTutorialActive) {
       const offsets = [
         { lat: 0.00225, lon: 0 },
         { lat: -0.00225, lon: 0 },
@@ -430,12 +435,12 @@ export default function ExploreScreen() {
         }}
       >
         {currentSuburbPolygon && <Polygon coordinates={currentSuburbPolygon} fillColor={biomeColors.fill} strokeColor={biomeColors.stroke} strokeWidth={4} zIndex={1} />}
-        {level < 10 && <Polygon coordinates={WORLD_BOUNDARY} holes={homeCityHoles} fillColor="rgba(0, 0, 0, 0.7)" strokeColor="transparent" strokeWidth={0} tappable={false} zIndex={2} />}
+        {(level < 10 && tutorialProgress.currentStep >= 36) && <Polygon coordinates={WORLD_BOUNDARY} holes={homeCityHoles} fillColor="rgba(0, 0, 0, 0.7)" strokeColor="transparent" strokeWidth={0} tappable={false} zIndex={2} />}
         <Circle center={playerLocation} radius={50} fillColor="rgba(6, 182, 212, 0.2)" strokeColor="rgba(6, 182, 212, 0.8)" strokeWidth={2} zIndex={2} />
         
         {tutorialMarker && (
           <React.Fragment key="tutorial-marker">
-            <Marker coordinate={tutorialMarker.coords} anchor={{ x: 0.5, y: 0.5 }} zIndex={60} tracksViewChanges={shouldTrackMarkers} onPress={(e) => { e.stopPropagation(); setSelectedZone({ suburb: "Glowing Blue Orb", biome: BiomeType.SHATTERED_SUBURBIA, faction: FactionType.IRON_CONSORTIUM, description: "A floating sphere of pure Imaginum energy. It seems to be responding to your presence.", coords: tutorialMarker.coords, isHostile: false, isTutorialMarker: true }); }}>
+            <Marker coordinate={tutorialMarker.coords} anchor={{ x: 0.5, y: 0.5 }} zIndex={60} tracksViewChanges={true} onPress={(e) => { e.stopPropagation(); setSelectedZone({ suburb: "Glowing Blue Orb", biome: BiomeType.SHATTERED_SUBURBIA, faction: FactionType.IRON_CONSORTIUM, description: "A floating sphere of pure Imaginum energy. It seems to be responding to your presence.", coords: tutorialMarker.coords, isHostile: false, isTutorialMarker: true }); }}>
               <View style={markerStyles.container}>
                 <Animated.View 
                   style={[
@@ -461,7 +466,7 @@ export default function ExploreScreen() {
                 coordinate={signal.coords} 
                 anchor={{ x: 0.5, y: 0.5 }} 
                 zIndex={isTutorialEnemy ? 100 : (signal.type === 'Boss' ? 30 : 20)} 
-                tracksViewChanges={shouldTrackMarkers} 
+                tracksViewChanges={isTutorialEnemy ? true : shouldTrackMarkers} 
                 onPress={(e) => { if (isTutorialRestricted && !isTutorialEnemy) return; e.stopPropagation(); handleMapPress({ nativeEvent: { coordinate: signal.coords } } as any); }}
               >
                 <View style={markerStyles.container}>

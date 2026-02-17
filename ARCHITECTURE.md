@@ -78,9 +78,12 @@ Manages real-time turn-based encounters.
     *   **Map Controls**: Recenter is always available; Scanning/Rifts unlock after the tutorial.
 *   **State Persistence**: `tutorialProgress` is stored in the `usePlayerStore` and persisted via `AsyncStorage`, maintaining the narrative position across sessions.
 *   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`) act as mandatory interaction points to progress the story.
+*   **Dynamic Map Restrictions**: Level-gated "Fog of War" and interaction locks are dynamically disabled during active tutorial steps to ensure a smooth onboarding experience.
+*   **Pathname-Aware Visibility**: The narrative overlay is contextually restricted to the Map and Title screens, preventing interference with character management or inventory tasks.
 *   **Combat Integration**:
     *   **Contextual Header**: "Back to Battle" button appears when navigating away from active combat.
     *   **Tutorial Loot**: Guaranteed Health/Mana potions and Aetium drops for tutorial encounters.
+    *   **Weapon Rebalancing**: Initial makeshift weapons (e.g., Small Car Door) are categorized as Weapons with attack stats to ensure fair early-game combat.
 *   **Cinematic Feedback**: 
     *   **Adaptive Typewriter**: Rhythmic text reveal with light haptic sync.
     *   **Transition Points**: Full-screen white flash transitions (`flashOpacity`) during high-resonance events (e.g., touching the orb).

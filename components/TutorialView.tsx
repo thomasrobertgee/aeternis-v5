@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useRouter, usePathname } from 'expo-router';
 import { useUIStore } from '../utils/useUIStore';
 
 const { width, height } = Dimensions.get('window');
@@ -223,13 +223,24 @@ const TUTORIAL_STEPS = [
     text: "really, five more dogs?",
     choices: [{ label: "prepare for battle", nextStep: 34, updates: { isTutorialActive: false } }],
     icon: <Skull size={32} color="#ef4444" />
+  },
+  {
+    text: "the mutated dogs are upon you! engage them on the map to defend yourself.",
+    choices: [],
+    icon: <Skull size={32} color="#ef4444" />
+  },
+  {
+    text: "you've done it. the perimeter is clear. the Fracture has recognized your presence. your journey has truly begun.\n\nwelcome to the fracture, traveller.",
+    choices: [{ label: "finish tutorial", updates: { currentStep: 36, isTutorialActive: false } }],
+    icon: <Sparkles size={32} color="#10b981" />
   }
 ];
 
 const TutorialView = () => {
   const router = useRouter();
+  const pathname = usePathname();
   const setHeroTab = useUIStore(s => s.setHeroTab);
-  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill } = usePlayerStore();
+  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem } = usePlayerStore();
   
   const currentStep = tutorialProgress.currentStep;
   const isTutorialActive = tutorialProgress.isTutorialActive;
@@ -319,6 +330,7 @@ const TutorialView = () => {
     if (choice.isHeroTrigger) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       setHeroTab(choice.nextStep === 33 ? 'Quests' : 'Stats');
+      // Set the step but DON'T activate the tutorial overlay yet.
       updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
       router.replace('/(tabs)/character');
       return;
@@ -338,7 +350,8 @@ const TutorialView = () => {
         rewardGold: 5,
       });
       setHeroTab('Quests');
-      updateTutorial({ isTutorialActive: false, currentStep: 33 });
+      // Set the step but DON'T activate the tutorial overlay yet.
+      updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
       router.replace('/(tabs)/character');
       return;
     }
@@ -352,13 +365,14 @@ const TutorialView = () => {
         item = { id: 'tutorial-stick', name: 'Large Heavy Stick', category: 'Weapon', rarity: 'Common', description: 'A sturdy branch that feels surprisingly balanced.', stats: { attack: 5 } };
         skill = { id: 'skill-heavy-strike', name: 'Heavy Strike', level: 1, description: 'A powerful overhead swing using your makeshift club.', type: 'Active' };
       } else if (choice.weaponId === 'door') {
-        item = { id: 'tutorial-door', name: 'Small Car Door', category: 'Armor', rarity: 'Common', description: 'A rusted sheet of metal with a handle.', stats: { defense: 5 } };
+        item = { id: 'tutorial-door', name: 'Small Car Door', category: 'Weapon', rarity: 'Common', description: 'A rusted sheet of metal with a handle.', stats: { attack: 5 } };
         skill = { id: 'skill-shield-bash', name: 'Shield Bash', level: 1, description: 'Slam your metal barrier into the enemy to daze them.', type: 'Active' };
       } else if (choice.weaponId === 'rocks') {
         item = { id: 'tutorial-rocks', name: 'Bag of Jagged Rocks', category: 'Weapon', rarity: 'Common', description: 'Sharp pieces of concrete and flint.', stats: { attack: 4 } };
         skill = { id: 'skill-rock-toss', name: 'Rock Toss', level: 1, description: 'Hurl jagged debris at enemies from a safe distance.', type: 'Active' };
       }
       addItem(item);
+      equipItem(item);
       learnSkill(skill);
       updateTutorial({ currentStep: 21 });
       return;
@@ -371,7 +385,9 @@ const TutorialView = () => {
     }
   };
 
-  if (!isTutorialActive || !step) return null;
+  // Only show tutorial on explore (map), battle, or title screen
+  const isAllowedPath = pathname === '/' || pathname === '/explore' || pathname === '/battle' || pathname.includes('(tabs)/explore');
+  if (!isTutorialActive || !step || !isAllowedPath) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 10000 }]}>
@@ -379,7 +395,7 @@ const TutorialView = () => {
         entering={FadeIn.duration(800)}
         exiting={FadeOut.duration(500)}
         style={StyleSheet.absoluteFill}
-        className="bg-black/95 items-center justify-center p-10"
+        className="bg-black items-center justify-center p-10"
       >
         <Animated.View 
           style={[StyleSheet.absoluteFill, flashStyle, { backgroundColor: 'white', zIndex: 10001 }]} 

@@ -138,6 +138,11 @@ export default function BattleScreen() {
         let goldLoot = 1;
         addLog(`Recovered ${goldLoot} Aetium from the remains.`, 'system');
         
+        // Remove from map immediately
+        if (sourceId) {
+          removeSignal(sourceId);
+        }
+        
         // Guaranteed both potions for any tutorial dog
         const hpPotion = { id: `hp-pot-${Date.now()}`, name: 'Health Potion', category: 'Utility', rarity: 'Common', description: 'Restores 50 HP.' };
         const mpPotion = { id: `mp-pot-${Date.now()}`, name: 'Mana Potion', category: 'Utility', rarity: 'Common', description: 'Restores 30 MP.' };
