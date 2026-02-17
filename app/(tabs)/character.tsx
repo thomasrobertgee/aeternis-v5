@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useUIStore } from '../../utils/useUIStore';
-import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity } from 'lucide-react-native';
+import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity, Navigation } from 'lucide-react-native';
 import { getRarityColor } from '../../utils/Constants';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { ENEMY_DATABASE, BOSS_DATABASE } from '../../utils/EnemyFactory';
