@@ -297,9 +297,13 @@ export const usePlayerStore = create<PlayerState>()(
             addItem: (item) => set((state) => ({ 
               inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }] 
             })),
-            removeItem: (itemId) => set((state) => ({
-              inventory: state.inventory.filter(i => i.id !== itemId)
-            })),
+            removeItem: (itemId) => set((state) => {
+              const index = state.inventory.findIndex(i => i.id === itemId);
+              if (index === -1) return state;
+              const newInventory = [...state.inventory];
+              newInventory.splice(index, 1);
+              return { inventory: newInventory };
+            }),
             equipItem: (item) => set((state) => {
               const newEquipment = { ...state.equipment };
               if (item.category === 'Weapon') newEquipment.weapon = item;

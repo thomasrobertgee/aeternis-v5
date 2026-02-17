@@ -8,6 +8,10 @@ import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
+interface StackedItem extends Item {
+  count: number;
+}
+
 export default function InventoryScreen() {
   const router = useRouter();
   const inventory = usePlayerStore((state) => state.inventory);
@@ -20,22 +24,35 @@ export default function InventoryScreen() {
   const maxMana = usePlayerStore((state) => state.maxMana);
   const mana = usePlayerStore((state) => state.mana);
 
-  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [selectedItem, setSelectedItem] = useState<StackedItem | null>(null);
 
   const categories = useMemo(() => {
-    const groups: Record<string, Item[]> = {
+    const groups: Record<string, StackedItem[]> = {
       'Weapon': [],
       'Armor': [],
       'Utility': []
     };
+    
     inventory.forEach(item => {
-      if (groups[item.category]) groups[item.category].push(item);
+      if (groups[item.category]) {
+        // Find existing stack
+        const existing = groups[item.category].find(i => i.name === item.name);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          groups[item.category].push({ ...item, count: 1 });
+        }
+      }
     });
     return groups;
   }, [inventory]);
 
   const handleAction = useCallback(() => {
     if (!selectedItem) return;
+
+    // Find the ACTUAL item instance in the store's inventory array (since we've grouped them in UI)
+    const actualItem = usePlayerStore.getState().inventory.find(i => i.name === selectedItem.name);
+    if (!actualItem) return;
 
     if (selectedItem.category === 'Utility') {
       if (selectedItem.name.includes('Rations')) {
@@ -49,10 +66,10 @@ export default function InventoryScreen() {
       } else if (selectedItem.name.includes('Mana Potion')) {
         setStats({ mana: Math.min(maxMana, mana + 30) });
       }
-      removeItem(selectedItem.id);
+      removeItem(actualItem.id);
       setSelectedItem(null);
     } else {
-      equipItem(selectedItem);
+      equipItem(actualItem);
       setSelectedItem(null);
     }
   }, [selectedItem, hp, maxHp, mana, maxMana, setStats, removeItem, equipItem]);
@@ -66,13 +83,14 @@ export default function InventoryScreen() {
     }
   };
 
-  const isEquipped = (item: Item) => {
-    return equipment.weapon?.id === item.id || 
-           equipment.armor?.id === item.id || 
-           equipment.boots?.id === item.id;
+  const isEquipped = (item: StackedItem) => {
+    // Check if ANY item with this name is equipped
+    return (equipment.weapon && equipment.weapon.name === item.name) || 
+           (equipment.armor && equipment.armor.name === item.name) || 
+           (equipment.boots && equipment.boots.name === item.name);
   };
 
-  const renderItemCard = (item: Item, index: number) => {
+  const renderItemCard = (item: StackedItem, index: number) => {
     const rColor = getRarityColor(item.rarity);
     const equipped = isEquipped(item);
 
@@ -88,7 +106,7 @@ export default function InventoryScreen() {
             { transform: [{ scale: pressed ? 0.98 : 1 }] }
           ]}
           className={`bg-zinc-900/50 border ${
-            selectedItem?.id === item.id ? 'border-cyan-500 bg-zinc-900' : 'border-zinc-800'
+            selectedItem?.name === item.name ? 'border-cyan-500 bg-zinc-900' : 'border-zinc-800'
           } rounded-[24px] p-4 flex-row items-center`}
         >
           <View 
@@ -100,7 +118,12 @@ export default function InventoryScreen() {
 
           <View className="flex-1 ml-4">
             <View className="flex-row items-center justify-between mb-1">
-              <Text className="text-white font-bold text-base">{item.name}</Text>
+              <View className="flex-row items-center">
+                <Text className="text-white font-bold text-base mr-2">{item.name}</Text>
+                {item.count > 1 && (
+                  <Text className="text-cyan-500 font-black text-xs">x{item.count}</Text>
+                )}
+              </View>
               {equipped && (
                 <View className="bg-emerald-500/20 px-2 py-0.5 rounded-md border border-emerald-500/30">
                   <Text className="text-emerald-500 text-[6px] font-black uppercase">Equipped</Text>

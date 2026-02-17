@@ -52,6 +52,7 @@ Manages real-time turn-based encounters.
 *   **Active Zone Highlight**: The current suburb is rendered with a **Light Grey** overlay (`rgba(212, 212, 216, 0.25)`) using high-fidelity OSM polygons.
 *   **Hostile Signal Manifestation**: Enemies appear as scaling red markers within the zone. Spawning is restricted to the interior of the current polygon via **Rejection Sampling**.
 *   **Manual Radar**: "Scan Area" action generates new manifestations around the player's current location.
+*   **Item Stacking**: Identical items (by name and category) are automatically stacked in the inventory, displaying a multiplier (e.g., x2) to conserve screen space and improve legibility.
 *   **Combat Loop**: Automated AI turn cycle with visual feedback and **Critical Hit** logic (15% chance for 1.75x damage).
 *   **Haptic Feedback**: Heavy impact haptics on critical hits; success notifications on quest turn-ins.
 *   **Sound System**: `SoundService` manages low-drone ambient world music and high-tension battle tracks.
