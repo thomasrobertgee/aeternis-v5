@@ -20,7 +20,7 @@ const MARKET_STOCK: MarketItem[] = [
       description: 'A vibro-sword that hums with harvested Imaginum. Cuts through static like paper.',
       stats: { attack: 25 },
     },
-    price: 500,
+    price: 1,
   },
   {
     item: {
@@ -31,7 +31,7 @@ const MARKET_STOCK: MarketItem[] = [
       description: 'Lightweight composite armor used by pre-Collapse orbital security.',
       stats: { defense: 15 },
     },
-    price: 450,
+    price: 1,
   },
   {
     item: {
@@ -42,7 +42,7 @@ const MARKET_STOCK: MarketItem[] = [
       description: 'Stabilized kinetic footwear. Completes the Plasteel protection suite.',
       stats: { defense: 10 },
     },
-    price: 350,
+    price: 1,
   },
   {
     item: {
@@ -53,7 +53,7 @@ const MARKET_STOCK: MarketItem[] = [
       description: 'A blade that exists partially in the static. Its strikes ignore physical density.',
       stats: { attack: 45 },
     },
-    price: 1500,
+    price: 1,
   },
   {
     item: {
@@ -63,7 +63,7 @@ const MARKET_STOCK: MarketItem[] = [
       rarity: 'Rare',
       description: 'A viscous, indigo liquid that sharpens the mind and stabilizes your connection to the Imaginum.',
     },
-    price: 100,
+    price: 1,
   },
   {
     item: {
@@ -73,7 +73,7 @@ const MARKET_STOCK: MarketItem[] = [
       rarity: 'Common',
       description: 'Vacuum-sealed nutrition from before The Collapse. Tastes like cardboard, but it keeps you going.',
     },
-    price: 80,
+    price: 1,
   },
 ];
 
