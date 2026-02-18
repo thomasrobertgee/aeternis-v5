@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, TouchableWithoutFeedback, TextInput } from 'react-native';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import Animated, { 
   FadeIn, 
@@ -270,9 +270,74 @@ const TUTORIAL_STEPS = [
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "congrats you completed the dungeon and for now this is the end of the tutorial",
-    choices: [{ label: "finish", updates: { isTutorialActive: false, currentStep: 45 } }],
-    icon: <Sparkles size={32} color="#10b981" />
+    text: "after exiting the dungeon, you hear a shuffling of footsteps.",
+    choices: [{ label: "draw your weapon", nextStep: 45 }],
+    icon: <Skull size={32} color="#ef4444" />
+  },
+  {
+    text: "\"Wait, wait! I mean you no harm\" a figure steps out from behind an old dumpster. he is a man, old, wearing old tattered clothing.",
+    choices: [{ label: "who are you?", nextStep: 46 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"my name is jeff, and i just wanted to say thank you for clearing the dungeon, you are the first to do it since the The Collapse\"",
+    choices: [{ label: "The Collapse?", nextStep: 47 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "jeff looks at you with a puzzled expression. \"what do you mean? you don't know what the Collapse is?\"",
+    choices: [{ label: "no", nextStep: 48 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "jeff's eyes grow wide, his voice excited. \"then you must be one of these famous 'Otherworlders' i keep hearing about!\"",
+    choices: [{ label: "otherwordlers?", nextStep: 49 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"yes, otherworlder, someone who has travelled from another world, from theirs into ours. does that sound familiar?\"",
+    choices: [{ label: "yep that sounds like me", nextStep: 50 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"Fantastic! I mean not for you probably, i hear you guys have a hard time, randomly getting summoned from your home into a strange place and all that\"",
+    choices: [{ label: "why are you so excited?", nextStep: 51 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"Because for us, who live here, you otherworlders are our only chance at a more peaceful life.\"",
+    choices: [{ label: "explain?", nextStep: 52 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"These dungeons, these monsters, these things in our world that to you seem like that are from a game, only otherworlders like yourself have the power, to interact with them, to defeat them. and when you defeat them, things naturally become better for us\"",
+    choices: [{ label: "keep listening", nextStep: 53 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "jeff continues. \"we don't know why you were summoned, we don't know your purpose beyond defeating what you come across, but we are always grateful for it. which is why i wanted to say thanks, and give you this\"",
+    choices: [{ label: "continue", nextStep: 54, isAetiumReward: true }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "Jeff presents to you a small pouch, you take it and open it up, inside are multiple aetium crystals. as soon as you hold them, they shimmer out of existence. jeff watches this, again his eyes growing wide.",
+    choices: [{ label: "you look at jeff", nextStep: 55 }],
+    icon: <Package size={32} color="#f59e0b" />
+  },
+  {
+    text: "\"sorry, i just wanted to be completely sure. these crystals are what we used to trade in our world, and only with otherworlders do they disappear when held.\"",
+    choices: [{ label: "so desu ney...", nextStep: 56 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"anyway, what is your name, otherworlder?\"",
+    choices: [{ label: "my name is...", isNameTrigger: true, nextStep: 57 }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "\"nice to meet you {name}. listen, i'm from a settlement not far from here, there are others who you can talk to, vendors who sell supplies, and apparently you can set it as a 'safe respawn' or whatever that means.\"",
+    choices: [{ label: "lead the way", updates: { isTutorialActive: false, currentStep: 58 } }],
+    icon: <User size={32} color="#a855f7" />
   }
 ];
 
@@ -280,8 +345,11 @@ const TutorialView = () => {
   const router = useRouter();
   const pathname = usePathname();
   const setHeroTab = useUIStore(s => s.setHeroTab);
-  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem } = usePlayerStore();
+  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem, setStats, gold, setPlayerName, playerName } = usePlayerStore();
   
+  const [nameInput, setNameInput] = useState("");
+  const [showNameInput, setShowNameInput] = useState(false);
+
   const currentStep = tutorialProgress.currentStep;
   const isTutorialActive = tutorialProgress.isTutorialActive;
 
@@ -302,8 +370,8 @@ const TutorialView = () => {
       else if (weaponChoice === 'rocks') weaponName = "group of rocks";
       return `you pick up the ${weaponName}, just as the mutated dog charges at you`;
     }
-    return baseText;
-  }, [choicesLog]);
+    return baseText.replace('{name}', playerName);
+  }, [choicesLog, playerName]);
 
   useEffect(() => {
     if (isTutorialActive && step) {
@@ -416,6 +484,17 @@ const TutorialView = () => {
       return;
     }
 
+    if (choice.isAetiumReward) {
+      setStats({ gold: gold + 500 });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+
+    if (choice.isNameTrigger) {
+      setNameInput("");
+      setShowNameInput(true);
+      return;
+    }
+
     if (choice.isWeaponChoice) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       logChoice(`weapon_${choice.weaponId}`);
@@ -476,6 +555,32 @@ const TutorialView = () => {
               <Text className="text-cyan-50/90 text-xl leading-[34px] font-serif italic text-left">
                 {displayedText}
               </Text>
+              
+              {showNameInput && (
+                <View className="mt-6 flex-row items-center gap-4">
+                  <TextInput
+                    value={nameInput}
+                    onChangeText={setNameInput}
+                    placeholder="Enter name..."
+                    placeholderTextColor="#3f3f46"
+                    className="flex-1 bg-black/40 border border-cyan-500/20 rounded-xl px-4 py-3 text-white font-bold"
+                    autoFocus
+                  />
+                  <Pressable 
+                    onPress={() => {
+                      if (nameInput.trim().length > 0) {
+                        setPlayerName(nameInput.trim());
+                        setShowNameInput(false);
+                        updateTutorial({ currentStep: step.choices[0].nextStep });
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                      }
+                    }}
+                    className="bg-cyan-600 px-6 py-3 rounded-xl"
+                  >
+                    <Text className="text-white font-black text-xs uppercase">Save</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
           </TouchableWithoutFeedback>
 

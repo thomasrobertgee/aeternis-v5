@@ -133,9 +133,9 @@ const PlayerHeader = () => {
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-white text-3xl font-black mb-1">Traveller Profile</Text>
+              <Text className="text-white text-3xl font-black mb-1">{player.playerName}</Text>
               <Text className="text-zinc-500 font-bold uppercase tracking-[4px] text-[10px] mb-8">
-                Fracture Synchronization Active
+                Fracture Profile Synchronization
               </Text>
 
               <View className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 mb-8">

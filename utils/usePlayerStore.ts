@@ -123,12 +123,14 @@ interface PlayerState {
   specialization: SpecializationID | null;
   setBonus: { name: string; bonus: Record<string, number> } | null;
   globalNotification: GlobalNotification | null;
+  playerName: string;
   hasSetHomeCity: boolean;
   homeCityName: string;
   sanctuaryLocation: Coords | null;
   isSaving: boolean;
   dungeonModifiers: DungeonModifier[];
   setPlayerLocation: (location: Coords) => void;
+  setPlayerName: (name: string) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
   setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
   gainXp: (amount: number) => void;
@@ -262,13 +264,15 @@ export const usePlayerStore = create<PlayerState>()(
                   specialization: null,
                   setBonus: null,
                         globalNotification: null,
+                              playerName: "Traveller",
                               hasSetHomeCity: true,
                               homeCityName: "Altona North",
                               sanctuaryLocation: INITIAL_LOCATION,
                               isSaving: false,
                               dungeonModifiers: [],
             
-                              setPlayerLocation: (location) => set({ playerLocation: location }),      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+                              setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
+                              setStats: (stats) => set((state) => ({ ...state, ...stats })),
                               setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
             gainXp: (amount) => set((state) => {
               let newXp = state.xp + amount;
@@ -591,6 +595,7 @@ export const usePlayerStore = create<PlayerState>()(
         specialization: null,
         setBonus: null,
         globalNotification: null,
+        playerName: "Traveller",
         hasSetHomeCity: true,
         homeCityName: "Altona North",
         sanctuaryLocation: INITIAL_LOCATION,

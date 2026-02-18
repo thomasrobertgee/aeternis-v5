@@ -24,7 +24,8 @@ export default function CharacterScreen() {
     setBonus,
     bestiary,
     activeQuests,
-    discoveredZones
+    discoveredZones,
+    playerName
   } = usePlayerStore();
 
   const getFactionColor = (id: string) => {
@@ -78,7 +79,7 @@ export default function CharacterScreen() {
         <View className="w-24 h-24 bg-cyan-500/10 rounded-full items-center justify-center border-2 border-cyan-500/30 mb-4">
           <User size={48} color="#06b6d4" />
         </View>
-        <Text className="text-white text-3xl font-black tracking-tight">The Traveller</Text>
+        <Text className="text-white text-3xl font-black tracking-tight">{playerName}</Text>
         <View className="flex-row items-center mt-1">
           <Text className="text-cyan-500 font-bold uppercase tracking-[4px] text-[10px]">
             Lvl {level} Fracture-Linked

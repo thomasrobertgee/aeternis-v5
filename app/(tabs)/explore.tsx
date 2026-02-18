@@ -43,6 +43,7 @@ import SoundService from '../../utils/SoundService';
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
 
 const MILLERS_JUNCTION_DEPTHS_COORDS = { latitude: -37.84405, longitude: 144.84356 };
+const ALTONA_GATE_COORDS = { latitude: -37.828, longitude: 144.847 };
 
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
@@ -65,7 +66,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 44);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 44 || tutorialProgress.currentStep === 58);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -185,7 +186,7 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
-    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 39, 41, 43, 44];
+    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 39, 41, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
     if (isFocused && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
       // Add a small delay to ensure navigation has completed before resuming overlay
       const timer = setTimeout(() => {
@@ -509,6 +510,32 @@ export default function ExploreScreen() {
             <View style={markerStyles.container}>
               <View className="w-8 h-8 bg-purple-900/40 rounded-full items-center justify-center border-2 border-purple-500 shadow-lg shadow-purple-500">
                 <Flame size={18} color="#a855f7" />
+              </View>
+            </View>
+          </Marker>
+        )}
+
+        {tutorialProgress.currentStep >= 58 && (
+          <Marker 
+            coordinate={ALTONA_GATE_COORDS} 
+            anchor={{ x: 0.5, y: 0.5 }} 
+            zIndex={70} 
+            tracksViewChanges={true} 
+            onPress={(e) => { 
+              e.stopPropagation(); 
+              setSelectedZone({ 
+                suburb: "ALTONA GATE SETTLEMENT", 
+                biome: BiomeType.SHATTERED_SUBURBIA, 
+                faction: FactionType.NEO_TECHNOCRATS, 
+                description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
+                coords: ALTONA_GATE_COORDS, 
+                isHostile: false 
+              }); 
+            }}
+          >
+            <View style={markerStyles.container}>
+              <View className="w-8 h-8 bg-emerald-900/40 rounded-full items-center justify-center border-2 border-emerald-500 shadow-lg shadow-emerald-500">
+                <Home size={18} color="#10b981" />
               </View>
             </View>
           </Marker>
