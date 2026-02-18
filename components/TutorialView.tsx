@@ -268,6 +268,11 @@ const TUTORIAL_STEPS = [
     text: "the paths have been taken over by nature, the buildings are crumbling, and where the roundabout used to be that connected the buildings is a dark wide pit, with stairs leading downwards. you assume that is the entrance to the depths",
     choices: [{ label: "proceed", updates: { isTutorialActive: false, currentStep: 43 } }],
     icon: <Sparkles size={32} color="#06b6d4" />
+  },
+  {
+    text: "congrats you completed the dungeon and for now this is the end of the tutorial",
+    choices: [{ label: "finish", updates: { isTutorialActive: false, currentStep: 45 } }],
+    icon: <Sparkles size={32} color="#10b981" />
   }
 ];
 

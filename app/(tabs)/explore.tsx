@@ -65,7 +65,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 44);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -185,7 +185,7 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
-    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 39, 41, 43];
+    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 39, 41, 43, 44];
     if (isFocused && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
       // Add a small delay to ensure navigation has completed before resuming overlay
       const timer = setTimeout(() => {

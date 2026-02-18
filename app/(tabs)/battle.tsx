@@ -231,8 +231,16 @@ export default function BattleScreen() {
         setIsResolving(false);
 
         if (dungeon.isInsideDungeon) {
-          dungeon.nextStage();
-          router.replace('/dungeon');
+          if (dungeon.currentStage === 10) {
+            // Dungeon Cleared!
+            updateQuestProgress('q-millers-junction-depths', 1);
+            player.updateTutorial({ currentStep: 44, isTutorialActive: true });
+            dungeon.exitDungeon();
+            router.replace('/explore');
+          } else {
+            dungeon.nextStage();
+            router.replace('/dungeon');
+          }
         }
       }, 2500);
     }
