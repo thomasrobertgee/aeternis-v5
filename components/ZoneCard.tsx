@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
-import { X, MapPin, Compass, ShieldAlert, Sword, Cloud, Package, Hammer } from 'lucide-react-native';
+import { X, MapPin, Compass, ShieldAlert, Sword, Cloud, Package, Hammer, Skull, Flame } from 'lucide-react-native';
 import Animated, { 
   useSharedValue, 
   useAnimatedStyle, 
