@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useUIStore } from '../../utils/useUIStore';
-import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity, Navigation } from 'lucide-react-native';
+import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity, Navigation, Gift } from 'lucide-react-native';
 import { getRarityColor } from '../../utils/Constants';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { ENEMY_DATABASE, BOSS_DATABASE } from '../../utils/EnemyFactory';
-
+import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+
 
 type HeroTab = 'Stats' | 'Skills' | 'Quests' | 'Codex';
 
@@ -25,7 +26,9 @@ export default function CharacterScreen() {
     bestiary,
     activeQuests,
     discoveredZones,
-    playerName
+    playerName,
+    tutorialProgress,
+    completeQuest
   } = usePlayerStore();
 
   const getFactionColor = (id: string) => {
@@ -41,21 +44,21 @@ export default function CharacterScreen() {
           name: 'Aether-Bumper', 
           role: 'Tank', 
           icon: <Shield size={20} color="#06b6d4" />,
-          desc: '+50 Max Vitality, +20% Defense' 
+          desc: '+50 Max Health, +20% Defense' 
         };
       case 'wildfire-mage':
         return { 
           name: 'Wildfire-Mage', 
           role: 'DPS', 
           icon: <Flame size={20} color="#ef4444" />,
-          desc: '+50 Max Imaginum, +20% Attack' 
+          desc: '+50 Max Mana, +20% Attack' 
         };
       case 'search-and-rescue':
         return { 
           name: 'Search-and-Rescue', 
           role: 'Support', 
           icon: <Zap size={20} color="#10b981" />,
-          desc: '+25 Max Vitality, +25 Max Imaginum' 
+          desc: '+25 Max Health, +25 Max Mana' 
         };
       default:
         return null;
@@ -98,14 +101,14 @@ export default function CharacterScreen() {
       {/* Core Stats Grid */}
       <View className="flex-row flex-wrap gap-4 mb-8">
         <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
-          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Vitality</Text>
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Health</Text>
           <Text className="text-white font-bold text-lg">{hp} / {maxHp}</Text>
           <View className="h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
             <View className="h-full bg-red-500" style={{ width: `${(hp/maxHp)*100}%` }} />
           </View>
         </View>
         <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
-          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Imaginum</Text>
+          <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Mana</Text>
           <Text className="text-white font-bold text-lg">{mana} / {maxMana}</Text>
           <View className="h-1 bg-zinc-800 rounded-full mt-2 overflow-hidden">
             <View className="h-full bg-cyan-500" style={{ width: `${(mana/maxMana)*100}%` }} />
@@ -225,41 +228,43 @@ export default function CharacterScreen() {
       </View>
 
       {/* Faction Standing Section */}
-      <View className="mb-10">
-        <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-4 px-1">
-          Faction Standing
-        </Text>
+      {tutorialProgress.currentStep >= 58 && (
+        <View className="mb-10">
+          <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-4 px-1">
+            Faction Standing
+          </Text>
 
-        <View className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-white font-bold">The Cogwheel</Text>
-            <Text className="text-amber-500 font-mono text-[10px] font-bold uppercase tracking-widest">
-              REP: {reputation['the-cogwheel'] || 0}
-            </Text>
+          <View className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-white font-bold">The Cogwheel</Text>
+              <Text className="text-amber-500 font-mono text-[10px] font-bold uppercase tracking-widest">
+                REP: {reputation['the-cogwheel'] || 0}
+              </Text>
+            </View>
+            <View className="h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <View 
+                className="h-full bg-amber-500 shadow-lg shadow-amber-500/50" 
+                style={{ width: `${Math.min(((reputation['the-cogwheel'] || 0) % 1000) / 10, 100)}%` }} 
+              />
+            </View>
           </View>
-          <View className="h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
-            <View 
-              className="h-full bg-amber-500 shadow-lg shadow-amber-500/50" 
-              style={{ width: `${Math.min(((reputation['the-cogwheel'] || 0) % 1000) / 10, 100)}%` }} 
-            />
+
+          <View className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl">
+            <View className="flex-row justify-between items-center mb-3">
+              <Text className="text-white font-bold">The Verdant</Text>
+              <Text className="text-emerald-500 font-mono text-[10px] font-bold uppercase tracking-widest">
+                REP: {reputation['the-verdant'] || 0}
+              </Text>
+            </View>
+            <View className="h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <View 
+                className="h-full bg-emerald-500 shadow-lg shadow-emerald-500/50" 
+                style={{ width: `${Math.min(((reputation['the-verdant'] || 0) % 1000) / 10, 100)}%` }} 
+              />
+            </View>
           </View>
         </View>
-
-        <View className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl">
-          <View className="flex-row justify-between items-center mb-3">
-            <Text className="text-white font-bold">The Verdant</Text>
-            <Text className="text-emerald-500 font-mono text-[10px] font-bold uppercase tracking-widest">
-              REP: {reputation['the-verdant'] || 0}
-            </Text>
-          </View>
-          <View className="h-2 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
-            <View 
-              className="h-full bg-emerald-500 shadow-lg shadow-emerald-500/50" 
-              style={{ width: `${Math.min(((reputation['the-verdant'] || 0) % 1000) / 10, 100)}%` }} 
-            />
-          </View>
-        </View>
-      </View>
+      )}
     </Animated.View>
   );
 
@@ -324,7 +329,19 @@ export default function CharacterScreen() {
                 {quest.isCompleted && <Zap size={12} color="#10b981" />}
               </View>
             </View>
-            {quest.id === 'q-millers-junction-depths' && (
+            {quest.isCompleted && (
+              <TouchableOpacity 
+                onPress={() => {
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  completeQuest(quest.id);
+                }}
+                className="mt-4 bg-emerald-600 h-12 rounded-xl flex-row items-center justify-center shadow-lg shadow-emerald-900/20"
+              >
+                <Gift size={16} color="#fff" className="mr-2" />
+                <Text className="text-white font-black text-xs uppercase tracking-[4px]">Complete Quest</Text>
+              </TouchableOpacity>
+            )}
+            {quest.id === 'q-millers-junction-depths' && !quest.isCompleted && (
               <TouchableOpacity 
                 onPress={() => router.replace('/(tabs)/explore')}
                 className="mt-4 bg-purple-600/20 border border-purple-500/40 p-4 rounded-2xl flex-row items-center justify-center"

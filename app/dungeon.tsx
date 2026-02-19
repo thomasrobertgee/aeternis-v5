@@ -87,7 +87,7 @@ export default function DungeonScreen() {
       router.push('/battle');
     } else {
       player.rest();
-      Alert.alert("Rest Area", "You find a moment of peace. Your Vitality and Imaginum have been restored.");
+      Alert.alert("Rest Area", "You find a moment of peace. Your Vitality and MP have been restored.");
       dungeon.nextStage();
     }
     setIsActionProcessing(false);

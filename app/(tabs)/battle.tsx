@@ -140,7 +140,10 @@ export default function BattleScreen() {
       if (isTutorialDog || isMultiTutorialDog) {
         // Special Tutorial Logic
         let goldLoot = 1;
+        let xpReward = isTutorialDog ? 100 : 50;
+        
         addLog(`Recovered ${goldLoot} Aetium from the remains.`, 'system');
+        addLog(`Synchronization improved (+${xpReward} XP)`, 'system');
         
         // Remove from map immediately
         if (sourceId) {
@@ -159,8 +162,8 @@ export default function BattleScreen() {
           updateQuestProgress('q-tutorial-dogs', 1);
 
           const quest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-tutorial-dogs');
-          if (quest && quest.currentCount + 1 >= quest.targetCount) {
-            player.updateTutorial({ currentStep: 35, isTutorialActive: false }); // Narrative checkpoint
+          if (quest && quest.currentCount >= quest.targetCount) {
+            player.updateTutorial({ currentStep: 35, isTutorialActive: true }); // Narrative checkpoint
           }
         } else {
           player.updateTutorial({ currentStep: 23, isTutorialActive: false }); // Narrative checkpoint
@@ -173,6 +176,7 @@ export default function BattleScreen() {
             mana: playerMana,
             gold: currentGold + goldLoot
           });
+          gainXp(xpReward);
           endCombat();
           setIsResolving(false);
           
@@ -221,12 +225,12 @@ export default function BattleScreen() {
       
       setTimeout(() => {
         const currentGold = usePlayerStore.getState().gold;
-        gainXp(xpGained);
         setGlobalStats({ 
           hp: playerHp, 
           mana: playerMana,
           gold: currentGold + goldLoot
         });
+        gainXp(xpGained);
         endCombat();
         setIsResolving(false);
 
@@ -234,7 +238,7 @@ export default function BattleScreen() {
           if (dungeon.currentStage === 10) {
             // Dungeon Cleared!
             updateQuestProgress('q-millers-junction-depths', 1);
-            player.updateTutorial({ currentStep: 44, isTutorialActive: true });
+            player.updateTutorial({ currentStep: 44, isTutorialActive: false });
             dungeon.exitDungeon();
             router.replace('/explore');
           } else {

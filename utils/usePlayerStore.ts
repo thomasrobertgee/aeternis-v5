@@ -129,10 +129,14 @@ interface PlayerState {
   sanctuaryLocation: Coords | null;
   isSaving: boolean;
   dungeonModifiers: DungeonModifier[];
+  settings: {
+    musicEnabled: boolean;
+  };
   setPlayerLocation: (location: Coords) => void;
   setPlayerName: (name: string) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
   setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
+  toggleMusic: () => void;
   gainXp: (amount: number) => void;
   addItem: (item: Item) => void;
   removeItem: (itemId: string) => void;
@@ -270,10 +274,16 @@ export const usePlayerStore = create<PlayerState>()(
                               sanctuaryLocation: INITIAL_LOCATION,
                               isSaving: false,
                               dungeonModifiers: [],
+                              settings: {
+                                musicEnabled: true,
+                              },
             
                               setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
                               setStats: (stats) => set((state) => ({ ...state, ...stats })),
                               setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
+                              toggleMusic: () => set((state) => ({
+                                settings: { ...state.settings, musicEnabled: !state.settings.musicEnabled }
+                              })),
             gainXp: (amount) => set((state) => {
               let newXp = state.xp + amount;
               let newLevel = state.level;
@@ -282,6 +292,8 @@ export const usePlayerStore = create<PlayerState>()(
               let newMaxMana = state.maxMana;
               let newHp = state.hp;
               let newMana = state.mana;
+              let newAttack = state.attack;
+              let newDefense = state.defense;
       
               while (newXp >= newMaxXp) {
                 newXp -= newMaxXp;
@@ -289,8 +301,14 @@ export const usePlayerStore = create<PlayerState>()(
                 newMaxXp = Math.floor(newMaxXp * 1.5);
                 newMaxHp += 20;
                 newMaxMana += 10;
-                newHp = newMaxHp; 
-                newMana = newMaxMana; 
+                newAttack += 2;
+                newDefense += 1;
+              }
+
+              // Fully restore to new maximums if a level was gained
+              if (newLevel > state.level) {
+                newHp = newMaxHp;
+                newMana = newMaxMana;
               }
       
               return { 
@@ -300,7 +318,9 @@ export const usePlayerStore = create<PlayerState>()(
                 maxHp: newMaxHp, 
                 maxMana: newMaxMana,
                 hp: newHp,
-                mana: newMana
+                mana: newMana,
+                attack: newAttack,
+                defense: newDefense
               };
             }),
             addItem: (item) => set((state) => ({ 
@@ -601,6 +621,9 @@ export const usePlayerStore = create<PlayerState>()(
         sanctuaryLocation: INITIAL_LOCATION,
         isSaving: false,
         dungeonModifiers: [],
+        settings: {
+          musicEnabled: true,
+        },
       }),
       updateTutorial: (progress) => set((state) => ({
         tutorialProgress: { ...state.tutorialProgress, ...progress }

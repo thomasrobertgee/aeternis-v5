@@ -1,4 +1,5 @@
 import { Audio } from 'expo-av';
+import { usePlayerStore } from './usePlayerStore';
 
 const AMBIENT_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'; // Placeholder low drone
 const BATTLE_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'; // Placeholder tense track
@@ -7,7 +8,6 @@ class SoundService {
   private static instance: SoundService;
   private ambientSound: Audio.Sound | null = null;
   private battleSound: Audio.Sound | null = null;
-  private isMuted: boolean = false;
 
   private constructor() {}
 
@@ -31,7 +31,11 @@ class SoundService {
   }
 
   public async playAmbient() {
-    if (this.isMuted) return;
+    const isEnabled = usePlayerStore.getState().settings.musicEnabled;
+    if (!isEnabled) {
+      await this.stopAll();
+      return;
+    }
     try {
       if (this.battleSound) {
         await this.battleSound.stopAsync();
@@ -52,7 +56,11 @@ class SoundService {
   }
 
   public async playBattle() {
-    if (this.isMuted) return;
+    const isEnabled = usePlayerStore.getState().settings.musicEnabled;
+    if (!isEnabled) {
+      await this.stopAll();
+      return;
+    }
     try {
       if (this.ambientSound) {
         await this.ambientSound.pauseAsync();
@@ -73,7 +81,8 @@ class SoundService {
   }
 
   public async playCrit() {
-    if (this.isMuted) return;
+    const isEnabled = usePlayerStore.getState().settings.musicEnabled;
+    if (!isEnabled) return;
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' }, // Placeholder SFX
@@ -91,7 +100,8 @@ class SoundService {
   }
 
   public async playScan() {
-    if (this.isMuted) return;
+    const isEnabled = usePlayerStore.getState().settings.musicEnabled;
+    if (!isEnabled) return;
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri: 'https://github.com/rafaelrinaldi/sonar/raw/master/sonar.mp3' }, // Reliable Sonar SFX

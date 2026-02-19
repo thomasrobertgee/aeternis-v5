@@ -11,7 +11,7 @@ import Animated, {
   Easing,
   runOnJS
 } from 'react-native-reanimated';
-import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll } from 'lucide-react-native';
+import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll, User, Package } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter, usePathname } from 'expo-router';
 import { useUIStore } from '../utils/useUIStore';
@@ -230,44 +230,47 @@ const TUTORIAL_STEPS = [
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "you've done it. the perimeter is clear. the Fracture has recognized your presence. your journey has truly begun.\n\nwelcome to the fracture, traveller.",
-    choices: [{ label: "finish tutorial", nextStep: 36 }],
-    icon: <Sparkles size={32} color="#10b981" />
-  },
-  {
     text: "you collapse on the ground, now truly exhausted",
-    choices: [{ label: "catch your breath, again", nextStep: 37 }],
+    choices: [{ label: "catch your breath, again", nextStep: 36 }],
     icon: <Activity size={32} color="#06b6d4" />
   },
   {
     text: "you hear another 'ding', and notice you have a new notification",
-    choices: [{ label: "read the new notification", nextStep: 38 }],
+    choices: [{ label: "read the new notification", nextStep: 37 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
     text: "it reads 'you have unlocked the marketplace'",
-    choices: [{ label: "marketplace..?", isMarketTrigger: true, nextStep: 39 }],
+    choices: [{ label: "marketplace..?", isMarketTrigger: true, nextStep: 38 }],
     icon: <Briefcase size={32} color="#06b6d4" />
   },
   {
     text: "after browsing through the marketplace, you hear another 'ding'.",
-    choices: [{ label: "look at the notification", nextStep: 40 }],
+    choices: [{ label: "look at the notification", nextStep: 39 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
     text: "the notification says 'dungeon MILLERS JUNCTION DEPTHS unlocked'. you hear another 'ding', this time its for a new quest",
-    choices: [{ label: "check quests", isQuestTrigger: true, nextStep: 41 }],
+    choices: [{ label: "check quests", isQuestTrigger: true, nextStep: 40 }],
     icon: <Scroll size={32} color="#f59e0b" />
   },
   {
     text: "you arrive at Millers Junction, however it is completely different from how you remember it.",
-    choices: [{ label: "take a look around", nextStep: 42 }],
+    choices: [{ label: "take a look around", nextStep: 41 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
     text: "the paths have been taken over by nature, the buildings are crumbling, and where the roundabout used to be that connected the buildings is a dark wide pit, with stairs leading downwards. you assume that is the entrance to the depths",
-    choices: [{ label: "proceed", updates: { isTutorialActive: false, currentStep: 43 } }],
+    choices: [{ 
+      label: "proceed", 
+      updates: { isTutorialActive: false, currentStep: 43 },
+    }],
     icon: <Sparkles size={32} color="#06b6d4" />
+  },
+  {
+    text: "Active Dungeon: Clear the depths to proceed.",
+    choices: [],
+    icon: <Skull size={32} color="#ef4444" />
   },
   {
     text: "after exiting the dungeon, you hear a shuffling of footsteps.",
@@ -349,6 +352,7 @@ const TutorialView = () => {
   
   const [nameInput, setNameInput] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);
+  const pendingNextStepRef = useRef<number | null>(null);
 
   const currentStep = tutorialProgress.currentStep;
   const isTutorialActive = tutorialProgress.isTutorialActive;
@@ -453,7 +457,7 @@ const TutorialView = () => {
 
     if (choice.isQuestTrigger) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      if (currentStep === 40) {
+      if (currentStep === 39) {
         startQuest({
           id: 'q-millers-junction-depths',
           title: 'Clear Millers Junction Depths',
@@ -492,6 +496,7 @@ const TutorialView = () => {
     if (choice.isNameTrigger) {
       setNameInput("");
       setShowNameInput(true);
+      pendingNextStepRef.current = choice.nextStep;
       return;
     }
 
@@ -517,7 +522,9 @@ const TutorialView = () => {
       return;
     }
 
-    if (choice.updates) updateTutorial(choice.updates);
+    if (choice.updates) {
+      updateTutorial(choice.updates);
+    }
     if (choice.nextStep !== undefined) {
       updateTutorial({ currentStep: choice.nextStep });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -571,8 +578,10 @@ const TutorialView = () => {
                       if (nameInput.trim().length > 0) {
                         setPlayerName(nameInput.trim());
                         setShowNameInput(false);
-                        updateTutorial({ currentStep: step.choices[0].nextStep });
+                        const nextStep = pendingNextStepRef.current || currentStep + 1;
+                        updateTutorial({ currentStep: nextStep, isTutorialActive: true });
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                        pendingNextStepRef.current = null;
                       }
                     }}
                     className="bg-cyan-600 px-6 py-3 rounded-xl"
@@ -584,7 +593,7 @@ const TutorialView = () => {
             </View>
           </TouchableWithoutFeedback>
 
-          {step.choices && step.choices.length > 0 ? (
+          {step.choices && step.choices.length > 0 && !showNameInput ? (
             <View className="w-full gap-4">
               {step.choices.map((choice, i) => {
                 const isDone = choice.isSticky && choice.updates && Object.keys(choice.updates).every(k => (tutorialProgress as any)[k]);
@@ -605,11 +614,17 @@ const TutorialView = () => {
                 );
               })}
             </View>
-          ) : (
+          ) : !showNameInput ? (
             <Pressable 
               hitSlop={10}
               onPress={() => {
                 if (!finishTyping()) {
+                  // Prevent skipping the active dungeon phase (Step 43)
+                  if (currentStep === 43) {
+                    updateTutorial({ isTutorialActive: false });
+                    return;
+                  }
+                  
                   if (currentStep < TUTORIAL_STEPS.length - 1) updateTutorial({ currentStep: currentStep + 1 });
                   else updateTutorial({ isTutorialActive: false });
                 }
@@ -621,7 +636,7 @@ const TutorialView = () => {
               </Text>
               <ChevronRight size={18} color="#06b6d4" />
             </Pressable>
-          )}
+          ) : null}
         </Animated.View>
         <View className="absolute inset-0 opacity-[0.03] pointer-events-none bg-zinc-400" />
       </Animated.View>

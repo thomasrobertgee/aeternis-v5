@@ -54,6 +54,7 @@ Manages real-time turn-based encounters.
 *   **Manual Radar**: "Scan Area" action generates new manifestations around the player's current location.
 *   **Item Stacking**: Identical items (by name and category) are automatically stacked in the inventory, displaying a multiplier (e.g., x2) to conserve screen space and improve legibility.
 *   **Dungeon System**: Instanced, 10-stage roguelite challenges featuring randomized choices (Enemies, Chests, Altars), fixed miniboss/boss encounters, and temporary stat modifiers that persist only within the instance.
+*   **Settlement System**: Persistent safe-zones (e.g., Altona Gate) featuring interactive NPCs, localized marketplaces for refined supplies, bulletin boards for extra-curricular contracts, and Lodges for full stat restoration.
 *   **Combat Loop**: Automated AI turn cycle with visual feedback and **Critical Hit** logic (15% chance for 1.75x damage).
 *   **Haptic Feedback**: Heavy impact haptics on critical hits; success notifications on quest turn-ins.
 *   **Sound System**: `SoundService` manages low-drone ambient world music and high-tension battle tracks.
@@ -79,7 +80,10 @@ Manages real-time turn-based encounters.
     *   **Battle/Market Tabs**: Unlocked only after completing the tutorial (Step 35).
     *   **Map Controls**: Recenter is always available; Scanning/Rifts unlock after the tutorial.
 *   **State Persistence**: `tutorialProgress` is stored in the `usePlayerStore` and persisted via `AsyncStorage`, maintaining the narrative position across sessions.
-*   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`) act as mandatory interaction points to progress the story.
+*   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`, `MILLERS_JUNCTION_DEPTHS`) act as mandatory interaction points to progress the story.
+*   **Proximity-Gated Narrative**: Critical story beats (e.g., meeting Jeff post-dungeon) utilize precise coordinate-based triggers and quest-completion checks to ensure a coherent linear experience.
+*   **Settlement Discovery**: Players are introduced to communal safe-zones through narrative guidance, providing a transition from survival to progression.
+*   **Character Identity**: Integrates a name-selection interface within the tutorial flow, persisting the identity across the HUD and status screens.
 *   **Dynamic Map Restrictions**: Level-gated "Fog of War" and interaction locks are dynamically disabled during active tutorial steps to ensure a smooth onboarding experience.
 *   **Pathname-Aware Visibility**: The narrative overlay is contextually restricted to the Map and Title screens, preventing interference with character management or inventory tasks.
 *   **Combat Integration**:

@@ -45,6 +45,12 @@ export default function InventoryScreen() {
         }
       }
     });
+
+    // Sort each category alphabetically by name
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => a.name.localeCompare(b.name));
+    });
+
     return groups;
   }, [inventory]);
 

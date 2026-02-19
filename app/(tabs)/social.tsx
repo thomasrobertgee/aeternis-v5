@@ -53,7 +53,7 @@ const MARKET_STOCK: MarketItem[] = [
       description: 'A blade that exists partially in the static. Its strikes ignore physical density.',
       stats: { attack: 45 },
     },
-    price: 1,
+    price: 7,
   },
   {
     item: {

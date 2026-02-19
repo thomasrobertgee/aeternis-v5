@@ -25,7 +25,7 @@ const QuestTracker = () => {
   const rewardHint = getRewardHint();
 
   return (
-    <View className="absolute top-[40%] right-4 w-48 z-10">
+    <View className="absolute top-24 right-4 w-48 z-10">
       {activeQuests.map((quest, index) => (
         <Animated.View 
           key={quest.id}
@@ -68,7 +68,7 @@ const QuestTracker = () => {
                 className="bg-emerald-500/20 border border-emerald-500/40 py-2 rounded-xl flex-row items-center justify-center"
               >
                 <Gift size={10} color="#10b981" className="mr-2" />
-                <Text className="text-emerald-500 font-black text-[8px] uppercase tracking-widest">Turn In</Text>
+                <Text className="text-emerald-500 font-black text-[8px] uppercase tracking-widest">Complete</Text>
               </TouchableOpacity>
             )}
           </TouchableOpacity>

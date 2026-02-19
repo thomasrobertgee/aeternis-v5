@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
-import { User, X, Trash2, ShieldAlert } from 'lucide-react-native';
+import { User, X, Trash2, ShieldAlert, Settings, Music, Music2 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import Animated, { FadeIn, SlideInDown, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
 import { useRouter, usePathname } from 'expo-router';
+import SoundService from '../utils/SoundService';
 
 const PlayerHeader = () => {
   const router = useRouter();
@@ -149,6 +150,35 @@ const PlayerHeader = () => {
                 </View>
               </View>
 
+              <Text className="text-zinc-600 font-bold uppercase tracking-[3px] text-[10px] mb-4 px-1">
+                Aether-Link Settings
+              </Text>
+
+              <View className="space-y-3 mb-8">
+                <TouchableOpacity 
+                  onPress={() => {
+                    player.toggleMusic();
+                    setTimeout(() => {
+                      if (usePlayerStore.getState().settings.musicEnabled) {
+                        SoundService.playAmbient();
+                      } else {
+                        SoundService.stopAll();
+                      }
+                    }, 100);
+                  }}
+                  className={`h-16 rounded-2xl flex-row items-center px-6 border ${player.settings.musicEnabled ? 'bg-cyan-950/20 border-cyan-500/40' : 'bg-zinc-950 border-zinc-800'}`}
+                >
+                  <View className={`p-2 rounded-lg mr-4 ${player.settings.musicEnabled ? 'bg-cyan-500/20' : 'bg-zinc-900'}`}>
+                    {player.settings.musicEnabled ? <Music size={18} color="#06b6d4" /> : <Music2 size={18} color="#3f3f46" />}
+                  </View>
+                  <View className="flex-1">
+                    <Text className={`font-bold ${player.settings.musicEnabled ? 'text-white' : 'text-zinc-500'}`}>Sync Music</Text>
+                    <Text className="text-[10px] text-zinc-600 uppercase tracking-widest">{player.settings.musicEnabled ? 'Operational' : 'Disabled'}</Text>
+                  </View>
+                  <View className={`w-4 h-4 rounded-full border-2 ${player.settings.musicEnabled ? 'bg-cyan-500 border-cyan-400' : 'border-zinc-800'}`} />
+                </TouchableOpacity>
+              </View>
+
               <View className="space-y-3">
                 <TouchableOpacity 
                   onPress={handleWipeData}
@@ -171,7 +201,7 @@ const PlayerHeader = () => {
 
         {/* Health */}
         <View className="flex-1">
-          <Text className="text-emerald-500 text-[8px] font-bold uppercase tracking-widest">Vitality</Text>
+          <Text className="text-emerald-500 text-[8px] font-bold uppercase tracking-widest">Health</Text>
           <View className="h-1.5 bg-zinc-900 rounded-full mt-1 overflow-hidden border border-zinc-800">
             <View className="h-full bg-emerald-500" style={{ width: `${(currentHp / maxHp) * 100}%` }} />
           </View>
@@ -180,7 +210,7 @@ const PlayerHeader = () => {
 
         {/* Mana */}
         <View className="flex-1 mx-6">
-          <Text className="text-cyan-500 text-[8px] font-bold uppercase tracking-widest">Imaginum</Text>
+          <Text className="text-cyan-500 text-[8px] font-bold uppercase tracking-widest">Mana</Text>
           <View className="h-1.5 bg-zinc-900 rounded-full mt-1 overflow-hidden border border-zinc-800">
             <View className="h-full bg-cyan-500" style={{ width: `${(currentMana / maxMana) * 100}%` }} />
           </View>
