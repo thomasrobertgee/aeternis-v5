@@ -96,7 +96,7 @@ export default function DungeonScreen() {
   const renderStageContent = () => {
     if (currentStage === 5) {
       return (
-        <Animated.View entering={FadeInDown} className="items-center py-10">
+        <View className="items-center py-10">
           <View className="bg-red-500/10 p-8 rounded-[40px] border-2 border-red-500/30 mb-8">
             <Skull size={64} color="#ef4444" />
           </View>
@@ -108,13 +108,13 @@ export default function DungeonScreen() {
           >
             <Text className="text-white font-black uppercase tracking-widest">Engage Guardian</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       );
     }
 
     if (currentStage === 6) {
       return (
-        <Animated.View entering={FadeInDown} className="items-center py-10">
+        <View className="items-center py-10">
           <View className="bg-emerald-500/10 p-8 rounded-[40px] border-2 border-emerald-500/30 mb-8">
             <Coffee size={64} color="#10b981" />
           </View>
@@ -126,13 +126,13 @@ export default function DungeonScreen() {
           >
             <Text className="text-white font-black uppercase tracking-widest">Rest and Recover</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       );
     }
 
     if (currentStage === 10) {
       return (
-        <Animated.View entering={FadeInDown} className="items-center py-10">
+        <View className="items-center py-10">
           <View className="bg-purple-500/10 p-8 rounded-[40px] border-2 border-purple-500/30 mb-8">
             <Flame size={64} color="#a855f7" />
           </View>
@@ -144,39 +144,38 @@ export default function DungeonScreen() {
           >
             <Text className="text-white font-black uppercase tracking-widest">Purge The Sovereign</Text>
           </TouchableOpacity>
-        </Animated.View>
+        </View>
       );
     }
 
     return (
       <View className="gap-4">
         {choices.map((choice, idx) => (
-          <Animated.View key={choice.id} entering={FadeInDown.delay(idx * 100)}>
-            <TouchableOpacity 
-              onPress={() => handleChoice(choice)}
-              className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
-            >
-              <View className={`p-4 rounded-2xl mr-5 border ${
-                choice.type === 'Enemy' ? 'bg-red-500/10 border-red-500/20' :
-                choice.type === 'Chest' ? 'bg-amber-500/10 border-amber-500/20' :
-                'bg-cyan-500/10 border-cyan-500/20'
-              }`}>
-                {choice.type === 'Enemy' ? <Sword size={24} color="#ef4444" /> :
-                 choice.type === 'Chest' ? <Package size={24} color="#f59e0b" /> :
-                 <Zap size={24} color="#06b6d4" />}
-              </View>
-              <View className="flex-1">
-                <Text className={`font-black text-[8px] uppercase tracking-widest mb-1 ${
-                  choice.type === 'Enemy' ? 'text-red-500' :
-                  choice.type === 'Chest' ? 'text-amber-500' :
-                  'text-cyan-500'
-                }`}>{choice.type}</Text>
-                <Text className="text-white font-bold text-lg">{choice.title}</Text>
-                <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"{choice.description}"</Text>
-              </View>
-              <ChevronRight size={20} color="#3f3f46" />
-            </TouchableOpacity>
-          </Animated.View>
+          <TouchableOpacity 
+            key={choice.id}
+            onPress={() => handleChoice(choice)}
+            className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          >
+            <View className={`p-4 rounded-2xl mr-5 border ${
+              choice.type === 'Enemy' ? 'bg-red-500/10 border-red-500/20' :
+              choice.type === 'Chest' ? 'bg-amber-500/10 border-amber-500/20' :
+              'bg-cyan-500/10 border-cyan-500/20'
+            }`}>
+              {choice.type === 'Enemy' ? <Sword size={24} color="#ef4444" /> :
+               choice.type === 'Chest' ? <Package size={24} color="#f59e0b" /> :
+               <Zap size={24} color="#06b6d4" />}
+            </View>
+            <View className="flex-1">
+              <Text className={`font-black text-[8px] uppercase tracking-widest mb-1 ${
+                choice.type === 'Enemy' ? 'text-red-500' :
+                choice.type === 'Chest' ? 'text-amber-500' :
+                'text-cyan-500'
+              }`}>{choice.type}</Text>
+              <Text className="text-white font-bold text-lg">{choice.title}</Text>
+              <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"{choice.description}"</Text>
+            </View>
+            <ChevronRight size={20} color="#3f3f46" />
+          </TouchableOpacity>
         ))}
       </View>
     );
@@ -218,7 +217,9 @@ export default function DungeonScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-        {renderStageContent()}
+        <Animated.View key={`stage-${currentStage}`} entering={FadeInDown.duration(600)}>
+          {renderStageContent()}
+        </Animated.View>
         <View className="h-20" />
       </ScrollView>
 

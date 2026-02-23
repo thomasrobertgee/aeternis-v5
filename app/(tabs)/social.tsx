@@ -52,6 +52,7 @@ const MARKET_STOCK: MarketItem[] = [
       rarity: 'Fractured',
       description: 'A blade that exists partially in the static. Its strikes ignore physical density.',
       stats: { attack: 45 },
+      grantedSkill: { id: 'skill-void-harvest', name: 'Void Harvest', level: 1, description: 'Step through the static to deliver a strike that ignores armor.', type: 'Active' },
     },
     price: 7,
   },

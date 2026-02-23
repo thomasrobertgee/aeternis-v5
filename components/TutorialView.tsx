@@ -20,249 +20,254 @@ const { width, height } = Dimensions.get('window');
 
 const TUTORIAL_STEPS = [
   {
-    text: "you wake up, dazed...",
+    text: "You wake up, dazed...",
     choices: [
-      { label: "sit up", nextStep: 1 },
-      { label: "stand up", nextStep: 2 }
+      { label: "Sit up", nextStep: 1 },
+      { label: "Stand up", nextStep: 2 }
     ],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "your arms and legs feel weak, but with a grunt of effort, you manage to sit up",
-    choices: [{ label: "continue", nextStep: 3 }],
+    text: "Your arms and legs feel weak, but with a grunt of effort, you manage to sit up.",
+    choices: [{ label: "Continue", nextStep: 3 }],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you try to stand up, but your arms and legs feel weak. with a grunt of effort, you manage to sit up. maybe you'll try standing up when you have gained more strength",
-    choices: [{ label: "continue", nextStep: 3 }],
+    text: "You try to stand up, but your limbs feel like lead. With a grunt of effort, you manage to sit up. Maybe you'll try standing again when you've gained more strength.",
+    choices: [{ label: "Continue", nextStep: 3 }],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you are sitting on the cold ground. what will you do now?",
+    text: "You are sitting on the cold, damp ground. What will you do now?",
     choices: [
       { 
-        label: "stand up", 
-        nextStep: 6, 
+        label: "Stand up", 
+        nextStep: 7, 
         validate: (p: any) => p.hasLookedAround && p.hasTriedToRemember,
-        failText: "you try to stand up, but your arms and legs still feel weak. maybe you'll try again in a little bit"
+        failStep: 6 
       },
-      { label: "take a look around", nextStep: 4, isSticky: true, updates: { hasLookedAround: true } },
-      { label: "try to remember what happened", nextStep: 5, isSticky: true, updates: { hasTriedToRemember: true } }
+      { label: "Take a look around", nextStep: 4, isSticky: true, updates: { hasLookedAround: true } },
+      { label: "Try to remember what happened", nextStep: 5, isSticky: true, updates: { hasTriedToRemember: true } }
     ],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you take a look around. you recognise this place, but it seems different somehow. everything is unkept, nature seems to have taken over, and the air feels... strange",
-    choices: [{ label: "back", nextStep: 3 }],
+    text: "You take a look around. You recognize this place, but it seems different somehow. Everything is unkempt, nature seems to have reclaimed the world, and the air feels... strange.",
+    choices: [{ label: "Back", nextStep: 3 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "you try to remember what happened, but your memory is foggy",
-    choices: [{ label: "back", nextStep: 3 }],
+    text: "You try to remember what happened, but your memory is a thick, impenetrable fog. Only flashes of static and light remain.",
+    choices: [{ label: "Back", nextStep: 3 }],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you finally manage to stand up. once the feeling of dizziness passes, you realise you can hear a faint hum in the distance, like the sound of energy",
+    text: "You try to stand up, but your arms and legs still feel weak. Maybe you should take a moment to look around or try to clear your head first.",
+    choices: [{ label: "Back", nextStep: 3 }],
+    icon: <Brain size={32} color="#a855f7" />
+  },
+  {
+    text: "You finally manage to stand up. Once the feeling of dizziness passes, you realize you can hear a faint hum in the distance—like the sound of raw energy vibrating in the air.",
     choices: [
-      { label: "sit back down", nextStep: 7 },
-      { label: "move towards the sound", updates: { isTutorialActive: false, currentStep: 8 } }
+      { label: "Sit back down", nextStep: 8 },
+      { label: "Move towards the sound", updates: { isTutorialActive: false, currentStep: 9 } }
     ],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you sit back down. after a while you grow restless, and you stand back up",
+    text: "You sit back down. After a while you grow restless, and you stand back up, your eyes searching for the source of the noise.",
     choices: [
-      { label: "move towards the sound", updates: { isTutorialActive: false, currentStep: 8 } }
+      { label: "Move towards the sound", updates: { isTutorialActive: false, currentStep: 9 } }
     ],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "as you move closer to the sound it gets louder, and you can see what looks like a blue orb of energy rippling in the air, pulsing with every sound it makes\n\nyou keep moving towards it, and eventually you are so close you could reach out and touch it...",
+    text: "As you move closer to the sound, it grows louder. You can see what looks like a blue orb of energy rippling in the air, pulsing with every sound it makes.\n\nYou keep moving towards it, and eventually, you are so close you could reach out and touch it...",
     choices: [
-      { label: "reach out and touch the light", nextStep: 9 },
-      { label: "back away", nextStep: 10 }
+      { label: "Reach out and touch the light", nextStep: 10 },
+      { label: "Back away", nextStep: 11 }
     ],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you slowly reach out to touch the light, as you get closer your fingers start to tingle, then feel warm, the heat increases spreading throughout your whole body, suddenly its too much to bare, and there is a blinding flash of light...",
-    choices: [{ label: "continue", isFinalTouch: true }],
+    text: "You slowly reach out to touch the light. As you get closer, your fingers start to tingle, then feel warm. The heat increases, spreading throughout your whole body. Suddenly, it's too much to bear, and there is a blinding flash of light...",
+    choices: [{ label: "Continue", isFinalTouch: true }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you try to back away, but the light hypnotizes you, drawing you in",
-    choices: [{ label: "continue", nextStep: 9 }],
+    text: "You try to back away, but the light hypnotizes you, drawing you in with an irresistible pull.",
+    choices: [{ label: "Continue", nextStep: 10 }],
     icon: <Eye size={32} color="#a855f7" />
   },
   {
-    text: "you wake up, dazed...",
+    text: "You wake up, dazed... again.",
     choices: [
-      { label: "not again...", nextStep: 12 }
+      { label: "Not again...", nextStep: 13 }
     ],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "with a sigh, you sit yourself back up again. you don't feel as weak as last time. instead, you actually feel different...",
+    text: "With a sigh, you sit yourself back up. You don't feel as weak as last time. Instead, you actually feel... different.",
     choices: [
-      { label: "assess yourself", nextStep: 13 },
-      { label: "take a look around", nextStep: 14 }
+      { label: "Assess yourself", nextStep: 14 },
+      { label: "Take a look around", nextStep: 15 }
     ],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you look over your body, and you notice that underneath your skin, there appears to be a faint rippling of blue light, barely noticeable to the naked eye",
-    choices: [{ label: "continue", nextStep: 14 }],
+    text: "You look over your body and notice that underneath your skin, there appears to be a faint rippling of blue light, barely noticeable but undeniably there.",
+    choices: [{ label: "Continue", nextStep: 15 }],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you are in the area where you came across the light. you look around and don't notice anything different from before, however you notice a small glowing blue orb in the corner of your eye, no matter where you look, it persists",
+    text: "You are in the area where you came across the light. You look around and don't notice anything different from before, however, you notice a small glowing blue orb in the corner of your eye. No matter where you look, it persists.",
     choices: [
-      { label: "rub your eyes", nextStep: 15 },
-      { label: "try focus on the orb of light", nextStep: 16 }
+      { label: "Rub your eyes", nextStep: 16 },
+      { label: "Focus on the orb of light", nextStep: 17 }
     ],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "nope, its still there",
-    choices: [{ label: "back", nextStep: 14 }],
+    text: "Nope, it's still there. It seems to be projected directly onto your vision.",
+    choices: [{ label: "Back", nextStep: 15 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "you try to focus on the orb of light in your vision, and suddenly you are startled as what appears to be a large heads up display appears in front of you, like a screen from an old game you used to play",
-    choices: [{ label: "look at the screen", nextStep: 17 }],
+    text: "You try to focus on the orb of light in your vision, and suddenly you are startled as a large heads-up display appears in front of you, like a screen from an old game you used to play.",
+    choices: [{ label: "Look at the screen", nextStep: 18 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "the screen appears to have information written in another language you don't recognise, however as you focus on the characters, they start to shimmer, and are eventually replaced in a language you can read and understand.",
-    choices: [{ label: "interact with the screen", isHeroTrigger: true, nextStep: 18 }],
+    text: "The screen appears to have information written in another language you don't recognize. However, as you focus on the characters, they start to shimmer and are eventually replaced by words you can understand.",
+    choices: [{ label: "Interact with the screen", isHeroTrigger: true, nextStep: 19 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you hear a growling sound behind you",
-    choices: [{ label: "turn around", nextStep: 19 }],
+    text: "You hear a low, guttural growl behind you.",
+    choices: [{ label: "Turn around", nextStep: 20 }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "you see a what appears to be a large dog, but hideously mutated and scarred, and its slowly stalking towards you, with menace in its eyes",
-    choices: [{ label: "look around for something to defend yourself with", nextStep: 20 }],
+    text: "You see what appears to be a large dog, but it is hideously mutated and scarred. It is slowly stalking towards you with menace in its eyes.",
+    choices: [{ label: "Look for a weapon", nextStep: 21 }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "you see multiple potential weapons on the ground within reach. you rush to grab...",
+    text: "You see multiple potential weapons on the ground within reach. You rush to grab...",
     choices: [
-      { label: "a large stick", isWeaponChoice: true, weaponId: 'stick' },
-      { label: "a small car door", isWeaponChoice: true, weaponId: 'door' },
-      { label: "a group of rocks", isWeaponChoice: true, weaponId: 'rocks' }
+      { label: "A large stick", isWeaponChoice: true, weaponId: 'stick' },
+      { label: "A small car door", isWeaponChoice: true, weaponId: 'door' },
+      { label: "A group of rocks", isWeaponChoice: true, weaponId: 'rocks' }
     ],
     icon: <Briefcase size={32} color="#06b6d4" />
   },
   {
-    text: "you pick up the weapon, just as the mutated dog charges at you",
-    choices: [{ label: "continue", nextStep: 22, updates: { isTutorialActive: false } }],
+    text: "You pick up the improvised weapon just as the mutated dog charges at you!",
+    choices: [{ label: "Continue", nextStep: 23, updates: { isTutorialActive: false } }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "the mutated dog is upon you! engage it on the map to defend yourself.",
+    text: "The mutated dog is upon you! Engage it on the map to defend yourself.",
     choices: [],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "after finally defeating the mutated dog, you sit down, exhausted.",
-    choices: [{ label: "catch your breath", nextStep: 24 }],
+    text: "After finally defeating the mutated dog, you sit down, exhausted and breathing heavily.",
+    choices: [{ label: "Catch your breath", nextStep: 25 }],
     icon: <Activity size={32} color="#06b6d4" />
   },
   {
-    text: "once you catch your breath, you look at the corpse of the mutated dog, and notice it starts to slowly shimmer",
+    text: "Once you catch your breath, you look at the corpse of the mutated dog and notice it starting to slowly shimmer.",
     choices: [
-      { label: "rub your eyes", nextStep: 25 },
-      { label: "continue to observe", nextStep: 26 }
+      { label: "Rub your eyes", nextStep: 26 },
+      { label: "Continue to observe", nextStep: 27 }
     ],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "yep, definitely shimmering",
-    choices: [{ label: "continue to observe", nextStep: 26 }],
+    text: "Yep, definitely shimmering. This world follows very strange rules.",
+    choices: [{ label: "Continue to observe", nextStep: 27 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "the mutated dog shimmers more and more, until eventually it seems to shimmer out of existence",
-    choices: [{ label: "thats wack", nextStep: 27 }],
+    text: "The mutated dog shimmers more and more until eventually it seems to dissolve out of existence entirely.",
+    choices: [{ label: "That's strange...", nextStep: 28 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "on the ground where the corpse previously was, you notice a glowing blue object, kind of like a crystal",
-    choices: [{ label: "pick up the crystal", nextStep: 28 }],
+    text: "On the ground where the corpse was, you notice a glowing blue object—a small, multifaceted crystal.",
+    choices: [{ label: "Pick up the crystal", nextStep: 29 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you crawl over and pick up the crystal, after staring at it in your hand for a few seconds, it also shimmers and then disappears. then, you hear a 'ding' and the words '1 x aetium received' appear in the corner of your vision",
-    choices: [{ label: "check your character", isHeroTrigger: true, nextStep: 29 }],
+    text: "You crawl over and pick up the crystal. After staring at it for a few seconds, it also shimmers and disappears. Then, you hear a soft 'ding' and the words '1 x Aetium received' appear in the corner of your vision.",
+    choices: [{ label: "Check your character", isHeroTrigger: true, nextStep: 30 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "you've confirmed that you now have one aetium, though you don't know how it is being stored",
-    choices: [{ label: "check pockets", nextStep: 30 }],
+    text: "You've confirmed that you now have one Aetium, though you still don't know where it's being stored.",
+    choices: [{ label: "Check pockets", nextStep: 31 }],
     icon: <Briefcase size={32} color="#06b6d4" />
   },
   {
-    text: "yep, definitely not in the pockets. must be in the 'cloud' or something.",
-    choices: [{ label: "continue", nextStep: 31 }],
+    text: "Yep, definitely not in your pockets. It must be in the 'cloud' or some similar system.",
+    choices: [{ label: "Continue", nextStep: 32 }],
     icon: <Brain size={32} color="#a855f7" />
   },
   {
-    text: "you hear another 'ping'. oh great, you think to yourself, what could this be now.",
-    choices: [{ label: "look around", nextStep: 32 }],
+    text: "You hear another 'ping'. Oh great, you think to yourself, what could this be now?",
+    choices: [{ label: "Look around", nextStep: 33 }],
     icon: <Activity size={32} color="#06b6d4" />
   },
   {
-    text: "as you look around, you can see more of the mutated dogs in the shadows, circling you from a distance. you also notice in your vision a small screen has appeared, titled 'QUEST'",
-    choices: [{ label: "read the quest details", isQuestTrigger: true, nextStep: 33 }],
+    text: "As you look around, you can see more mutated dogs in the shadows, circling you from a distance. You also notice a small screen has appeared in your vision, titled 'QUEST'.",
+    choices: [{ label: "Read the quest details", isQuestTrigger: true, nextStep: 34 }],
     icon: <Scroll size={32} color="#f59e0b" />
   },
   {
-    text: "really, five more dogs?",
-    choices: [{ label: "prepare for battle", nextStep: 34, updates: { isTutorialActive: false } }],
+    text: "Really? Five more dogs?",
+    choices: [{ label: "Prepare for battle", nextStep: 35, updates: { isTutorialActive: false } }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "the mutated dogs are upon you! engage them on the map to defend yourself.",
+    text: "The mutated dogs are upon you! Engage them on the map to defend yourself.",
     choices: [],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "you collapse on the ground, now truly exhausted",
-    choices: [{ label: "catch your breath, again", nextStep: 36 }],
+    text: "You collapse on the ground, now truly exhausted. The immediate threat is over, but you are spent.",
+    choices: [{ label: "Catch your breath, again", nextStep: 37 }],
     icon: <Activity size={32} color="#06b6d4" />
   },
   {
-    text: "you hear another 'ding', and notice you have a new notification",
-    choices: [{ label: "read the new notification", nextStep: 37 }],
+    text: "You hear another 'ding', and notice a new notification pulsing in your HUD.",
+    choices: [{ label: "Read the notification", nextStep: 38 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "it reads 'you have unlocked the marketplace'",
-    choices: [{ label: "marketplace..?", isMarketTrigger: true, nextStep: 38 }],
+    text: "It reads: 'You have unlocked the Marketplace'.",
+    choices: [{ label: "Marketplace..?", isMarketTrigger: true, nextStep: 39 }],
     icon: <Briefcase size={32} color="#06b6d4" />
   },
   {
-    text: "after browsing through the marketplace, you hear another 'ding'.",
-    choices: [{ label: "look at the notification", nextStep: 39 }],
+    text: "After browsing through the marketplace, you hear another 'ding'.",
+    choices: [{ label: "Look at the notification", nextStep: 40 }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
-    text: "the notification says 'dungeon MILLERS JUNCTION DEPTHS unlocked'. you hear another 'ding', this time its for a new quest",
-    choices: [{ label: "check quests", isQuestTrigger: true, nextStep: 40 }],
+    text: "The notification says 'Dungeon MILLERS JUNCTION DEPTHS unlocked'. You hear another 'ding', this time for a new quest.",
+    choices: [{ label: "Check quests", isQuestTrigger: true, nextStep: 41 }],
     icon: <Scroll size={32} color="#f59e0b" />
   },
   {
-    text: "you arrive at Millers Junction, however it is completely different from how you remember it.",
-    choices: [{ label: "take a look around", nextStep: 41 }],
+    text: "You arrive at Miller's Junction, however it is completely different from how you remember it.",
+    choices: [{ label: "Take a look around", nextStep: 42 }],
     icon: <Eye size={32} color="#06b6d4" />
   },
   {
-    text: "the paths have been taken over by nature, the buildings are crumbling, and where the roundabout used to be that connected the buildings is a dark wide pit, with stairs leading downwards. you assume that is the entrance to the depths",
+    text: "The paths have been taken over by nature, the buildings are crumbling, and where the roundabout used to be is now a dark, wide pit with stairs leading downwards. You assume that is the entrance to the depths.",
     choices: [{ 
-      label: "proceed", 
+      label: "Proceed", 
       updates: { isTutorialActive: false, currentStep: 43 },
     }],
     icon: <Sparkles size={32} color="#06b6d4" />
@@ -273,74 +278,84 @@ const TUTORIAL_STEPS = [
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "after exiting the dungeon, you hear a shuffling of footsteps.",
-    choices: [{ label: "draw your weapon", nextStep: 45 }],
+    text: "Congratulations, you've completed the dungeon!",
+    choices: [{ label: "Continue", nextStep: 45 }],
+    icon: <Sparkles size={32} color="#10b981" />
+  },
+  {
+    text: "After exiting the dungeon, you hear a shuffling of footsteps from behind a nearby ruin.",
+    choices: [{ label: "Draw your weapon", nextStep: 46 }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "\"Wait, wait! I mean you no harm\" a figure steps out from behind an old dumpster. he is a man, old, wearing old tattered clothing.",
-    choices: [{ label: "who are you?", nextStep: 46 }],
+    text: "\"Wait, wait! I mean you no harm!\" A figure steps out from behind an old dumpster. He is an old man, wearing tattered, weathered clothing.",
+    choices: [{ label: "Who are you?", nextStep: 47 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"my name is jeff, and i just wanted to say thank you for clearing the dungeon, you are the first to do it since the The Collapse\"",
-    choices: [{ label: "The Collapse?", nextStep: 47 }],
+    text: "\"My name is Jeff, and I just wanted to say thank you for clearing the dungeon. You're the first to do it since The Collapse.\"",
+    choices: [{ label: "The Collapse?", nextStep: 48 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "jeff looks at you with a puzzled expression. \"what do you mean? you don't know what the Collapse is?\"",
-    choices: [{ label: "no", nextStep: 48 }],
+    text: "Jeff looks at you with a puzzled expression. \"What do you mean? You don't know what The Collapse was?\"",
+    choices: [{ label: "No", nextStep: 49 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "jeff's eyes grow wide, his voice excited. \"then you must be one of these famous 'Otherworlders' i keep hearing about!\"",
-    choices: [{ label: "otherwordlers?", nextStep: 49 }],
+    text: "Jeff's eyes grow wide, his voice rising with excitement. \"Then you must be one of those famous 'Otherworlders' I keep hearing about!\"",
+    choices: [{ label: "Otherworlders?", nextStep: 50 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"yes, otherworlder, someone who has travelled from another world, from theirs into ours. does that sound familiar?\"",
-    choices: [{ label: "yep that sounds like me", nextStep: 50 }],
+    text: "\"Yes, an Otherworlder! Someone who has traveled from another world—yours—into ours. Does that sound familiar?\"",
+    choices: [{ label: "Yep, that sounds like me", nextStep: 51 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"Fantastic! I mean not for you probably, i hear you guys have a hard time, randomly getting summoned from your home into a strange place and all that\"",
-    choices: [{ label: "why are you so excited?", nextStep: 51 }],
+    text: "\"Fantastic! I mean, probably not for you. I hear you guys have a hard time, randomly getting summoned from your home into a strange place and all that.\"",
+    choices: [{ label: "Why are you so excited?", nextStep: 52 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"Because for us, who live here, you otherworlders are our only chance at a more peaceful life.\"",
-    choices: [{ label: "explain?", nextStep: 52 }],
+    text: "\"Because for us, who live here, you Otherworlders are our only chance at a more peaceful life.\"",
+    choices: [{ label: "Explain?", nextStep: 53 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"These dungeons, these monsters, these things in our world that to you seem like that are from a game, only otherworlders like yourself have the power, to interact with them, to defeat them. and when you defeat them, things naturally become better for us\"",
-    choices: [{ label: "keep listening", nextStep: 53 }],
+    text: "\"These dungeons, these monsters, these things in our world that to you seem like they are from a game... only Otherworlders like yourself have the power to interact with them, to defeat them. And when you do, things naturally become better for us.\"",
+    choices: [{ label: "Keep listening", nextStep: 54 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "jeff continues. \"we don't know why you were summoned, we don't know your purpose beyond defeating what you come across, but we are always grateful for it. which is why i wanted to say thanks, and give you this\"",
-    choices: [{ label: "continue", nextStep: 54, isAetiumReward: true }],
+    text: "Jeff continues. \"We don't know why you were summoned, or your purpose beyond defeating what you come across, but we are always grateful for it. Which is why I wanted to say thanks and give you this.\"",
+    choices: [{ label: "Continue", nextStep: 55, isAetiumReward: true }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "Jeff presents to you a small pouch, you take it and open it up, inside are multiple aetium crystals. as soon as you hold them, they shimmer out of existence. jeff watches this, again his eyes growing wide.",
-    choices: [{ label: "you look at jeff", nextStep: 55 }],
+    text: "Jeff presents to you a small pouch. You take it and open it up to find multiple Aetium crystals inside. As soon as you touch them, they shimmer out of existence.",
+    choices: [{ label: "Look at Jeff", nextStep: 56 }],
     icon: <Package size={32} color="#f59e0b" />
   },
   {
-    text: "\"sorry, i just wanted to be completely sure. these crystals are what we used to trade in our world, and only with otherworlders do they disappear when held.\"",
-    choices: [{ label: "so desu ney...", nextStep: 56 }],
+    text: "\"Sorry, I just wanted to be completely sure. These crystals are what we used to trade in our world, and only with Otherworlders do they disappear when held.\"",
+    choices: [{ label: "I see...", nextStep: 57 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"anyway, what is your name, otherworlder?\"",
-    choices: [{ label: "my name is...", isNameTrigger: true, nextStep: 57 }],
+    text: "\"Anyway, what is your name, Otherworlder?\"",
+    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 58 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "\"nice to meet you {name}. listen, i'm from a settlement not far from here, there are others who you can talk to, vendors who sell supplies, and apparently you can set it as a 'safe respawn' or whatever that means.\"",
-    choices: [{ label: "lead the way", updates: { isTutorialActive: false, currentStep: 58 } }],
+    text: "\"Nice to meet you, {name}. Listen, I'm from a settlement not far from here. There are others you can talk to, vendors who sell supplies, and apparently you can set it as a 'safe respawn'—whatever that means.\"",
+    choices: [{ label: "Lead the way", updates: { isTutorialActive: false, currentStep: 59 } }],
     icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "The tutorial is now complete. Welcome to the Fracture.",
+    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 60 } }],
+    icon: <Sparkles size={32} color="#10b981" />
   }
 ];
 
@@ -372,7 +387,7 @@ const TutorialView = () => {
       if (weaponChoice === 'stick') weaponName = "large stick";
       else if (weaponChoice === 'door') weaponName = "small car door";
       else if (weaponChoice === 'rocks') weaponName = "group of rocks";
-      return `you pick up the ${weaponName}, just as the mutated dog charges at you`;
+      return `You pick up the ${weaponName} just as the mutated dog charges at you!`;
     }
     return baseText.replace('{name}', playerName);
   }, [choicesLog, playerName]);
@@ -421,8 +436,13 @@ const TutorialView = () => {
     }
     
     if (choice.validate && !choice.validate(tutorialProgress)) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      alert(choice.failText);
+      if (choice.failStep !== undefined) {
+        updateTutorial({ currentStep: choice.failStep });
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        alert(choice.failText);
+      }
       return;
     }
 
@@ -432,7 +452,7 @@ const TutorialView = () => {
       flashOpacity.value = withTiming(1, { duration: 1500 }, (finished) => {
         if (finished) {
           runOnJS(clearTutorialMarker)();
-          runOnJS(updateTutorial)({ currentStep: 11 });
+          runOnJS(updateTutorial)({ currentStep: 12 });
           flashOpacity.value = withTiming(0, { duration: 2000 });
         }
       });
@@ -441,8 +461,7 @@ const TutorialView = () => {
 
     if (choice.isHeroTrigger) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setHeroTab(choice.nextStep === 33 ? 'Quests' : 'Stats');
-      // Set the step but DON'T activate the tutorial overlay yet.
+      setHeroTab(currentStep === 33 ? 'Quests' : 'Stats');
       updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
       router.replace('/(tabs)/character');
       return;
@@ -457,7 +476,7 @@ const TutorialView = () => {
 
     if (choice.isQuestTrigger) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      if (currentStep === 39) {
+      if (currentStep === 40) {
         startQuest({
           id: 'q-millers-junction-depths',
           title: 'Clear Millers Junction Depths',
@@ -482,14 +501,13 @@ const TutorialView = () => {
         });
       }
       setHeroTab('Quests');
-      // Set the step but DON'T activate the tutorial overlay yet.
       updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
       router.replace('/(tabs)/character');
       return;
     }
 
     if (choice.isAetiumReward) {
-      setStats({ gold: gold + 500 });
+      setStats({ gold: gold + 50 });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
@@ -506,19 +524,43 @@ const TutorialView = () => {
       let item: any;
       let skill: any;
       if (choice.weaponId === 'stick') {
-        item = { id: 'tutorial-stick', name: 'Large Heavy Stick', category: 'Weapon', rarity: 'Common', description: 'A sturdy branch that feels surprisingly balanced.', stats: { attack: 5 } };
-        skill = { id: 'skill-heavy-strike', name: 'Heavy Strike', level: 1, description: 'A powerful overhead swing using your makeshift club.', type: 'Active' };
+        item = { 
+          id: 'tutorial-stick', 
+          name: 'Large Heavy Stick', 
+          category: 'Weapon', 
+          rarity: 'Common', 
+          description: 'A sturdy branch that feels surprisingly balanced.', 
+          stats: { attack: 5 },
+          grantedSkill: { id: 'skill-heavy-strike', name: 'Heavy Strike', level: 1, description: 'A powerful overhead swing using your makeshift club.', type: 'Active' }
+        };
+        skill = item.grantedSkill;
       } else if (choice.weaponId === 'door') {
-        item = { id: 'tutorial-door', name: 'Small Car Door', category: 'Weapon', rarity: 'Common', description: 'A rusted sheet of metal with a handle.', stats: { attack: 5 } };
-        skill = { id: 'skill-shield-bash', name: 'Shield Bash', level: 1, description: 'Slam your metal barrier into the enemy to daze them.', type: 'Active' };
+        item = { 
+          id: 'tutorial-door', 
+          name: 'Small Car Door', 
+          category: 'Weapon', 
+          rarity: 'Common', 
+          description: 'A rusted sheet of metal with a handle.', 
+          stats: { attack: 5 },
+          grantedSkill: { id: 'skill-shield-bash', name: 'Shield Bash', level: 1, description: 'Slam your metal barrier into the enemy to daze them.', type: 'Active' }
+        };
+        skill = item.grantedSkill;
       } else if (choice.weaponId === 'rocks') {
-        item = { id: 'tutorial-rocks', name: 'Bag of Jagged Rocks', category: 'Weapon', rarity: 'Common', description: 'Sharp pieces of concrete and flint.', stats: { attack: 4 } };
-        skill = { id: 'skill-rock-toss', name: 'Rock Toss', level: 1, description: 'Hurl jagged debris at enemies from a safe distance.', type: 'Active' };
+        item = { 
+          id: 'tutorial-rocks', 
+          name: 'Bag of Jagged Rocks', 
+          category: 'Weapon', 
+          rarity: 'Common', 
+          description: 'Sharp pieces of concrete and flint.', 
+          stats: { attack: 4 },
+          grantedSkill: { id: 'skill-rock-toss', name: 'Rock Toss', level: 1, description: 'Hurl jagged debris at enemies from a safe distance.', type: 'Active' }
+        };
+        skill = item.grantedSkill;
       }
       addItem(item);
       equipItem(item);
       learnSkill(skill);
-      updateTutorial({ currentStep: 21 });
+      updateTutorial({ currentStep: 22 });
       return;
     }
 
@@ -531,8 +573,8 @@ const TutorialView = () => {
     }
   };
 
-  // Only show tutorial on explore (map), battle, or title screen
-  const isAllowedPath = pathname === '/' || pathname === '/explore' || pathname === '/battle' || pathname.includes('(tabs)/explore');
+  // Only show tutorial on explore (map), battle, character, social or title screen
+  const isAllowedPath = pathname === '/' || pathname === '/explore' || pathname === '/battle' || pathname === '/character' || pathname === '/social' || pathname.includes('(tabs)');
   if (!isTutorialActive || !step || !isAllowedPath) return null;
 
   return (
@@ -593,20 +635,24 @@ const TutorialView = () => {
             </View>
           </TouchableWithoutFeedback>
 
-          {step.choices && step.choices.length > 0 && !showNameInput ? (
+          {(!isTyping && step.choices && step.choices.length > 0 && !showNameInput) ? (
             <View className="w-full gap-4">
               {step.choices.map((choice, i) => {
                 const isDone = choice.isSticky && choice.updates && Object.keys(choice.updates).every(k => (tutorialProgress as any)[k]);
+                // Grey out the 'Stand up' choice if requirements aren't met
+                const isLocked = choice.label === 'Stand up' && choice.validate && !choice.validate(tutorialProgress);
+
                 return (
                   <Pressable 
                     key={i}
                     hitSlop={10}
                     onPress={() => handleChoice(choice)}
                     className={`w-full h-16 border rounded-2xl flex-row items-center justify-center active:scale-95 ${
+                      isLocked ? 'bg-zinc-950 border-zinc-900 opacity-40' : 
                       isDone ? 'bg-zinc-950 border-zinc-900' : 'bg-zinc-900/80 border-zinc-800'
                     }`}
                   >
-                    <Text className={`font-bold uppercase tracking-[4px] text-xs ${isDone ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                    <Text className={`font-bold uppercase tracking-[4px] text-xs ${isLocked ? 'text-zinc-800' : isDone ? 'text-zinc-700' : 'text-zinc-300'}`}>
                       {choice.label}
                     </Text>
                     {isDone && <CheckCircle2 size={12} color="#10b981" className="ml-3" />}
@@ -614,13 +660,13 @@ const TutorialView = () => {
                 );
               })}
             </View>
-          ) : !showNameInput ? (
+          ) : (!isTyping && !showNameInput) ? (
             <Pressable 
               hitSlop={10}
               onPress={() => {
                 if (!finishTyping()) {
-                  // Prevent skipping the active dungeon phase (Step 43)
-                  if (currentStep === 43) {
+                  // Prevent skipping active combat/dungeon phases
+                  if (currentStep === 23 || currentStep === 35 || currentStep === 43) {
                     updateTutorial({ isTutorialActive: false });
                     return;
                   }

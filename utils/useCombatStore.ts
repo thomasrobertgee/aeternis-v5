@@ -36,6 +36,7 @@ interface CombatState {
   nextTurn: () => void;
   addLog: (message: string, type: 'player' | 'enemy' | 'system') => void;
   endCombat: () => void;
+  syncStats: () => void;
 }
 
 export const useCombatStore = create<CombatState>((set) => ({
@@ -137,4 +138,30 @@ export const useCombatStore = create<CombatState>((set) => ({
     isPlayerTurn: true,
     turnCount: 1
   }),
+
+  syncStats: () => {
+    const playerStore = usePlayerStore.getState();
+    const mods = playerStore.dungeonModifiers || [];
+    
+    let finalMaxHp = playerStore.maxHp;
+    let finalMaxMana = playerStore.maxMana;
+    let finalAttack = playerStore.attack;
+    let finalDefense = playerStore.defense;
+
+    mods.forEach(mod => {
+      if (mod.stat === 'maxHp') finalMaxHp = Math.floor(finalMaxHp * mod.value);
+      if (mod.stat === 'maxMana') finalMaxMana = Math.floor(finalMaxMana * mod.value);
+      if (mod.stat === 'attack') finalAttack = Math.floor(finalAttack * mod.value);
+      if (mod.stat === 'defense') finalDefense = Math.floor(finalDefense * mod.value);
+    });
+
+    set((state) => ({
+      maxPlayerHp: finalMaxHp,
+      playerHp: Math.min(state.playerHp, finalMaxHp),
+      maxPlayerMana: finalMaxMana,
+      playerMana: Math.min(state.playerMana, finalMaxMana),
+      playerAttack: finalAttack,
+      playerDefense: finalDefense
+    }));
+  }
 }));

@@ -95,6 +95,11 @@ export default function InventoryScreen() {
       }
     } else {
       equipItem(actualItem);
+      if (combat.isInCombat) {
+        combat.syncStats();
+        combat.addLog(`Equipped ${actualItem.name}.`, 'system');
+        router.replace('/battle');
+      }
       setSelectedItem(null);
     }
   }, [selectedItem, hp, maxHp, mana, maxMana, setStats, removeItem, equipItem, router]);

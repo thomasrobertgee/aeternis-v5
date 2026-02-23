@@ -129,6 +129,7 @@ export default function BattleScreen() {
 
     if (enemyHp <= 0 && !isResolving) {
       setIsResolving(true);
+      const currentDungeonStage = dungeon.currentStage; // Capture current stage
       addLog(`${enemyName} has been purged from the Fracture.`, 'system');
       
       const isTutorialDog = sourceId === 'tutorial-dog-signal';
@@ -316,7 +317,7 @@ export default function BattleScreen() {
     triggerEnemyShake();
     updateMana(-15);
     updateHp('enemy', -damage);
-    const skillName = player.skills[0]?.name || "Axe Sweep";
+    const skillName = player.skills.find(s => s.type === 'Active')?.name || "Axe Sweep";
     addLog(`You perform a ${skillName}! ${damage} damage dealt.${damageModifier !== 1 ? ' (Weather Mod)' : ''}`, 'player');
     
     if (enemyHp - damage > 0) {
@@ -501,9 +502,9 @@ export default function BattleScreen() {
               <Zap size={18} color={playerMana >= 15 ? "#06b6d4" : "#3f3f46"} className="mr-2" />
               <View>
                 <Text className={`font-bold uppercase tracking-widest text-[10px] ${playerMana >= 15 ? 'text-cyan-400' : 'text-zinc-600'}`}>
-                  {player.skills[0]?.name || "Axe Sweep"}
+                  {player.skills.find(s => s.type === 'Active')?.name || "Axe Sweep"}
                 </Text>
-                <Text className="text-[8px] text-cyan-700 font-bold">-15 MP</Text>
+                <Text className="text-[8px] text-cyan-700 font-bold">-15 Mana</Text>
               </View>
             </TouchableOpacity>
 

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, Text, TouchableOpacity, TextInput, ActivityIndicator, DevSettings, Alert } from 'react-native';
-import MapView, { PROVIDER_GOOGLE, MapPressEvent, Marker, Circle, Polygon } from 'react-native-maps';
+import { View, StyleSheet, Text, TouchableOpacity, TextInput, ActivityIndicator, DevSettings, Alert, Platform } from 'react-native';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useCombatStore } from '../../utils/useCombatStore';
 import { geocodeCity, reverseGeocode } from '../../utils/GeoService';
@@ -39,6 +38,7 @@ import { useTravelStore } from '../../utils/useTravelStore';
 import { useUIStore } from '../../utils/useUIStore';
 import { useDungeonStore } from '../../utils/useDungeonStore';
 import SoundService from '../../utils/SoundService';
+import FractureMap from '../../components/FractureMap';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
 
@@ -66,7 +66,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 22 || tutorialProgress.currentStep === 33 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 44 || tutorialProgress.currentStep === 57);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -144,10 +144,10 @@ export default function ExploreScreen() {
       }
 
       // Auto-trigger tutorial if arriving at Millers Junction Depths during correct step
-      if (tutorialProgress.currentStep === 40 &&
+      if (tutorialProgress.currentStep === 41 &&
           Math.abs(destinationCoords.latitude - MILLERS_JUNCTION_DEPTHS_COORDS.latitude) < 0.0001 && 
           Math.abs(destinationCoords.longitude - MILLERS_JUNCTION_DEPTHS_COORDS.longitude) < 0.0001) {
-        updateTutorial({ currentStep: 41, isTutorialActive: true });
+        updateTutorial({ currentStep: 42, isTutorialActive: true });
       }
     } 
   }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
@@ -169,7 +169,7 @@ export default function ExploreScreen() {
       return () => clearTimeout(zoomTimer); 
     } 
   }, [hasSetHomeCity, tutorialProgress.currentStep]);
-  useEffect(() => { if (hasSetHomeCity) { if (level >= 5 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 10 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
+  useEffect(() => { if (hasSetHomeCity) { if (level >= 10 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 15 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
   // Force markers to redraw once when they change
   const [shouldTrackMarkers, setShouldTrackMarkers] = useState(true);
@@ -186,19 +186,19 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
-    const checkpoints = [18, 23, 29, 33, 35, 36, 37, 38, 39, 41, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57];
+    const checkpoints = [18, 19, 30, 34, 36, 37, 38, 39, 40, 42, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58];
     
-    // Step 44 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
-    if (isFocused && tutorialProgress.currentStep === 44 && !tutorialProgress.isTutorialActive) {
+    // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
+    if (isFocused && tutorialProgress.currentStep === 46 && !tutorialProgress.isTutorialActive) {
       const activeQuest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-millers-junction-depths');
       // Quest is considered done if it's completed OR if it's missing from the active list
       const isDungeonQuestComplete = activeQuest?.isCompleted || !activeQuest;
       
       const distance = getDistance(playerLocation, MILLERS_JUNCTION_DEPTHS_COORDS) * 1000;
-      console.log(`[DEBUG] Step 44 Listener - Step: ${tutorialProgress.currentStep}, Distance: ${distance.toFixed(1)}m, Quest Complete: ${isDungeonQuestComplete}`);
+      console.log(`[DEBUG] Step 46 Listener - Step: ${tutorialProgress.currentStep}, Distance: ${distance.toFixed(1)}m, Quest Complete: ${isDungeonQuestComplete}`);
 
       if (distance <= 150 && isDungeonQuestComplete) {
-        console.log('[DEBUG] Step 44 TRIGGERED');
+        console.log('[DEBUG] Step 46 TRIGGERED');
         const timer = setTimeout(() => {
           if (isFocused) updateTutorial({ isTutorialActive: true });
         }, 500);
@@ -216,9 +216,9 @@ export default function ExploreScreen() {
     }
   }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused]);
 
-  // Handle step 22 (spawn tutorial enemy)
+  // Handle step 23 (spawn tutorial enemy)
   useEffect(() => {
-    if (tutorialProgress.currentStep === 22 && !tutorialProgress.isTutorialActive) {
+    if (tutorialProgress.currentStep === 23 && !tutorialProgress.isTutorialActive) {
       // Spawn a special tutorial enemy near player (approx 100m west)
       const dogCoords = { 
         latitude: playerLocation.latitude, 
@@ -233,9 +233,9 @@ export default function ExploreScreen() {
     }
   }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
 
-  // Handle step 33 (spawn 5 tutorial dogs)
+  // Handle step 35 (spawn 5 tutorial dogs)
   useEffect(() => {
-    if (tutorialProgress.currentStep === 33 && !tutorialProgress.isTutorialActive) {
+    if (tutorialProgress.currentStep === 35 && !tutorialProgress.isTutorialActive) {
       const offsets = [
         { lat: 0.00225, lon: 0 },
         { lat: -0.00225, lon: 0 },
@@ -319,7 +319,7 @@ export default function ExploreScreen() {
     triggerRift({ latitude: playerLocation.latitude + (Math.random() - 0.5) * 0.015, longitude: playerLocation.longitude + (Math.random() - 0.5) * 0.015 }, currentBiome);
   };
 
-  const [selectedZone, setSelectedZone] = useState<{ suburb: string; biome: BiomeType; faction: FactionType; description: string; coords: { latitude: number; longitude: number }; isHostile: boolean; isBoss?: boolean; isTutorialMarker?: boolean; isDungeon?: boolean; signalId?: string; } | null>(null);
+  const [selectedZone, setSelectedZone] = useState<{ suburb: string; biome: BiomeType; faction: FactionType; description: string; coords: { latitude: number; longitude: number }; isHostile: boolean; isBoss?: boolean; isTutorialMarker?: boolean; isDungeon?: boolean; isSettlement?: boolean; signalId?: string; } | null>(null);
 
   const handleMapPress = async (event: MapPressEvent) => {
     if (isGeocoding) return;
@@ -346,19 +346,6 @@ export default function ExploreScreen() {
       });
       setIsGeocoding(false);
       return;
-    }
-
-    // New Tutorial Logic: Disable general map clicks if in tutorial
-    if (tutorialProgress.currentStep < 58) {
-      // Check for tutorial fixed markers (orb, dungeon, settlement)
-      const isOrbClicked = tutorialMarker && getDistance(coords, tutorialMarker.coords) < hitRadius;
-      const isDungeonClicked = tutorialProgress.currentStep >= 40 && getDistance(coords, MILLERS_JUNCTION_DEPTHS_COORDS) < hitRadius;
-      const isSettlementClicked = tutorialProgress.currentStep >= 58 && getDistance(coords, ALTONA_GATE_COORDS) < hitRadius;
-
-      if (!isOrbClicked && !isDungeonClicked && !isSettlementClicked) {
-        // Just return if clicking empty map or non-tutorial stuff
-        return;
-      }
     }
 
     setIsGeocoding(true);
@@ -536,7 +523,7 @@ export default function ExploreScreen() {
           </React.Fragment>
         )}
 
-        {tutorialProgress.currentStep >= 40 && (
+        {tutorialProgress.currentStep >= 41 && (
           <Marker 
             coordinate={MILLERS_JUNCTION_DEPTHS_COORDS} 
             anchor={{ x: 0.5, y: 0.5 }} 
@@ -563,7 +550,7 @@ export default function ExploreScreen() {
           </Marker>
         )}
 
-        {tutorialProgress.currentStep >= 58 && (
+        {tutorialProgress.currentStep >= 59 && (
           <Marker 
             coordinate={ALTONA_GATE_COORDS} 
             anchor={{ x: 0.5, y: 0.5 }} 
@@ -577,7 +564,8 @@ export default function ExploreScreen() {
                 faction: FactionType.NEO_TECHNOCRATS, 
                 description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
                 coords: ALTONA_GATE_COORDS, 
-                isHostile: false 
+                isHostile: false,
+                isSettlement: true
               }); 
             }}
           >
@@ -589,7 +577,7 @@ export default function ExploreScreen() {
           </Marker>
         )}
 
-        <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={shouldTrackMarkers}><View style={markerStyles.container}><View className="w-5 h-5 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-2 h-2 bg-cyan-400 rounded-full" /></View></View></Marker>
+        <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={tutorialProgress.currentStep < 58 ? true : shouldTrackMarkers}><View style={markerStyles.container}><View className="w-7 h-7 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-3 h-3 bg-cyan-400 rounded-full" /></View></View></Marker>
         {(hostileSignals || []).filter(s => !s.respawnAt).map((signal) => {
           const isTutorialEnemy = signal.id.startsWith('tutorial-dog');
           if (isTutorialRestricted && !isTutorialEnemy) return null;
@@ -599,7 +587,7 @@ export default function ExploreScreen() {
                 coordinate={signal.coords} 
                 anchor={{ x: 0.5, y: 0.5 }} 
                 zIndex={isTutorialEnemy ? 100 : (signal.type === 'Boss' ? 30 : 20)} 
-                tracksViewChanges={isTutorialEnemy ? true : shouldTrackMarkers} 
+                tracksViewChanges={true} 
                 onPress={(e) => { if (isTutorialRestricted && !isTutorialEnemy) return; e.stopPropagation(); handleMapPress({ nativeEvent: { coordinate: signal.coords } } as any); }}
               >
                 <View style={markerStyles.container}>
@@ -612,7 +600,7 @@ export default function ExploreScreen() {
           );
         })}
       </MapView>
-      {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
+      {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} isSettlement={selectedZone.isSettlement} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
         if (tutorialProgress.currentStep < 58 && !selectedZone.isTutorialMarker && selectedZone.suburb !== "MILLERS JUNCTION DEPTHS" && selectedZone.suburb !== "ALTONA GATE SETTLEMENT") {
           Alert.alert("Locked", "The Aether-Link is currently synchronized to tutorial objectives only.");
           return;

@@ -18,9 +18,8 @@ interface ZoneCardProps {
   description: string;
   coords: { latitude: number; longitude: number };
   isHostile?: boolean;
-  isResourceNode?: boolean;
+  isSettlement?: boolean;
   isDungeon?: boolean;
-  resourceData?: { materialName: string; amount: number; distance: number };
   onClose: () => void;
   onExplore: () => void;
   onFastTravel: (duration: number) => void;
@@ -28,7 +27,7 @@ interface ZoneCardProps {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResourceNode, isDungeon, resourceData, onClose, onExplore, onFastTravel }: ZoneCardProps) => {
+const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isSettlement, isDungeon, onClose, onExplore, onFastTravel }: ZoneCardProps) => {
   const translateY = useSharedValue(SCREEN_HEIGHT);
   const weather = useMemo(() => getWeatherForSuburb(suburb), [suburb]);
   const playerLocation = usePlayerStore((state) => state.playerLocation);
@@ -58,8 +57,6 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
     });
   };
 
-  const isWithinHarvestRange = resourceData ? resourceData.distance <= 100 : false;
-
   return (
     <View style={StyleSheet.absoluteFill} className="items-center justify-center p-6 z-[2500]" pointerEvents="box-none">
       <Animated.View 
@@ -67,7 +64,7 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
         className={`w-full border p-8 rounded-[40px] shadow-2xl ${
           isHostile ? 'bg-red-950/95 border-red-800' : 
           isDungeon ? 'bg-purple-950/95 border-purple-800' :
-          isResourceNode ? 'bg-emerald-950/95 border-emerald-800' :
+          isSettlement ? 'bg-emerald-950/95 border-emerald-800' :
           'bg-zinc-950/95 border-zinc-800'
         }`}
       >
@@ -75,7 +72,7 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
       <View className={`absolute -top-px left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent to-transparent ${
         isHostile ? 'via-red-500/50' : 
         isDungeon ? 'via-purple-500/50' :
-        isResourceNode ? 'via-emerald-500/50' :
+        isSettlement ? 'via-emerald-500/50' :
         'via-cyan-500/50'
       }`} />
 
@@ -85,24 +82,24 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
           <View className={`p-3 rounded-2xl mr-4 border ${
             isHostile ? 'bg-red-500/10 border-red-500/20' : 
             isDungeon ? 'bg-purple-500/10 border-purple-500/20' :
-            isResourceNode ? 'bg-emerald-500/10 border-emerald-500/20' :
+            isSettlement ? 'bg-emerald-500/10 border-emerald-500/20' :
             'bg-cyan-500/10 border-cyan-500/20'
           }`}>
             {isHostile ? <ShieldAlert size={22} color="#ef4444" /> : 
              isDungeon ? <Skull size={22} color="#a855f7" /> :
-             isResourceNode ? <Package size={22} color="#10b981" /> :
+             isSettlement ? <Home size={22} color="#10b981" /> :
              <MapPin size={22} color="#06b6d4" />}
           </View>
           <View className="flex-1">
             <Text className={`font-bold uppercase tracking-[3px] text-[10px] mb-1 ${
               isHostile ? 'text-red-500' : 
               isDungeon ? 'text-purple-500' :
-              isResourceNode ? 'text-emerald-500' :
+              isSettlement ? 'text-emerald-500' :
               'text-cyan-500'
             }`}>
               {isHostile ? 'Hostile Manifestation' : 
                isDungeon ? 'Dungeon Manifestation' :
-               isResourceNode ? 'Resource Manifestation' :
+               isSettlement ? 'Communal Settlement' :
                'Location Identified'}
             </Text>
             <Text className="text-white text-2xl font-bold tracking-tight">{suburb}</Text>
@@ -116,50 +113,39 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
         </TouchableOpacity>
       </View>
 
-      {!isResourceNode && (
-        <View className="flex-row items-center mb-4 bg-zinc-900/50 self-start px-3 py-1.5 rounded-full border border-zinc-800">
-          <Cloud size={12} color="#94a3b8" className="mr-2" />
-          <Text className="text-zinc-400 font-bold text-[9px] uppercase tracking-widest">{weather}</Text>
-        </View>
-      )}
-
-      {isResourceNode && resourceData && (
-        <View className="flex-row items-center mb-4 bg-emerald-900/20 self-start px-3 py-1.5 rounded-full border border-emerald-800/30">
-          <View className={`w-1.5 h-1.5 rounded-full mr-2 ${isWithinHarvestRange ? 'bg-emerald-500' : 'bg-red-500'}`} />
-          <Text className={`${isWithinHarvestRange ? 'text-emerald-400' : 'text-red-400'} font-bold text-[9px] uppercase tracking-widest`}>
-            Distance: {Math.round(resourceData.distance)}m {isWithinHarvestRange ? '(READY)' : '(TOO FAR)'}
-          </Text>
-        </View>
-      )}
+      <View className="flex-row items-center mb-4 bg-zinc-900/50 self-start px-3 py-1.5 rounded-full border border-zinc-800">
+        <Cloud size={12} color="#94a3b8" className="mr-2" />
+        <Text className="text-zinc-400 font-bold text-[9px] uppercase tracking-widest">{weather}</Text>
+      </View>
 
       {/* Lore Context */}
       <View className={`mb-6 p-4 rounded-2xl border ${
         isHostile ? 'bg-red-900/20 border-red-800/30' : 
         isDungeon ? 'bg-purple-900/20 border-purple-800/30' :
-        isResourceNode ? 'bg-emerald-900/20 border-emerald-800/30' :
+        isSettlement ? 'bg-emerald-900/20 border-emerald-800/30' :
         'bg-zinc-900/50 border-zinc-800/50'
       }`}>
         <View className="flex-row items-center mb-2">
           {isHostile ? <Sword size={14} color="#ef4444" className="mr-2" /> : 
            isDungeon ? <Flame size={14} color="#a855f7" className="mr-2" /> :
-           isResourceNode ? <Hammer size={14} color="#10b981" className="mr-2" /> :
+           isSettlement ? <Home size={14} color="#10b981" className="mr-2" /> :
            <Compass size={14} color="#06b6d4" className="mr-2" />}
           <Text className="text-zinc-400 font-medium text-xs uppercase tracking-widest">
             {isHostile ? 'Threat Analysis' : 
              isDungeon ? 'Critical Anomaly' :
-             isResourceNode ? 'Resource Scan' :
+             isSettlement ? 'Communal Sanctuary' :
              'The Fractured Realm'}
           </Text>
         </View>
         <Text className={`text-lg font-semibold mb-2 ${
           isHostile ? 'text-red-100' : 
           isDungeon ? 'text-purple-100' :
-          isResourceNode ? 'text-emerald-100' :
+          isSettlement ? 'text-emerald-100' :
           'text-cyan-100'
         }`}>
           {isHostile ? 'Fracture Anomaly' : 
            isDungeon ? 'The Depths' :
-           isResourceNode ? loreName :
+           isSettlement ? 'Safety and Order' :
            loreName}
         </Text>
         <Text className="text-zinc-400 text-sm leading-6 italic">
@@ -169,7 +155,7 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
 
       {/* Action Buttons */}
       <View className="flex-row gap-3">
-        {(!isWithinHarvestRange && !isHostile && !isDungeon) && (
+        {(!isHostile) && (
           <TouchableOpacity 
             onPress={() => onFastTravel(travelDuration)}
             activeOpacity={0.8}
@@ -189,14 +175,14 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isResource
           className={`flex-1 h-16 rounded-2xl items-center justify-center shadow-lg border-t border-white/10 ${
             isHostile ? 'bg-red-600 shadow-red-900/40' : 
             isDungeon ? 'bg-purple-600 shadow-purple-900/40' :
-            isResourceNode ? (isWithinHarvestRange ? 'bg-emerald-600 shadow-emerald-900/40' : 'bg-zinc-800 opacity-50') :
+            isSettlement ? 'bg-emerald-600 shadow-emerald-900/40' :
             'bg-cyan-600 shadow-cyan-900/40'
           }`}
         >
           <Text className="text-white font-black text-sm uppercase tracking-[4px]">
             {isHostile ? 'Engage' : 
              isDungeon ? 'Descend' :
-             isResourceNode ? 'Harvest' :
+             isSettlement ? 'Enter' :
              'Explore'}
           </Text>
         </TouchableOpacity>

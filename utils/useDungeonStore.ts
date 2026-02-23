@@ -27,6 +27,7 @@ interface DungeonState {
   modifiers: DungeonModifier[];
   stageChoices: DungeonChoice[];
   
+  lastStageUpdate: number;
   // Actions
   enterDungeon: (dungeonId: string) => void;
   exitDungeon: () => void;
@@ -56,13 +57,15 @@ export const useDungeonStore = create<DungeonState>()(
       currentStage: 1,
       modifiers: [],
       stageChoices: [],
+      lastStageUpdate: 0,
 
       enterDungeon: (dungeonId) => {
         set({ 
           isInsideDungeon: true, 
           currentDungeonId: dungeonId, 
           currentStage: 1, 
-          modifiers: [] 
+          modifiers: [],
+          lastStageUpdate: Date.now()
         });
         get().generateChoices();
       },
@@ -72,15 +75,19 @@ export const useDungeonStore = create<DungeonState>()(
         currentDungeonId: null, 
         currentStage: 1, 
         modifiers: [],
-        stageChoices: []
+        stageChoices: [],
+        lastStageUpdate: 0
       }),
 
       nextStage: () => {
+        const now = Date.now();
+        if (now - get().lastStageUpdate < 1000) return; // Prevent double trigger
+
         const next = get().currentStage + 1;
         if (next > 10) {
           get().exitDungeon();
         } else {
-          set({ currentStage: next });
+          set({ currentStage: next, lastStageUpdate: now });
           get().generateChoices();
         }
       },

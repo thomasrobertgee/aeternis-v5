@@ -30,6 +30,7 @@ export interface Item {
   rarity: 'Common' | 'Rare' | 'Fractured' | 'Legendary';
   description: string;
   stats?: Record<string, number>;
+  grantedSkill?: Skill;
 }
 
 export interface Quest {
@@ -51,14 +52,6 @@ export interface Signal {
   type?: 'Standard' | 'Boss';
   expiresAt?: number;
   respawnAt?: number;
-}
-
-export interface ResourceNode {
-  id: string;
-  coords: Coords;
-  materialName: string;
-  amount: number;
-  isHarvested: boolean;
 }
 
 export interface GlobalNotification {
@@ -114,7 +107,6 @@ interface PlayerState {
   discoveredZones: Record<string, ZoneProfile>;
   activeQuests: Quest[];
   hostileSignals: Signal[];
-  resourceNodes: ResourceNode[];
   bestiary: Record<string, BestiaryEntry>;
   tutorialProgress: TutorialProgress;
   tutorialMarker: { coords: Coords; label: string } | null;
@@ -155,8 +147,6 @@ interface PlayerState {
   removeSignal: (id: string) => void;
   respawnSignals: () => void;
   setHostileSignals: (signals: Signal[]) => void;
-  setResourceNodes: (nodes: ResourceNode[]) => void;
-  harvestNode: (id: string) => void;
   triggerRift: (coords: Coords, biome: BiomeType) => void;
   setNotification: (notif: GlobalNotification | null) => void;
   setHomeCity: (city: string, location: Coords) => void;
@@ -188,6 +178,7 @@ const STARTING_WEAPON: Item = {
   rarity: 'Common',
   description: 'A weighted tool of survival, blunt but effective against the horrors of the fracture.',
   stats: { attack: 12 },
+  grantedSkill: { id: 'skill-axe-sweep', name: 'Axe Sweep', level: 1, description: 'A wide horizontal arc that cleaves through static.', type: 'Active' },
 };
 
 const STARTING_ARMOR: Item = {
@@ -248,7 +239,6 @@ export const usePlayerStore = create<PlayerState>()(
             discoveredZones: {},
             activeQuests: [],
             hostileSignals: [],
-            resourceNodes: [],
             bestiary: {},
             tutorialProgress: {
               currentStep: 0,
@@ -335,7 +325,22 @@ export const usePlayerStore = create<PlayerState>()(
             }),
             equipItem: (item) => set((state) => {
               const newEquipment = { ...state.equipment };
-              if (item.category === 'Weapon') newEquipment.weapon = item;
+              let newSkills = [...state.skills];
+
+              if (item.category === 'Weapon') {
+                newEquipment.weapon = item;
+                // If the weapon has a skill, learn it (add or update in skills array)
+                if (item.grantedSkill) {
+                  const existingIdx = newSkills.findIndex(s => s.id === item.grantedSkill?.id);
+                  if (existingIdx > -1) {
+                    newSkills[existingIdx] = item.grantedSkill;
+                  } else {
+                    // Remove other active skills to keep it simple (one weapon skill at a time)
+                    newSkills = newSkills.filter(s => s.type !== 'Active');
+                    newSkills.push(item.grantedSkill);
+                  }
+                }
+              }
               if (item.category === 'Armor') {
                 if (item.name.toLowerCase().includes('boots')) {
                   newEquipment.boots = item;
@@ -356,6 +361,7 @@ export const usePlayerStore = create<PlayerState>()(
               
               return { 
                 equipment: newEquipment,
+                skills: newSkills,
                 attack: BASE_ATTACK + weaponBonus,
                 defense: BASE_DEFENSE + armorBonus,
                 setBonus: activeSetBonus
@@ -404,6 +410,10 @@ export const usePlayerStore = create<PlayerState>()(
         const quest = state.activeQuests.find(q => q.id === id);
         if (!quest || !quest.isCompleted) return state;
 
+        // Custom reward for Miller's Junction Depths (Tutorial Pouch)
+        let goldReward = quest.rewardGold;
+        if (id === 'q-millers-junction-depths') goldReward = 500;
+
         let itemReward: Item | null = null;
         if (state.enrolledFaction === 'the-cogwheel') {
           itemReward = Math.random() > 0.5 ? LOOT_ITEMS.SCRAP_METAL : LOOT_ITEMS.AETHER_SHARDS;
@@ -431,12 +441,13 @@ export const usePlayerStore = create<PlayerState>()(
           newMaxMana += 10;
           newHp = newMaxHp;
           newMana = newMaxMana;
-        }
-
-        return {
-          gold: state.gold + quest.rewardGold,
-          inventory: updatedInventory,
-          xp: newXp,
+                }
+          
+                return {
+                  gold: state.gold + goldReward,
+                  inventory: updatedInventory,
+                  xp: newXp,
+        
           level: newLevel,
           maxXp: newMaxXp,
           maxHp: newMaxHp,
@@ -522,24 +533,6 @@ export const usePlayerStore = create<PlayerState>()(
         return { hostileSignals: updated };
       }),
       setHostileSignals: (signals) => set({ hostileSignals: signals }),
-      setResourceNodes: (nodes) => set({ resourceNodes: nodes }),
-      harvestNode: (id) => set((state) => {
-        const node = state.resourceNodes.find(n => n.id === id);
-        if (!node || node.isHarvested) return state;
-
-        const material: Item = {
-          id: `mat-${node.materialName.toLowerCase()}`,
-          name: node.materialName,
-          category: 'Utility',
-          rarity: 'Common',
-          description: `A raw material used for crafting and faction projects. Amount: ${node.amount}`,
-        };
-
-        return {
-          resourceNodes: state.resourceNodes.map(n => n.id === id ? { ...n, isHarvested: true } : n),
-          inventory: [...state.inventory, { ...material, id: `${material.id}-${Math.random().toString(36).substr(2, 9)}` }]
-        };
-      }),
       triggerRift: (coords, biome) => set((state) => {
         const riftSignal: Signal = {
           id: `rift-${Date.now()}`,
@@ -570,8 +563,7 @@ export const usePlayerStore = create<PlayerState>()(
       }),
       cleanupZones: () => set({
         discoveredZones: {},
-        hostileSignals: [],
-        resourceNodes: []
+        hostileSignals: []
       }),
       resetStore: () => set({
         playerLocation: INITIAL_LOCATION,
@@ -595,7 +587,6 @@ export const usePlayerStore = create<PlayerState>()(
         discoveredZones: {},
         activeQuests: [],
         hostileSignals: [],
-        resourceNodes: [],
         bestiary: {},
         tutorialProgress: {
           currentStep: 0,
