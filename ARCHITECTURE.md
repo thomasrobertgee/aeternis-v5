@@ -14,23 +14,10 @@ This document outlines the current technical architecture and implementation sta
 *   **Location**: Web-based Geocoding (OSM Nominatim API) + Local GeoJSON Boundaries
 *   **Maps**: React Native Maps (Fantasy-Dark Styling + Polygon Overlays)
 
-## 2. Core Stores (Zustand)
-
-### 2.1 `usePlayerStore`
-The central source of truth for the player's journey.
-*   **Stats**: Level, XP, Vitality, Imaginum, Aetium, Attack, Defense.
-*   **World**: Current coordinates, **Persistent Zone Profiles** (Record of synthesized lore).
-*   **RPG**: Inventory, Equipment (Weapon, Armor, Boots), Faction Reputation, Quests.
-*   **Persistence**: Fully synced to `@aeternis-player-storage`.
-
-### 2.2 `useTravelStore`
-Manages the timed transit mechanics for the Aether-Link.
-*   **Dynamic State**: `isTraveling` flag, `travelTimeRemaining` countdown (15s), `destinationCoords`.
-*   **Lifecycle**: Manages the "In-Transit" lockout period and arrival triggers.
-
-### 2.3 `useCombatStore`
-Manages real-time turn-based encounters.
-*   **Dynamic State**: Enemy health, turn order, combat logs, source Signal ID, Biome context.
+### 2.4 `useUIStore`
+Coordinates global UI state and cross-component actions.
+*   **Dynamic State**: `heroTab` (active character screen), `isSaving` indicator, `activeWorldEvent`.
+*   **Map Control**: `pendingMapAction` allows components (like Quests) to request smooth panning/zooming to specific coordinates.
 
 ## 3. RPG Systems
 
@@ -46,6 +33,7 @@ Manages real-time turn-based encounters.
     *   **Difficulty/Resonance**: Based on the historical age of the locality.
     *   **Unique NPC**: Generates a persistent "Sector Contact" with a lore-accurate name and title.
 *   **Instability Fog**: Visually restricts players under Level 10 to their Home City polygon using inverted `Polygon` holes.
+*   **Smart Navigation**: "Take me there" buttons in the Quest Log and Character screen utilize the `pendingMapAction` system to center/zoom the map on objectives.
 
 ### 3.2 Tactical Map & Combat
 *   **Player Representation**: Represented by a **50m radius Circle** and a high-z-index **Traveller Marker**, ensuring visibility over all terrain layers.
@@ -53,7 +41,8 @@ Manages real-time turn-based encounters.
 *   **Hostile Signal Manifestation**: Enemies appear as scaling red markers within the zone. Spawning is restricted to the interior of the current polygon via **Rejection Sampling**.
 *   **Manual Radar**: "Scan Area" action generates new manifestations around the player's current location.
 *   **Item Stacking**: Identical items (by name and category) are automatically stacked in the inventory, displaying a multiplier (e.g., x2) to conserve screen space and improve legibility.
-*   **Dungeon System**: Instanced, 10-stage roguelite challenges featuring randomized choices (Enemies, Chests, Altars), fixed miniboss/boss encounters, and temporary stat modifiers that persist only within the instance.
+*   **Dungeon System**: Instanced, 10-stage roguelite challenges featuring randomized choices (Enemies, Chests, Altars), fixed miniboss/boss encounters, and temporary stat modifiers that persist only within the instance. 
+    *   **Modifier Feedback**: Active buffs/debuffs are clickable, opening a detail popup explaining the exact stat impact.
 *   **Settlement System**: Persistent safe-zones (e.g., Altona Gate) featuring interactive NPCs, localized marketplaces for refined supplies, bulletin boards for extra-curricular contracts, and Lodges for full stat restoration.
 *   **Combat Loop**: Automated AI turn cycle with visual feedback and **Critical Hit** logic (15% chance for 1.75x damage).
 *   **Haptic Feedback**: Heavy impact haptics on critical hits; success notifications on quest turn-ins.
@@ -61,7 +50,7 @@ Manages real-time turn-based encounters.
 *   **UI Layout**:
     *   **Safe Zone Banner**: Positioned at the bottom (`bottom: 100`) for clear visibility.
     *   **Recenter Control**: Floating button in the bottom-right corner.
-    *   **Quest Tracker**: Interactive side-panel at `top: 40%` with a detailed modal view.
+    *   **Quest Tracker**: Interactive side-panel at `top: 40%` with a detailed modal view and navigation shortcuts.
 
 ### 3.3 Dynamic World
 *   **ZoneEventManager**: Periodically triggers biome-specific events (e.g., **Industrial Steam Leak**) that modify combat difficulty and loot drops (Double Scrap).
@@ -75,14 +64,15 @@ Manages real-time turn-based encounters.
 *   **Initial Narrative Overlay**: The `TutorialView` provides a high-z-index (`z-[10000]`) narrative overlay that guides the player through their first moments in the Fracture.
 *   **Dynamic Choice Engine**: Player decisions (e.g., choosing a makeshift weapon) are recorded in a `choicesLog` and immediately impact gameplay by granting specific items and learning corresponding skills (e.g., **Shield Bash**).
 *   **Progressive Feature Unlocking**:
-    *   **Hero Tab**: Unlocks at step 17 (HUD discovery).
-    *   **Bag Tab**: Unlocks at step 23 (After first combat).
-    *   **Battle/Market Tabs**: Unlocked only after completing the tutorial (Step 35).
+    *   **Hero Tab**: Unlocks at step 18/19 (HUD discovery).
+    *   **Bag Tab**: Unlocks at step 24 (After first combat).
+    *   **Battle/Market Tabs**: Unlocked only after completing the tutorial (Step 60).
     *   **Map Controls**: Recenter is always available; Scanning/Rifts unlock after the tutorial.
 *   **State Persistence**: `tutorialProgress` is stored in the `usePlayerStore` and persisted via `AsyncStorage`, maintaining the narrative position across sessions.
 *   **Interactive World Gates**: Physical manifestations (`tutorialMarker`, `tutorial-dog-signal`, `MILLERS_JUNCTION_DEPTHS`) act as mandatory interaction points to progress the story.
+*   **Predictive Spawning**: Tutorial enemies (e.g., the mutated dog) spawn as soon as their narrative introduction is reached, appearing behind the dialogue overlay for immersion.
 *   **Proximity-Gated Narrative**: Critical story beats (e.g., meeting Jeff post-dungeon) utilize precise coordinate-based triggers and quest-completion checks to ensure a coherent linear experience.
-*   **Settlement Discovery**: Players are introduced to communal safe-zones through narrative guidance, providing a transition from survival to progression.
+*   **Settlement Discovery**: Players are introduced to communal safe-zones through narrative guidance, with the map automatically zooming to the destination (Altona Gate) during the final sequence.
 *   **Character Identity**: Integrates a name-selection interface within the tutorial flow, persisting the identity across the HUD and status screens.
 *   **Dynamic Map Restrictions**: Level-gated "Fog of War" and interaction locks are dynamically disabled during active tutorial steps to ensure a smooth onboarding experience.
 *   **Pathname-Aware Visibility**: The narrative overlay is contextually restricted to the Map and Title screens, preventing interference with character management or inventory tasks.
@@ -96,7 +86,12 @@ Manages real-time turn-based encounters.
     *   **Tactile UI**: All tutorial elements use `Pressable` with `scale-95` feedback for consistent responsiveness.
     *   **Inventory UX**: Categorized, large-card layout for Bag items with intuitive "Use/Equip" actions.
 
-## 4. Completed Milestones
+## 4. Platform & Web Compatibility
+*   **ESM Support**: Configured Metro and Babel (`babel-plugin-transform-import-meta`) to support modern ESM libraries like Zustand v5 on web.
+*   **Bundler Fixes**: Enabled `unstable_enablePackageExports` in Metro to handle conditional exports and package entry points.
+*   **React Version Alignment**: Enforced strict version parity between `react`, `react-dom`, and `react-native-renderer` (19.1.0) to prevent runtime crashes on Expo Go.
+
+## 5. Completed Milestones
 - [x] Initial Expo + NativeWind scaffolding.
 - [x] Web-based geocoding (GeoService) with procedural fallback.
 - [x] Home City Sanctuary system with Rest mechanic.
@@ -115,3 +110,6 @@ Manages real-time turn-based encounters.
 - [x] **Dynamic Zone Events (Steam Leak) and Biome-specific loot.**
 - [x] **Visual "Fog of War" restriction for Level-gated areas.**
 - [x] **Exploit Prevention: Combat Action Locking.**
+- [x] **Smart Navigation System ("Take me there").**
+- [x] **Dungeon Altar Detail Popups.**
+- [x] **ESM/Web Compatibility Layer.**
