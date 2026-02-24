@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { usePlayerStore } from '../utils/usePlayerStore';
-import { Scroll, CheckCircle2, Gift, X, Sparkles, Trophy } from 'lucide-react-native';
+import { Scroll, CheckCircle2, Gift, X, Sparkles, Trophy, Navigation } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInRight, SlideInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useUIStore } from '../utils/useUIStore';
+import { MILLERS_JUNCTION_DEPTHS_COORDS } from '../utils/Constants';
 
 const QuestTracker = () => {
   const { activeQuests, completeQuest, enrolledFaction } = usePlayerStore();
@@ -154,6 +156,23 @@ const QuestTracker = () => {
                     >
                       <Gift size={16} color="#fff" className="mr-2" />
                       <Text className="text-white font-black text-xs uppercase tracking-[4px]">Claim Reward</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {quest.id === 'q-millers-junction-depths' && !quest.isCompleted && (
+                    <TouchableOpacity 
+                      onPress={() => {
+                        useUIStore.getState().setPendingMapAction({
+                          type: 'center',
+                          coords: MILLERS_JUNCTION_DEPTHS_COORDS,
+                          zoom: 0.005
+                        });
+                        setShowDetails(false);
+                      }}
+                      className="mt-4 bg-purple-600/20 border border-purple-500/40 h-12 rounded-xl flex-row items-center justify-center"
+                    >
+                      <Navigation size={14} color="#a855f7" className="mr-2" />
+                      <Text className="text-purple-400 font-black text-[10px] uppercase tracking-widest">Take me there</Text>
                     </TouchableOpacity>
                   )}
                 </View>

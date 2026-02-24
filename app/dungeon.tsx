@@ -4,8 +4,8 @@ import { useDungeonStore, DungeonChoice, DungeonModifier } from '../utils/useDun
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
 import { useRouter } from 'expo-router';
-import { Sword, Package, Zap, Skull, Coffee, Flame, Shield, ChevronRight, Activity, Sparkles } from 'lucide-react-native';
-import Animated, { FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
+import { Sword, Package, Zap, Skull, Coffee, Flame, Shield, ChevronRight, Activity, Sparkles, Info } from 'lucide-react-native';
+import Animated, { FadeIn, FadeInDown, SlideInDown, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { getDeterministicEnemy, getBossByBiome } from '../utils/EnemyFactory';
 import { BiomeType } from '../utils/BiomeMapper';
@@ -16,6 +16,7 @@ export default function DungeonScreen() {
   const player = usePlayerStore();
   const combat = useCombatStore();
   const [isProcessing, setIsActionProcessing] = useState(false);
+  const [selectedModifier, setSelectedModifier] = useState<DungeonModifier | null>(null);
 
   const currentStage = dungeon.currentStage;
   const choices = dungeon.stageChoices;
@@ -227,13 +228,55 @@ export default function DungeonScreen() {
       {dungeon.modifiers.length > 0 && (
         <View className="absolute bottom-10 left-6 right-6 flex-row flex-wrap gap-2">
           {dungeon.modifiers.map(mod => (
-            <View key={mod.id} className={`px-2 py-1 rounded-md border flex-row items-center ${mod.type === 'buff' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+            <TouchableOpacity 
+              key={mod.id} 
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setSelectedModifier(mod);
+              }}
+              className={`px-2 py-1 rounded-md border flex-row items-center ${mod.type === 'buff' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}
+            >
               <Text className={`${mod.type === 'buff' ? 'text-emerald-400' : 'text-red-400'} font-bold text-[8px] uppercase tracking-widest`}>
                 {mod.name}
               </Text>
-            </View>
+            </TouchableOpacity>
           ))}
         </View>
+      )}
+
+      {/* Modifier Detail Popup */}
+      {selectedModifier && (
+        <Animated.View 
+          entering={FadeInDown.duration(300)}
+          exiting={FadeOut.duration(200)}
+          className="absolute bottom-0 left-0 right-0 p-6 bg-zinc-900 border-t border-zinc-800 rounded-t-[40px] shadow-2xl z-[100]"
+        >
+          <View className="flex-row justify-between items-center mb-4">
+            <View className="flex-row items-center">
+              <View className={`p-2 rounded-lg mr-3 ${selectedModifier.type === 'buff' ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
+                {selectedModifier.type === 'buff' ? <Sparkles size={16} color="#10b981" /> : <Info size={16} color="#ef4444" />}
+              </View>
+              <Text className="text-white font-black text-lg uppercase tracking-widest">{selectedModifier.name}</Text>
+            </View>
+            <TouchableOpacity 
+              onPress={() => setSelectedModifier(null)}
+              className="bg-zinc-800 p-2 rounded-full"
+            >
+              <X size={16} color="#71717a" />
+            </TouchableOpacity>
+          </View>
+          
+          <Text className="text-zinc-400 text-sm leading-5 mb-6">
+            This {selectedModifier.type} {selectedModifier.type === 'buff' ? 'increases' : 'decreases'} your total {selectedModifier.stat} by {Math.abs(Math.round((selectedModifier.value - 1) * 100))}% while inside this dungeon.
+          </Text>
+
+          <TouchableOpacity 
+            onPress={() => setSelectedModifier(null)}
+            className="bg-zinc-800 h-12 rounded-xl items-center justify-center"
+          >
+            <Text className="text-zinc-300 font-bold uppercase tracking-widest text-[10px]">Dismiss</Text>
+          </TouchableOpacity>
+        </Animated.View>
       )}
     </View>
   );

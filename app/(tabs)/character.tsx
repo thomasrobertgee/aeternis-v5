@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useUIStore } from '../../utils/useUIStore';
 import { Sword, Shield, User, Zap, Flame, Skull, Eye, Heart, BookOpen, Scroll, Activity, Navigation, Gift } from 'lucide-react-native';
-import { getRarityColor } from '../../utils/Constants';
+import { getRarityColor, MILLERS_JUNCTION_DEPTHS_COORDS } from '../../utils/Constants';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 import { ENEMY_DATABASE, BOSS_DATABASE } from '../../utils/EnemyFactory';
 import * as Haptics from 'expo-haptics';
@@ -67,6 +67,12 @@ export default function CharacterScreen() {
 
   const specDetails = specialization ? getSpecDetails(specialization) : null;
 
+  // Calculate equipment bonuses for display
+  const equipmentAtkBonus = (equipment.weapon?.stats?.attack || 0);
+  const equipmentDefBonus = (equipment.armor?.stats?.defense || 0) + 
+                           (equipment.boots?.stats?.defense || 0) + 
+                           (setBonus?.bonus?.defense || 0);
+
   const getItemIcon = (category: string, rarity: string | undefined) => {
     const color = getRarityColor(rarity || 'Common');
     switch (category) {
@@ -116,11 +122,25 @@ export default function CharacterScreen() {
         </View>
         <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
           <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Attack</Text>
-          <Text className="text-white font-bold text-lg">{attack}</Text>
+          <View className="flex-row items-baseline">
+            <Text className="text-white font-bold text-lg">{attack}</Text>
+            {equipmentAtkBonus > 0 && (
+              <Text className="text-zinc-500 text-[10px] ml-1.5 font-bold">
+                ({attack - equipmentAtkBonus} <Text className="text-emerald-500">+{equipmentAtkBonus}</Text>)
+              </Text>
+            )}
+          </View>
         </View>
         <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
           <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Defense</Text>
-          <Text className="text-white font-bold text-lg">{defense}</Text>
+          <View className="flex-row items-baseline">
+            <Text className="text-white font-bold text-lg">{defense}</Text>
+            {equipmentDefBonus > 0 && (
+              <Text className="text-zinc-500 text-[10px] ml-1.5 font-bold">
+                ({defense - equipmentDefBonus} <Text className="text-emerald-500">+{equipmentDefBonus}</Text>)
+              </Text>
+            )}
+          </View>
         </View>
         <View className="flex-1 min-w-[45%] bg-zinc-900/50 border border-zinc-800 p-4 rounded-3xl">
           <Text className="text-zinc-500 text-[8px] font-black uppercase tracking-widest mb-1">Aetium</Text>
@@ -343,7 +363,14 @@ export default function CharacterScreen() {
             )}
             {quest.id === 'q-millers-junction-depths' && !quest.isCompleted && (
               <TouchableOpacity 
-                onPress={() => router.replace('/(tabs)/explore')}
+                onPress={() => {
+                  useUIStore.getState().setPendingMapAction({
+                    type: 'center',
+                    coords: MILLERS_JUNCTION_DEPTHS_COORDS,
+                    zoom: 0.005
+                  });
+                  router.replace('/(tabs)/explore');
+                }}
                 className="mt-4 bg-purple-600/20 border border-purple-500/40 p-4 rounded-2xl flex-row items-center justify-center"
               >
                 <Navigation size={14} color="#a855f7" className="mr-2" />

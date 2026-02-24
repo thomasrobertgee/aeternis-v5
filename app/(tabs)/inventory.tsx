@@ -212,7 +212,7 @@ export default function InventoryScreen() {
           entering={SlideInUp.duration(300)}
           className="absolute bottom-6 left-4 right-4 bg-zinc-900 border-2 border-zinc-800 p-6 rounded-[40px] shadow-2xl z-50"
         >
-          <View className="flex-row items-center">
+          <View className="flex-row justify-between items-start">
             {/* Left Column: Details */}
             <View className="flex-1 pr-4">
               <View className="flex-row items-center mb-2">
@@ -239,26 +239,26 @@ export default function InventoryScreen() {
               )}
             </View>
 
-            {/* Right Column: Large Action Button */}
-            <View className="flex-col" style={{ marginLeft: -70 }}>
+            {/* Right Column: Action Button */}
+            <View className="pt-1">
               <Pressable 
                 onPress={handleAction}
                 style={({ pressed }) => [
                   { 
-                    width: 175, 
-                    height: 125, 
-                    borderRadius: 28, 
+                    width: 120,
+                    height: 44,
+                    borderRadius: 12, 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    borderWidth: 3,
+                    borderWidth: 1,
                     borderColor: 'rgba(255,255,255,0.3)'
                   },
                   { backgroundColor: selectedItem.category === 'Utility' ? '#059669' : '#0891b2' },
                   pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }
                 ]}
               >
-                <View className="border border-white/30 px-6 py-3 rounded-2xl">
-                  <Text className="text-white font-normal text-3xl uppercase text-center tracking-[6px]">
+                <View className="border border-white/20 px-4 py-1.5 rounded-lg">
+                  <Text className="text-white font-black text-[10px] uppercase text-center tracking-[3px]">
                     {selectedItem.category === 'Utility' ? 'Use' : 'Equip'}
                   </Text>
                 </View>

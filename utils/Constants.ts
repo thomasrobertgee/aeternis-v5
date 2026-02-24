@@ -11,3 +11,6 @@ export const getRarityColor = (rarity: string) => {
     default: return '#f4f4f5'; // zinc-100
   }
 };
+
+export const MILLERS_JUNCTION_DEPTHS_COORDS = { latitude: -37.84405, longitude: 144.84356 };
+export const ALTONA_GATE_COORDS = { latitude: -37.828, longitude: 144.847 };

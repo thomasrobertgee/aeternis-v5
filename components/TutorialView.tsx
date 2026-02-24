@@ -344,7 +344,7 @@ const TUTORIAL_STEPS = [
   },
   {
     text: "\"Anyway, what is your name, Otherworlder?\"",
-    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 58 }],
+    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 59 }],
     icon: <User size={32} color="#a855f7" />
   },
   {

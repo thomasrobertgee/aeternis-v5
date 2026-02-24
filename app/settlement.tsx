@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Pressable 
 import { usePlayerStore, Quest, Item } from '../utils/usePlayerStore';
 import { useRouter } from 'expo-router';
 import { 
-  Home, User, ShoppingBag, Scroll, Coffee, X, 
+  Home, User, ShoppingBag, Scroll, Coffee, X as CloseIcon, 
   MessageSquare, ChevronRight, Sword, Shield, 
   Package, Zap, Star
 } from 'lucide-react-native';
@@ -170,7 +170,7 @@ export default function SettlementScreen() {
             onPress={() => router.replace('/(tabs)/explore')}
             className="bg-zinc-900 p-3 rounded-2xl border border-zinc-800"
           >
-            <X size={20} color="#71717a" />
+            <CloseIcon size={20} color="#71717a" />
           </TouchableOpacity>
         </View>
       </View>

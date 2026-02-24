@@ -38,12 +38,11 @@ import { useTravelStore } from '../../utils/useTravelStore';
 import { useUIStore } from '../../utils/useUIStore';
 import { useDungeonStore } from '../../utils/useDungeonStore';
 import SoundService from '../../utils/SoundService';
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
 import FractureMap from '../../components/FractureMap';
+import { MILLERS_JUNCTION_DEPTHS_COORDS, ALTONA_GATE_COORDS } from '../../utils/Constants';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
-
-const MILLERS_JUNCTION_DEPTHS_COORDS = { latitude: -37.84405, longitude: 144.84356 };
-const ALTONA_GATE_COORDS = { latitude: -37.828, longitude: 144.847 };
 
 export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
@@ -52,6 +51,7 @@ export default function ExploreScreen() {
   const { playerLocation, setPlayerLocation, rest, hasSetHomeCity, homeCityName, sanctuaryLocation, enrolledFaction, specialization, level, hostileSignals, setHostileSignals, respawnSignals, triggerRift, saveZoneProfile, cleanupZones, tutorialProgress, updateTutorial, tutorialMarker } = usePlayerStore();
   const { initiateCombat } = useCombatStore();
   const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName, totalTravelDuration } = useTravelStore();
+  const { pendingMapAction, setPendingMapAction } = useUIStore();
   const [currentSuburb, setCurrentSuburb] = useState<string>("");
   const [currentSuburbPolygon, setCurrentSuburbPolygon] = useState<{latitude: number, longitude: number}[] | null>(null);
   const [isInEncounter, setIsInEncounter] = useState(false);
@@ -61,12 +61,27 @@ export default function ExploreScreen() {
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const [mapRegion, setMapRegion] = useState({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 });
 
+  useEffect(() => {
+    if (isFocused && pendingMapAction && pendingMapAction.type === 'center') {
+      const { coords, zoom } = pendingMapAction;
+      setTimeout(() => {
+        mapRef.current?.animateToRegion({
+          ...coords,
+          latitudeDelta: zoom || 0.02,
+          longitudeDelta: zoom || 0.02
+        }, 1500);
+        // Clear the action after triggering
+        setPendingMapAction(null);
+      }, 500);
+    }
+  }, [isFocused, pendingMapAction]);
+
   const tutorialPulseScale = useSharedValue(1);
   const tutorialPulseOpacity = useSharedValue(0);
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57);
+  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 59);
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -87,6 +102,17 @@ export default function ExploreScreen() {
             edgePadding: { top: 150, right: 100, bottom: 150, left: 100 },
             animated: true,
           });
+        }, 500);
+      }
+
+      // Special handling for Step 59: Zoom to Altona Gate
+      if (tutorialProgress.currentStep === 59 && mapRef.current) {
+        setTimeout(() => {
+          mapRef.current?.animateToRegion({
+            ...ALTONA_GATE_COORDS,
+            latitudeDelta: 0.005,
+            longitudeDelta: 0.005
+          }, 1500);
         }, 500);
       }
     } else {
@@ -186,7 +212,11 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
   useEffect(() => {
-    const checkpoints = [18, 19, 30, 34, 36, 37, 38, 39, 40, 42, 45, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58];
+    const checkpoints = [
+      18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
+      31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58
+    ];
     
     // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
     if (isFocused && tutorialProgress.currentStep === 46 && !tutorialProgress.isTutorialActive) {
@@ -218,7 +248,10 @@ export default function ExploreScreen() {
 
   // Handle step 23 (spawn tutorial enemy)
   useEffect(() => {
-    if (tutorialProgress.currentStep === 23 && !tutorialProgress.isTutorialActive) {
+    if (tutorialProgress.currentStep >= 22 && tutorialProgress.currentStep <= 23) {
+      // Don't re-spawn if they already exist
+      if (hostileSignals?.some(s => s.id === 'tutorial-dog-signal')) return;
+      
       // Spawn a special tutorial enemy near player (approx 100m west)
       const dogCoords = { 
         latitude: playerLocation.latitude, 
@@ -235,7 +268,10 @@ export default function ExploreScreen() {
 
   // Handle step 35 (spawn 5 tutorial dogs)
   useEffect(() => {
-    if (tutorialProgress.currentStep === 35 && !tutorialProgress.isTutorialActive) {
+    if (tutorialProgress.currentStep >= 33 && tutorialProgress.currentStep <= 35) {
+      // Don't re-spawn if they already exist
+      if (hostileSignals?.some(s => s.id === 'tutorial-dog-multi-0')) return;
+
       const offsets = [
         { lat: 0.00225, lon: 0 },
         { lat: -0.00225, lon: 0 },
@@ -286,7 +322,7 @@ export default function ExploreScreen() {
     }
   };
 
-  const hideScanner = tutorialProgress.currentStep < 35;
+  const hideScanner = tutorialProgress.currentStep < 59;
 
   const homeCityHoles = useMemo(() => { if (!homeCityName) return []; const feature = BoundaryService.getSuburbFeature(homeCityName); if (!feature || !feature.geometry) return []; if (feature.geometry.type === 'Polygon') { return [feature.geometry.coordinates[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))]; } if (feature.geometry.type === 'MultiPolygon') { return feature.geometry.coordinates.map((poly: any) => poly[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))); } return []; }, [homeCityName]);
   const biomeColors = useMemo(() => { return { fill: 'rgba(212, 212, 216, 0.25)', stroke: 'rgba(6, 182, 212, 0.8)' }; }, []);
@@ -456,7 +492,7 @@ export default function ExploreScreen() {
       <TransitView />
       {showDiscovery && selectedZone && <DiscoveryOverlay suburb={selectedZone.suburb} fracturedTitle={getProceduralZone(selectedZone.suburb).loreName} onComplete={() => setShowDiscovery(false)} />}
       <QuestTracker />
-      {tutorialProgress.currentStep >= 58 && (
+      {tutorialProgress.currentStep >= 60 && (
         <View className="absolute top-32 right-6 z-50 flex-col gap-3">
           <TouchableOpacity 
             onPress={handleScanArea} 

@@ -138,6 +138,10 @@ export default function BattleScreen() {
       // Bestiary Update
       recordDefeat(enemyName);
 
+      if (sourceId === 'dungeon-boss') {
+        player.updateTutorial({ currentStep: 44, isTutorialActive: true }); // Congratulations
+      }
+
       if (isTutorialDog || isMultiTutorialDog) {
         // Special Tutorial Logic
         let goldLoot = 1;
@@ -164,10 +168,10 @@ export default function BattleScreen() {
 
           const quest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-tutorial-dogs');
           if (quest && quest.currentCount >= quest.targetCount) {
-            player.updateTutorial({ currentStep: 35, isTutorialActive: true }); // Narrative checkpoint
+            player.updateTutorial({ currentStep: 36, isTutorialActive: true }); // Narrative checkpoint: "You collapse..."
           }
         } else {
-          player.updateTutorial({ currentStep: 23, isTutorialActive: false }); // Narrative checkpoint
+          player.updateTutorial({ currentStep: 24, isTutorialActive: true }); // Narrative checkpoint: "After finally defeating..."
         }
         
         setTimeout(() => {
