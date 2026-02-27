@@ -58,7 +58,7 @@ export interface GlobalNotification {
   id: string;
   title: string;
   message: string;
-  type: 'Info' | 'Warning' | 'Rift';
+  type: 'Info' | 'Warning' | 'Rift' | 'LevelUp' | 'Aetium' | 'Item';
 }
 
 export interface BestiaryEntry {
@@ -114,12 +114,15 @@ interface PlayerState {
   enrolledFaction: string | null;
   specialization: SpecializationID | null;
   setBonus: { name: string; bonus: Record<string, number> } | null;
-  globalNotification: GlobalNotification | null;
+  globalNotification: GlobalNotification[];
+  errorNotification: { id: string; title: string; message: string }[];
   playerName: string;
   hasSetHomeCity: boolean;
   homeCityName: string;
   sanctuaryLocation: Coords | null;
   isSaving: boolean;
+  isInSettlement: boolean;
+  isTutorialComplete: boolean;
   dungeonModifiers: DungeonModifier[];
   settings: {
     musicEnabled: boolean;
@@ -127,6 +130,8 @@ interface PlayerState {
   setPlayerLocation: (location: Coords) => void;
   setPlayerName: (name: string) => void;
   setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
+  setIsInSettlement: (inSettlement: boolean) => void;
+  setTutorialComplete: (complete: boolean) => void;
   setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
   toggleMusic: () => void;
   gainXp: (amount: number) => void;
@@ -149,6 +154,9 @@ interface PlayerState {
   setHostileSignals: (signals: Signal[]) => void;
   triggerRift: (coords: Coords, biome: BiomeType) => void;
   setNotification: (notif: GlobalNotification | null) => void;
+  removeNotification: (id: string) => void;
+  setErrorNotification: (error: { title: string; message: string } | null) => void;
+  removeErrorNotification: (id: string) => void;
   setHomeCity: (city: string, location: Coords) => void;
   triggerSaving: () => void;
   cleanupZones: () => void;
@@ -257,19 +265,44 @@ export const usePlayerStore = create<PlayerState>()(
             enrolledFaction: null,
                   specialization: null,
                   setBonus: null,
-                        globalNotification: null,
+                        globalNotification: [],
+                              errorNotification: [],
                               playerName: "Traveller",
                               hasSetHomeCity: true,
                               homeCityName: "Altona North",
                               sanctuaryLocation: INITIAL_LOCATION,
                               isSaving: false,
+                              isInSettlement: false,
+                              isTutorialComplete: false,
                               dungeonModifiers: [],
                               settings: {
                                 musicEnabled: true,
                               },
             
                               setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
-                              setStats: (stats) => set((state) => ({ ...state, ...stats })),
+                              setStats: (stats) => set((state) => {
+                                let newNotifications = state.globalNotification;
+                                
+                                // Trigger Aetium notification if gold increases
+                                if (stats.gold !== undefined && stats.gold > state.gold) {
+                                  const amount = stats.gold - state.gold;
+                                  const aetiumNotif: GlobalNotification = {
+                                    id: `aetium-${Date.now()}-${Math.random()}`,
+                                    title: 'Aetium Synchronized',
+                                    message: `+${amount} Aetium crystals merged with your vault.`,
+                                    type: 'Aetium'
+                                  };
+                                  newNotifications = [...newNotifications, aetiumNotif];
+                                }
+                                
+                                return { 
+                                  ...state, 
+                                  ...stats,
+                                  globalNotification: newNotifications
+                                };
+                              }),
+                              setIsInSettlement: (inSettlement) => set({ isInSettlement: inSettlement }),
+                              setTutorialComplete: (complete) => set({ isTutorialComplete: complete }),
                               setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
                               toggleMusic: () => set((state) => ({
                                 settings: { ...state.settings, musicEnabled: !state.settings.musicEnabled }
@@ -284,6 +317,7 @@ export const usePlayerStore = create<PlayerState>()(
               let newMana = state.mana;
               let newAttack = state.attack;
               let newDefense = state.defense;
+              let newNotifications = state.globalNotification;
       
               while (newXp >= newMaxXp) {
                 newXp -= newMaxXp;
@@ -299,6 +333,15 @@ export const usePlayerStore = create<PlayerState>()(
               if (newLevel > state.level) {
                 newHp = newMaxHp;
                 newMana = newMaxMana;
+                
+                // Trigger LevelUp notification
+                const levelNotif: GlobalNotification = {
+                  id: `level-${Date.now()}-${Math.random()}`,
+                  title: 'Level Resonance',
+                  message: `Your Imaginum expands. You have reached Level ${newLevel}.`,
+                  type: 'LevelUp'
+                };
+                newNotifications = [...newNotifications, levelNotif];
               }
       
               return { 
@@ -310,12 +353,23 @@ export const usePlayerStore = create<PlayerState>()(
                 hp: newHp,
                 mana: newMana,
                 attack: newAttack,
-                defense: newDefense
+                defense: newDefense,
+                globalNotification: newNotifications
               };
             }),
-            addItem: (item) => set((state) => ({ 
-              inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }] 
-            })),
+            addItem: (item) => set((state) => {
+              const itemNotif: GlobalNotification = {
+                id: `item-${Date.now()}-${Math.random()}`,
+                title: 'Item Acquired',
+                message: `${item.name} has been synchronized to your inventory.`,
+                type: 'Item'
+              };
+
+              return { 
+                inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }],
+                globalNotification: [...state.globalNotification, itemNotif]
+              };
+            }),
             removeItem: (itemId) => set((state) => {
               const index = state.inventory.findIndex(i => i.id === itemId);
               if (index === -1) return state;
@@ -410,9 +464,19 @@ export const usePlayerStore = create<PlayerState>()(
         const quest = state.activeQuests.find(q => q.id === id);
         if (!quest || !quest.isCompleted) return state;
 
+        let newNotifications = [...state.globalNotification];
+
         // Custom reward for Miller's Junction Depths (Tutorial Pouch)
         let goldReward = quest.rewardGold;
         if (id === 'q-millers-junction-depths') goldReward = 500;
+
+        // Trigger Aetium notification
+        newNotifications.push({
+          id: `aetium-${Date.now()}-${Math.random()}`,
+          title: 'Aetium Synchronized',
+          message: `+${goldReward} Aetium crystals merged with your vault.`,
+          type: 'Aetium'
+        });
 
         let itemReward: Item | null = null;
         if (state.enrolledFaction === 'the-cogwheel') {
@@ -425,6 +489,15 @@ export const usePlayerStore = create<PlayerState>()(
           ? [...state.inventory, { ...itemReward, id: `${itemReward.id}-${Math.random().toString(36).substr(2, 9)}` }]
           : state.inventory;
 
+        if (itemReward) {
+          newNotifications.push({
+            id: `item-${Date.now()}-${Math.random()}`,
+            title: 'Item Acquired',
+            message: `${itemReward.name} has been synchronized to your inventory.`,
+            type: 'Item'
+          });
+        }
+
         let newXp = state.xp + quest.rewardXp;
         let newLevel = state.level;
         let newMaxXp = state.maxXp;
@@ -432,6 +505,8 @@ export const usePlayerStore = create<PlayerState>()(
         let newMaxMana = state.maxMana;
         let newHp = state.hp;
         let newMana = state.mana;
+        let newAttack = state.attack;
+        let newDefense = state.defense;
 
         while (newXp >= newMaxXp) {
           newXp -= newMaxXp;
@@ -439,22 +514,38 @@ export const usePlayerStore = create<PlayerState>()(
           newMaxXp = Math.floor(newMaxXp * 1.5);
           newMaxHp += 20;
           newMaxMana += 10;
+          newAttack += 2;
+          newDefense += 1;
+        }
+
+        // Fully restore to new maximums if a level was gained
+        if (newLevel > state.level) {
           newHp = newMaxHp;
           newMana = newMaxMana;
-                }
           
-                return {
-                  gold: state.gold + goldReward,
-                  inventory: updatedInventory,
-                  xp: newXp,
-        
+          // Trigger LevelUp notification
+          newNotifications.push({
+            id: `level-${Date.now()}-${Math.random()}`,
+            title: 'Level Resonance',
+            message: `Your Imaginum expands. You have reached Level ${newLevel}.`,
+            type: 'LevelUp'
+          });
+        }
+          
+        return {
+          gold: state.gold + goldReward,
+          inventory: updatedInventory,
+          xp: newXp,
           level: newLevel,
           maxXp: newMaxXp,
           maxHp: newMaxHp,
           maxMana: newMaxMana,
           hp: newHp,
           mana: newMana,
-          activeQuests: state.activeQuests.filter(q => q.id !== id)
+          attack: newAttack,
+          defense: newDefense,
+          activeQuests: state.activeQuests.filter(q => q.id !== id),
+          globalNotification: newNotifications
         };
       }),
       enrollInFaction: (factionId) => set((state) => {
@@ -551,16 +642,32 @@ export const usePlayerStore = create<PlayerState>()(
 
         return {
           hostileSignals: [...state.hostileSignals, riftSignal],
-          globalNotification: riftNotif
+          globalNotification: [...state.globalNotification, riftNotif]
         };
       }),
-      setNotification: (notif) => set({ globalNotification: notif }),
-      setHomeCity: (city, location) => set({ 
+                                    setNotification: (notif) => set((state) => ({ 
+                                      globalNotification: notif ? [...state.globalNotification, notif] : state.globalNotification 
+                                    })),
+                                    removeNotification: (id) => set((state) => ({
+                                      globalNotification: state.globalNotification.filter(n => n.id !== id)
+                                    })),
+                                    setErrorNotification: (error) => set((state) => ({ 
+                                      errorNotification: error ? [...state.errorNotification, { ...error, id: `error-${Date.now()}-${Math.random()}` }] : state.errorNotification 
+                                    })),
+                                    removeErrorNotification: (id) => set((state) => ({
+                                      errorNotification: state.errorNotification.filter(e => e.id !== id)
+                                    })),
+                                    setHomeCity: (city, location) => set({ 
+       
         homeCityName: city, 
         playerLocation: location, 
         sanctuaryLocation: location,
         hasSetHomeCity: true 
       }),
+      triggerSaving: () => {
+        set({ isSaving: true });
+        setTimeout(() => set({ isSaving: false }), 2000);
+      },
       cleanupZones: () => set({
         discoveredZones: {},
         hostileSignals: []
@@ -605,20 +712,24 @@ export const usePlayerStore = create<PlayerState>()(
         enrolledFaction: null,
         specialization: null,
         setBonus: null,
-        globalNotification: null,
+        globalNotification: [],
+        errorNotification: [],
         playerName: "Traveller",
         hasSetHomeCity: true,
         homeCityName: "Altona North",
         sanctuaryLocation: INITIAL_LOCATION,
         isSaving: false,
+        isInSettlement: false,
+        isTutorialComplete: false,
         dungeonModifiers: [],
         settings: {
           musicEnabled: true,
         },
       }),
-      updateTutorial: (progress) => set((state) => ({
-        tutorialProgress: { ...state.tutorialProgress, ...progress }
-      })),
+      updateTutorial: (progress) => set((state) => {
+        console.log(`[TUTORIAL] Updating progress:`, progress);
+        return { tutorialProgress: { ...state.tutorialProgress, ...progress } };
+      }),
       clearTutorialMarker: () => set({ tutorialMarker: null }),
       logChoice: (choice) => set((state) => ({ choicesLog: [...state.choicesLog, choice] })),
     }),

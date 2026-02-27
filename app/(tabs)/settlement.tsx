@@ -1,48 +1,176 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Pressable } from 'react-native';
-import { usePlayerStore, Quest, Item } from '../utils/usePlayerStore';
+import { usePlayerStore, Quest, Item } from '../../utils/usePlayerStore';
 import { useRouter } from 'expo-router';
 import { 
   Home, User, ShoppingBag, Scroll, Coffee, X as CloseIcon, 
   MessageSquare, ChevronRight, Sword, Shield, 
-  Package, Zap, Star
+  Package, Zap, Star, Users, Utensils, ClipboardList
 } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { getRarityColor } from '../utils/Constants';
+import { getRarityColor } from '../../utils/Constants';
 
-type SettlementTab = 'NPCs' | 'Market' | 'Board' | 'Lodge';
+type SettlementTab = 'Lobby' | 'NPCs' | 'Market' | 'Board' | 'Lodge';
 
 export default function SettlementScreen() {
   const router = useRouter();
   const player = usePlayerStore();
-  const [activeTab, setActiveTab] = useState<SettlementTab>('NPCs');
+  const [activeTab, setActiveTab] = useState<SettlementTab>('Lobby');
+
+  useEffect(() => {
+    player.setIsInSettlement(true);
+    // When the component unmounts, it doesn't necessarily mean we've 'left' the settlement 
+    // (e.g. if we just clicked a tab). But if we navigate back to explore, we should set it to false.
+    // However, the user wants a 'Back to Settlement' button, so we KEEP it true until they exit.
+  }, []);
+
+  const handleExit = () => {
+    Alert.alert("Leave Settlement", "Return to the wild Fracture?", [
+      { text: "Stay" },
+      { text: "Leave", style: "destructive", onPress: () => {
+        player.setIsInSettlement(false);
+        router.replace('/(tabs)/explore');
+      }}
+    ]);
+  };
+
+  const renderLobby = () => (
+    <Animated.View entering={FadeIn} className="flex-1">
+      <View className="gap-4">
+        <TouchableOpacity 
+          className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab('NPCs');
+          }}
+        >
+          <View className="bg-cyan-500/10 p-4 rounded-2xl mr-5 border border-cyan-500/20">
+            <User size={24} color="#06b6d4" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-white font-bold text-lg">Talk to the Chief</Text>
+            <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"The Mayor handles all official enclave business."</Text>
+          </View>
+          <ChevronRight size={20} color="#3f3f46" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab('Market');
+          }}
+        >
+          <View className="bg-amber-500/10 p-4 rounded-2xl mr-5 border border-amber-500/20">
+            <ShoppingBag size={24} color="#f59e0b" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-white font-bold text-lg">Vendors</Text>
+            <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"Browse the stalls for supplies and scrap."</Text>
+          </View>
+          <ChevronRight size={20} color="#3f3f46" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab('Lodge');
+          }}
+        >
+          <View className="bg-emerald-500/10 p-4 rounded-2xl mr-5 border border-emerald-500/20">
+            <Utensils size={24} color="#10b981" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-white font-bold text-lg">Tavern</Text>
+            <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"The Lodge is the heart of our community."</Text>
+          </View>
+          <ChevronRight size={20} color="#3f3f46" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab('Board');
+          }}
+        >
+          <View className="bg-purple-500/10 p-4 rounded-2xl mr-5 border border-purple-500/20">
+            <ClipboardList size={24} color="#a855f7" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-white font-bold text-lg">Bulletin Board</Text>
+            <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"Contracts and assignments for Otherworlders."</Text>
+          </View>
+          <ChevronRight size={20} color="#3f3f46" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="bg-zinc-900/80 border border-zinc-800 p-6 rounded-[32px] flex-row items-center"
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setActiveTab('NPCs');
+          }}
+        >
+          <View className="bg-zinc-800 p-4 rounded-2xl mr-5 border border-zinc-700">
+            <Users size={24} color="#71717a" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-white font-bold text-lg">Talk to the Locals</Text>
+            <Text className="text-zinc-500 text-xs italic mt-1 leading-4">"Learn more about life inside the enclave."</Text>
+          </View>
+          <ChevronRight size={20} color="#3f3f46" />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          className="bg-red-950/20 border border-red-500/30 p-6 rounded-[32px] flex-row items-center mt-4"
+          onPress={handleExit}
+        >
+          <View className="bg-red-500/10 p-4 rounded-2xl mr-5 border border-red-500/20">
+            <CloseIcon size={24} color="#ef4444" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-red-500 font-bold text-lg">Exit Settlement</Text>
+            <Text className="text-red-900/60 text-xs italic mt-1 leading-4">"Return to the volatile overworld."</Text>
+          </View>
+          <ChevronRight size={20} color="#ef4444" />
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
 
   const handleRest = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     player.rest();
+    
+    // Complete the tutorial if it hasn't been already
+    if (!player.isTutorialComplete) {
+      player.setTutorialComplete(true);
+    }
+
     Alert.alert("Sanctuary Found", "The warmth of the lodge restores your spirit. Vitality and MP fully synchronized.");
   };
 
   const handleAcceptQuest = (quest: Quest) => {
     if (player.activeQuests.find(q => q.id === quest.id)) {
-      Alert.alert("Already Active", "You are already tracking this objective.");
+      player.setErrorNotification({ title: "Objective Active", message: "You are already tracking this objective." });
       return;
     }
     player.startQuest(quest);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Objective Synchronized", `Quest '${quest.title}' added to your HUD.`);
+    player.setNotification({ id: `quest-${Date.now()}`, title: "Objective Synchronized", message: `Quest '${quest.title}' added to your HUD.`, type: 'Info' });
   };
 
   const handlePurchase = (item: Item, price: number) => {
     if (player.gold < price) {
-      Alert.alert("Insufficient Aetium", "You require more resources for this acquisition.");
+      player.setErrorNotification({ title: "Insufficient Aetium", message: "You require more resources for this acquisition." });
       return;
     }
     player.setStats({ gold: player.gold - price });
     player.addItem(item);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Purchase Complete", `${item.name} moved to your storage vault.`);
+    player.setNotification({ id: `buy-${Date.now()}`, title: "Purchase Complete", message: `${item.name} moved to your storage vault.`, type: 'Info' });
   };
 
   const renderNPCs = () => (
@@ -111,26 +239,35 @@ export default function SettlementScreen() {
       {[
         { id: 'q-sett-1', title: 'Static Culling', description: 'The perimeter is crawling with manifestations. Purge 10 enemies.', targetCount: 10, currentCount: 0, isCompleted: false, rewardXp: 500, rewardGold: 1000 },
         { id: 'q-sett-2', title: 'Scrap for Kael', description: 'Find and collect 5 units of Scrap Metal from the Rust Fields.', targetCount: 5, currentCount: 0, isCompleted: false, rewardXp: 300, rewardGold: 800 },
-      ].map((quest, idx) => (
-        <View key={idx} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[32px] mb-4">
-          <Text className="text-white font-bold text-xl mb-2">{quest.title}</Text>
-          <Text className="text-zinc-500 text-xs italic mb-6">"{quest.description}"</Text>
-          <View className="flex-row gap-4 mb-6">
-            <View className="bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800">
-              <Text className="text-cyan-400 font-black text-[8px] uppercase">{quest.rewardXp} XP</Text>
+      ].map((quest, idx) => {
+        const isActive = player.activeQuests.some(q => q.id === quest.id);
+        // Note: We don't have a completedQuests history yet, but we can check if it's NOT active and not in board? 
+        // For now, let's just handle 'Accepted'.
+        
+        return (
+          <View key={idx} className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-[32px] mb-4">
+            <Text className="text-white font-bold text-xl mb-2">{quest.title}</Text>
+            <Text className="text-zinc-500 text-xs italic mb-6">"{quest.description}"</Text>
+            <View className="flex-row gap-4 mb-6">
+              <View className="bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800">
+                <Text className="text-cyan-400 font-black text-[8px] uppercase">{quest.rewardXp} XP</Text>
+              </View>
+              <View className="bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800">
+                <Text className="text-amber-500 font-black text-[8px] uppercase">{quest.rewardGold} AETIUM</Text>
+              </View>
             </View>
-            <View className="bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800">
-              <Text className="text-amber-500 font-black text-[8px] uppercase">{quest.rewardGold} AETIUM</Text>
-            </View>
+            <TouchableOpacity 
+              onPress={() => !isActive && handleAcceptQuest(quest as any)}
+              disabled={isActive}
+              className={`h-14 rounded-2xl items-center justify-center ${isActive ? 'bg-zinc-800 opacity-50' : 'bg-white'}`}
+            >
+              <Text className={`${isActive ? 'text-zinc-500' : 'text-black'} font-black uppercase text-xs tracking-widest`}>
+                {isActive ? 'Contract Accepted' : 'Accept Contract'}
+              </Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity 
-            onPress={() => handleAcceptQuest(quest)}
-            className="bg-white h-14 rounded-2xl items-center justify-center"
-          >
-            <Text className="text-black font-black uppercase text-xs tracking-widest">Accept Contract</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+        );
+      })}
     </Animated.View>
   );
 
@@ -167,7 +304,7 @@ export default function SettlementScreen() {
             </View>
           </View>
           <TouchableOpacity 
-            onPress={() => router.replace('/(tabs)/explore')}
+            onPress={handleExit}
             className="bg-zinc-900 p-3 rounded-2xl border border-zinc-800"
           >
             <CloseIcon size={20} color="#71717a" />
@@ -177,7 +314,7 @@ export default function SettlementScreen() {
 
       {/* Tabs */}
       <View className="flex-row bg-zinc-950 px-4 py-2 gap-2">
-        {(['NPCs', 'Market', 'Board', 'Lodge'] as SettlementTab[]).map(tab => (
+        {(['Lobby', 'NPCs', 'Market', 'Board', 'Lodge'] as SettlementTab[]).map(tab => (
           <TouchableOpacity
             key={tab}
             onPress={() => {
@@ -196,6 +333,7 @@ export default function SettlementScreen() {
       </View>
 
       <ScrollView className="flex-1 px-6 pt-8" showsVerticalScrollIndicator={false}>
+        {activeTab === 'Lobby' && renderLobby()}
         {activeTab === 'NPCs' && renderNPCs()}
         {activeTab === 'Market' && renderMarket()}
         {activeTab === 'Board' && renderBoard()}

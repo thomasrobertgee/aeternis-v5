@@ -6,6 +6,7 @@ import { useDialogueSystem, DialogueTree } from '../utils/DialogueSystem';
 
 import { useRouter } from 'expo-router';
 import { useCombatStore } from '../utils/useCombatStore';
+import { usePlayerStore } from '../utils/usePlayerStore';
 
 interface DialogueViewProps {
   dialogueData: DialogueTree;

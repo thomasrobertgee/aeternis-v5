@@ -94,6 +94,17 @@ export default function DungeonScreen() {
     setIsActionProcessing(false);
   };
 
+  // Completion effect
+  useEffect(() => {
+    if (currentStage > 10 && dungeon.isInsideDungeon) {
+      if (player.tutorialProgress.currentStep === 43) {
+        player.updateTutorial({ currentStep: 44, isTutorialActive: true });
+      }
+      dungeon.exitDungeon();
+      router.replace('/(tabs)/explore');
+    }
+  }, [currentStage, dungeon.isInsideDungeon, player.tutorialProgress.currentStep]);
+
   const renderStageContent = () => {
     if (currentStage === 5) {
       return (

@@ -183,7 +183,6 @@ export default function BattleScreen() {
           });
           gainXp(xpReward);
           endCombat();
-          setIsResolving(false);
           
           if (dungeon.isInsideDungeon) {
             dungeon.nextStage();
@@ -191,6 +190,7 @@ export default function BattleScreen() {
           } else {
             router.replace('/explore');
           }
+          setIsResolving(false);
         }, 2500);
         return;
       }
@@ -237,7 +237,6 @@ export default function BattleScreen() {
         });
         gainXp(xpGained);
         endCombat();
-        setIsResolving(false);
 
         if (dungeon.isInsideDungeon) {
           if (dungeon.currentStage === 10) {
@@ -250,7 +249,10 @@ export default function BattleScreen() {
             dungeon.nextStage();
             router.replace('/dungeon');
           }
+        } else {
+          router.replace('/explore');
         }
+        setIsResolving(false);
       }, 2500);
     }
 

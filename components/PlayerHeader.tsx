@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
-import { User, X, Trash2, ShieldAlert, Settings, Music, Music2 } from 'lucide-react-native';
+import { User, X, Trash2, ShieldAlert, Settings, Music, Music2, Home } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import Animated, { FadeIn, SlideInDown, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
@@ -19,9 +19,13 @@ const PlayerHeader = () => {
   const [showProfile, setShowProfile] = useState(false);
 
   const isInBattleScreen = pathname === '/battle';
+  const isInSettlementScreen = pathname === '/settlement' || pathname === '/(tabs)/settlement';
   const showBackToBattle = combat.isInCombat && !isInBattleScreen;
+  const showBackToSettlement = player.isInSettlement && !isInSettlementScreen;
 
   const battlePulse = useSharedValue(1);
+  const settlementPulse = useSharedValue(1);
+
   useEffect(() => {
     if (showBackToBattle) {
       battlePulse.value = withRepeat(
@@ -35,8 +39,25 @@ const PlayerHeader = () => {
     }
   }, [showBackToBattle]);
 
+  useEffect(() => {
+    if (showBackToSettlement) {
+      settlementPulse.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 1000 }),
+          withTiming(1, { duration: 1000 })
+        ),
+        -1,
+        true
+      );
+    }
+  }, [showBackToSettlement]);
+
   const battleButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: battlePulse.value }],
+  }));
+
+  const settlementButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: settlementPulse.value }],
   }));
 
   // Use combat stats if in battle, otherwise use global player stats
@@ -106,6 +127,18 @@ const PlayerHeader = () => {
             >
               <ShieldAlert size={12} color="#fff" className="mr-1.5" />
               <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Battle</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {showBackToSettlement && (
+          <Animated.View entering={FadeIn} style={settlementButtonStyle} className="mr-4">
+            <TouchableOpacity 
+              onPress={() => router.replace('/(tabs)/settlement')}
+              className="bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400 shadow-lg shadow-emerald-900/40 flex-row items-center"
+            >
+              <Home size={12} color="#fff" className="mr-1.5" />
+              <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Settlement</Text>
             </TouchableOpacity>
           </Animated.View>
         )}

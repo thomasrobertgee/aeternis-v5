@@ -8,7 +8,6 @@ import Animated, {
   withTiming, 
   withSequence,
   useSharedValue,
-  useEffect,
   Easing
 } from 'react-native-reanimated';
 import { useTravelStore } from '../utils/useTravelStore';

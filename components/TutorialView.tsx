@@ -11,14 +11,38 @@ import Animated, {
   Easing,
   runOnJS
 } from 'react-native-reanimated';
-import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll, User, Package } from 'lucide-react-native';
+import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll, User, Package, Home } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter, usePathname } from 'expo-router';
 import { useUIStore } from '../utils/useUIStore';
 
 const { width, height } = Dimensions.get('window');
 
-const TUTORIAL_STEPS = [
+interface TutorialChoice {
+  label: string;
+  nextStep?: number;
+  validate?: (progress: any) => boolean;
+  failStep?: number;
+  isSticky?: boolean;
+  updates?: any;
+  isFinalTouch?: boolean;
+  isHeroTrigger?: boolean;
+  isMarketTrigger?: boolean;
+  isQuestTrigger?: boolean;
+  isNameTrigger?: boolean;
+  isAetiumReward?: boolean;
+  isWeaponChoice?: boolean;
+  weaponId?: string;
+  failText?: string;
+}
+
+interface TutorialStep {
+  text: string;
+  choices?: TutorialChoice[];
+  icon: React.ReactNode;
+}
+
+const TUTORIAL_STEPS: TutorialStep[] = [
   {
     text: "You wake up, dazed...",
     choices: [
@@ -201,7 +225,7 @@ const TUTORIAL_STEPS = [
   },
   {
     text: "You crawl over and pick up the crystal. After staring at it for a few seconds, it also shimmers and disappears. Then, you hear a soft 'ding' and the words '1 x Aetium received' appear in the corner of your vision.",
-    choices: [{ label: "Check your character", isHeroTrigger: true, nextStep: 30 }],
+    choices: [{ label: "Check your character", isHeroTrigger: true, nextStep: 30, updates: { gold: 1 } }],
     icon: <Sparkles size={32} color="#06b6d4" />
   },
   {
@@ -278,63 +302,58 @@ const TUTORIAL_STEPS = [
     icon: <Skull size={32} color="#ef4444" />
   },
   {
-    text: "Congratulations, you've completed the dungeon!",
-    choices: [{ label: "Continue", nextStep: 45 }],
-    icon: <Sparkles size={32} color="#10b981" />
-  },
-  {
     text: "After exiting the dungeon, you hear a shuffling of footsteps from behind a nearby ruin.",
-    choices: [{ label: "Draw your weapon", nextStep: 46 }],
+    choices: [{ label: "Draw your weapon", nextStep: 45 }],
     icon: <Skull size={32} color="#ef4444" />
   },
   {
     text: "\"Wait, wait! I mean you no harm!\" A figure steps out from behind an old dumpster. He is an old man, wearing tattered, weathered clothing.",
-    choices: [{ label: "Who are you?", nextStep: 47 }],
+    choices: [{ label: "Who are you?", nextStep: 46 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"My name is Jeff, and I just wanted to say thank you for clearing the dungeon. You're the first to do it since The Collapse.\"",
-    choices: [{ label: "The Collapse?", nextStep: 48 }],
+    choices: [{ label: "The Collapse?", nextStep: 47 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "Jeff looks at you with a puzzled expression. \"What do you mean? You don't know what The Collapse was?\"",
-    choices: [{ label: "No", nextStep: 49 }],
+    choices: [{ label: "No", nextStep: 48 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "Jeff's eyes grow wide, his voice rising with excitement. \"Then you must be one of those famous 'Otherworlders' I keep hearing about!\"",
-    choices: [{ label: "Otherworlders?", nextStep: 50 }],
+    choices: [{ label: "Otherworlders?", nextStep: 49 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"Yes, an Otherworlder! Someone who has traveled from another world—yours—into ours. Does that sound familiar?\"",
-    choices: [{ label: "Yep, that sounds like me", nextStep: 51 }],
+    choices: [{ label: "Yep, that sounds like me", nextStep: 50 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"Fantastic! I mean, probably not for you. I hear you guys have a hard time, randomly getting summoned from your home into a strange place and all that.\"",
-    choices: [{ label: "Why are you so excited?", nextStep: 52 }],
+    choices: [{ label: "Why are you so excited?", nextStep: 51 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"Because for us, who live here, you Otherworlders are our only chance at a more peaceful life.\"",
-    choices: [{ label: "Explain?", nextStep: 53 }],
+    choices: [{ label: "Explain?", nextStep: 52 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"These dungeons, these monsters, these things in our world that to you seem like they are from a game... only Otherworlders like yourself have the power to interact with them, to defeat them. And when you do, things naturally become better for us.\"",
-    choices: [{ label: "Keep listening", nextStep: 54 }],
+    choices: [{ label: "Keep listening", nextStep: 53 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "Jeff continues. \"We don't know why you were summoned, or your purpose beyond defeating what you come across, but we are always grateful for it. Which is why I wanted to say thanks and give you this.\"",
-    choices: [{ label: "Continue", nextStep: 55, isAetiumReward: true }],
+    choices: [{ label: "Continue", nextStep: 54, isAetiumReward: true }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "Jeff presents to you a small pouch. You take it and open it up to find multiple Aetium crystals inside. As soon as you touch them, they shimmer out of existence.",
-    choices: [{ label: "Look at Jeff", nextStep: 56 }],
+    choices: [{ label: "Look at Jeff", nextStep: 55 }],
     icon: <Package size={32} color="#f59e0b" />
   },
   {
@@ -344,7 +363,7 @@ const TUTORIAL_STEPS = [
   },
   {
     text: "\"Anyway, what is your name, Otherworlder?\"",
-    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 59 }],
+    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 58 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
@@ -353,8 +372,18 @@ const TUTORIAL_STEPS = [
     icon: <User size={32} color="#a855f7" />
   },
   {
+    text: "You arrive at the settlement with Jeff. Altona Gate, from your memory as one of the busiest shopping centres in the Altona North region, now appears run down, with camping tents set up in the carpark, people walking around, and stalls that appear to be vendors.",
+    choices: [{ label: "Continue", nextStep: 60 }],
+    icon: <Home size={32} color="#10b981" />
+  },
+  {
+    text: "\"How about I show you around,\" Jeff begins...",
+    choices: [{ label: "Explore", updates: { isTutorialActive: false, currentStep: 61 } }],
+    icon: <User size={32} color="#a855f7" />
+  },
+  {
     text: "The tutorial is now complete. Welcome to the Fracture.",
-    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 60 } }],
+    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 62 } }],
     icon: <Sparkles size={32} color="#10b981" />
   }
 ];
@@ -377,6 +406,12 @@ const TutorialView = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const flashOpacity = useSharedValue(0);
   const step = TUTORIAL_STEPS[currentStep];
+
+  useEffect(() => {
+    if (isTutorialActive) {
+      console.log(`[TUTORIAL] Active Step: ${currentStep} (${pathname})`);
+    }
+  }, [currentStep, isTutorialActive, pathname]);
 
   const getStepText = useCallback((stepIndex: number) => {
     if (!TUTORIAL_STEPS[stepIndex]) return "";
@@ -427,8 +462,8 @@ const TutorialView = () => {
     opacity: flashOpacity.value,
   }));
 
-  const handleChoice = (choice: any) => {
-    console.log('--- Choice Event ---', choice.label, 'Step:', currentStep);
+  const handleChoice = (choice: TutorialChoice) => {
+    console.log(`[TUTORIAL] User selected: "${choice.label}" at Step ${currentStep}`);
     
     if (isTyping) {
       finishTyping();
@@ -514,7 +549,7 @@ const TutorialView = () => {
     if (choice.isNameTrigger) {
       setNameInput("");
       setShowNameInput(true);
-      pendingNextStepRef.current = choice.nextStep;
+      pendingNextStepRef.current = choice.nextStep ?? null;
       return;
     }
 
@@ -565,6 +600,9 @@ const TutorialView = () => {
     }
 
     if (choice.updates) {
+      if (choice.updates.gold !== undefined) {
+        setStats({ gold: gold + choice.updates.gold });
+      }
       updateTutorial(choice.updates);
     }
     if (choice.nextStep !== undefined) {
@@ -620,7 +658,7 @@ const TutorialView = () => {
                       if (nameInput.trim().length > 0) {
                         setPlayerName(nameInput.trim());
                         setShowNameInput(false);
-                        const nextStep = pendingNextStepRef.current || currentStep + 1;
+                        const nextStep = 59; // Correctly go to 'Nice to meet you'
                         updateTutorial({ currentStep: nextStep, isTutorialActive: true });
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         pendingNextStepRef.current = null;
@@ -667,12 +705,18 @@ const TutorialView = () => {
                 if (!finishTyping()) {
                   // Prevent skipping active combat/dungeon phases
                   if (currentStep === 23 || currentStep === 35 || currentStep === 43) {
+                    console.log(`[TUTORIAL] Interaction required at Step ${currentStep}. Hiding overlay.`);
                     updateTutorial({ isTutorialActive: false });
                     return;
                   }
                   
-                  if (currentStep < TUTORIAL_STEPS.length - 1) updateTutorial({ currentStep: currentStep + 1 });
-                  else updateTutorial({ isTutorialActive: false });
+                  if (currentStep < TUTORIAL_STEPS.length - 1) {
+                    console.log(`[TUTORIAL] Continuing to Step ${currentStep + 1}`);
+                    updateTutorial({ currentStep: currentStep + 1 });
+                  } else if (currentStep === 63) {
+                    console.log(`[TUTORIAL] Final step reached and confirmed. Closing tutorial.`);
+                    updateTutorial({ isTutorialActive: false });
+                  }
                 }
               }}
               className="w-full h-20 bg-cyan-950/20 border border-cyan-500/30 rounded-3xl flex-row items-center justify-center shadow-lg active:scale-95"

@@ -8,17 +8,17 @@ import { useCombatStore } from '../../utils/useCombatStore';
 import TutorialView from '../../components/TutorialView';
 
 export default function TabLayout() {
-  const { tutorialProgress } = usePlayerStore();
+  const { tutorialProgress, isTutorialComplete } = usePlayerStore();
   const { isInCombat } = useCombatStore();
   const currentStep = tutorialProgress.currentStep;
   
-  // Hide tabs until specific milestones
-  const hideHero = currentStep < 17;
-  const hideBag = currentStep < 23;
-  const hideOthers = currentStep < 38; // Marketplace unlocks at step 38
+  // Hide tabs until specific milestones OR tutorial is fully complete
+  const hideHero = !isTutorialComplete && currentStep < 17;
+  const hideBag = !isTutorialComplete && currentStep < 23;
+  const hideOthers = !isTutorialComplete && currentStep < 38; // Marketplace unlocks at step 38
 
   // Interaction restrictions for specific overworld steps
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (currentStep === 22 || currentStep === 34);
+  const isTutorialRestricted = !isTutorialComplete && tutorialProgress.isTutorialActive === false && (currentStep === 22 || currentStep === 34);
 
   return (
     <>
@@ -64,7 +64,6 @@ export default function TabLayout() {
         options={{
           title: 'Battle',
           href: hideOthers ? null : undefined,
-          display: hideOthers ? 'none' : 'flex',
           tabBarIcon: ({ color, size }) => (
             <Sword size={size} color={color} strokeWidth={2.5} />
           ),
@@ -80,7 +79,6 @@ export default function TabLayout() {
         options={{
           title: 'Hero',
           href: hideHero ? null : undefined,
-          display: hideHero ? 'none' : 'flex',
           tabBarIcon: ({ color, size }) => (
             <User size={size} color={color} strokeWidth={2.5} />
           ),
@@ -98,7 +96,6 @@ export default function TabLayout() {
         options={{
           title: 'Bag',
           href: hideBag ? null : undefined,
-          display: hideBag ? 'none' : 'flex',
           tabBarIcon: ({ color, size }) => (
             <Briefcase size={size} color={color} strokeWidth={2.5} />
           ),
@@ -114,7 +111,6 @@ export default function TabLayout() {
         options={{
           title: 'Market',
           href: hideOthers ? null : undefined,
-          display: hideOthers ? 'none' : 'flex',
           tabBarIcon: ({ color, size }) => (
             <Store size={size} color={color} strokeWidth={2.5} />
           ),
@@ -123,6 +119,12 @@ export default function TabLayout() {
           tabPress: (e) => {
             if (hideOthers) e.preventDefault();
           },
+        }}
+      />
+      <Tabs.Screen
+        name="settlement"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen

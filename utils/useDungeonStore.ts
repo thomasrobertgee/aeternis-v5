@@ -33,7 +33,7 @@ interface DungeonState {
   exitDungeon: () => void;
   nextStage: () => void;
   generateChoices: () => void;
-  addModifier: (mod: DungeonModifier) => void;
+  addModifier: (mod: Omit<DungeonModifier, 'id'>) => void;
   clearModifiers: () => void;
   resetDungeon: () => void;
 }
@@ -136,7 +136,7 @@ export const useDungeonStore = create<DungeonState>()(
               description: 'A manifestation of the static blocks your path. Purge it.'
             });
           } else if (type === 'Chest') {
-            const isMimic = Math.random() < 0.666;
+            const isMimic = Math.random() < 0.33; // 33% chance of being a mimic
             choices.push({
               id: `choice-${i}-${Date.now()}`,
               type: 'Chest',
@@ -158,7 +158,7 @@ export const useDungeonStore = create<DungeonState>()(
       },
 
       addModifier: (mod) => set((state) => ({
-        modifiers: [...state.modifiers, { ...mod, id: `${mod.id}-${Date.now()}` }]
+        modifiers: [...state.modifiers, { ...mod, id: `mod-${Math.random().toString(36).substr(2, 9)}` }]
       })),
 
       clearModifiers: () => set({ modifiers: [] }),

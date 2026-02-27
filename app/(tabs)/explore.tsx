@@ -48,7 +48,29 @@ export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
-  const { playerLocation, setPlayerLocation, rest, hasSetHomeCity, homeCityName, sanctuaryLocation, enrolledFaction, specialization, level, hostileSignals, setHostileSignals, respawnSignals, triggerRift, saveZoneProfile, cleanupZones, tutorialProgress, updateTutorial, tutorialMarker } = usePlayerStore();
+  const { 
+    playerLocation, 
+    setPlayerLocation, 
+    rest, 
+    hasSetHomeCity, 
+    homeCityName, 
+    sanctuaryLocation, 
+    enrolledFaction, 
+    specialization, 
+    level, 
+    hostileSignals, 
+    setHostileSignals, 
+    respawnSignals, 
+    triggerRift, 
+    saveZoneProfile, 
+    cleanupZones, 
+    tutorialProgress, 
+    updateTutorial, 
+    tutorialMarker, 
+    isInSettlement, 
+    isTutorialComplete,
+    setErrorNotification
+  } = usePlayerStore();
   const { initiateCombat } = useCombatStore();
   const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName, totalTravelDuration } = useTravelStore();
   const { pendingMapAction, setPendingMapAction } = useUIStore();
@@ -81,7 +103,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 59);
+  const isTutorialRestricted = !isTutorialComplete && (tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 59 || tutorialProgress.currentStep === 60));
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -175,6 +197,13 @@ export default function ExploreScreen() {
           Math.abs(destinationCoords.longitude - MILLERS_JUNCTION_DEPTHS_COORDS.longitude) < 0.0001) {
         updateTutorial({ currentStep: 42, isTutorialActive: true });
       }
+
+      // Auto-trigger tutorial if arriving at Altona Gate during correct step
+      if (tutorialProgress.currentStep === 60 &&
+          Math.abs(destinationCoords.latitude - ALTONA_GATE_COORDS.latitude) < 0.0001 && 
+          Math.abs(destinationCoords.longitude - ALTONA_GATE_COORDS.longitude) < 0.0001) {
+        updateTutorial({ isTutorialActive: true });
+      }
     } 
   }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
   useEffect(() => { const timer = setTimeout(() => setTracksViewChanges(false), 3000); return () => clearTimeout(timer); }, []);
@@ -215,7 +244,7 @@ export default function ExploreScreen() {
     const checkpoints = [
       18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
       31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 
-      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58, 60, 61, 62
     ];
     
     // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
@@ -322,7 +351,7 @@ export default function ExploreScreen() {
     }
   };
 
-  const hideScanner = tutorialProgress.currentStep < 59;
+  const hideScanner = !isTutorialComplete;
 
   const homeCityHoles = useMemo(() => { if (!homeCityName) return []; const feature = BoundaryService.getSuburbFeature(homeCityName); if (!feature || !feature.geometry) return []; if (feature.geometry.type === 'Polygon') { return [feature.geometry.coordinates[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))]; } if (feature.geometry.type === 'MultiPolygon') { return feature.geometry.coordinates.map((poly: any) => poly[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))); } return []; }, [homeCityName]);
   const biomeColors = useMemo(() => { return { fill: 'rgba(212, 212, 216, 0.25)', stroke: 'rgba(6, 182, 212, 0.8)' }; }, []);
@@ -384,6 +413,9 @@ export default function ExploreScreen() {
       return;
     }
 
+    // Disable generic suburb zone cards until the tutorial is complete
+    if (!isTutorialComplete) return;
+
     setIsGeocoding(true);
     try {
       const result = await reverseGeocode(coords);
@@ -411,17 +443,17 @@ export default function ExploreScreen() {
         router.push('/dungeon');
         setSelectedZone(null);
       } else {
-        Alert.alert("Too far away", "You must be within 100m of the depths entrance to descend.");
+        setErrorNotification({ title: "Signal Lost", message: "You must be within 100m of the depths entrance to descend." });
       }
       return;
     }
     if (selectedZone.suburb === "ALTONA GATE SETTLEMENT") {
       const distance = getDistance(playerLocation, selectedZone.coords) * 1000;
       if (distance <= 100) {
-        router.push('/settlement');
+        router.push('/(tabs)/settlement');
         setSelectedZone(null);
       } else {
-        Alert.alert("Too far away", "You must reach the settlement perimeter to enter.");
+        setErrorNotification({ title: "Access Denied", message: "You must reach the settlement perimeter to enter." });
       }
       return;
     }
@@ -431,7 +463,7 @@ export default function ExploreScreen() {
         updateTutorial({ isTutorialActive: true });
         setSelectedZone(null);
       } else {
-        alert("Too far away. You must reach the orb to interact with it.");
+        setErrorNotification({ title: "Resonance Lost", message: "You must reach the orb to interact with it." });
       }
       return;
     }
@@ -492,7 +524,7 @@ export default function ExploreScreen() {
       <TransitView />
       {showDiscovery && selectedZone && <DiscoveryOverlay suburb={selectedZone.suburb} fracturedTitle={getProceduralZone(selectedZone.suburb).loreName} onComplete={() => setShowDiscovery(false)} />}
       <QuestTracker />
-      {tutorialProgress.currentStep >= 60 && (
+      {isTutorialComplete && (
         <View className="absolute top-32 right-6 z-50 flex-col gap-3">
           <TouchableOpacity 
             onPress={handleScanArea} 
@@ -637,8 +669,12 @@ export default function ExploreScreen() {
         })}
       </MapView>
       {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} isSettlement={selectedZone.isSettlement} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
+        if (isInSettlement) {
+          setErrorNotification({ title: "Link Blocked", message: "The Aether-Link is currently synchronized to local Enclave protocols. You must exit the settlement perimeter before jumping." });
+          return;
+        }
         if (tutorialProgress.currentStep < 58 && !selectedZone.isTutorialMarker && selectedZone.suburb !== "MILLERS JUNCTION DEPTHS" && selectedZone.suburb !== "ALTONA GATE SETTLEMENT") {
-          Alert.alert("Locked", "The Aether-Link is currently synchronized to tutorial objectives only.");
+          setErrorNotification({ title: "Link Locked", message: "The Aether-Link is currently synchronized to tutorial objectives only." });
           return;
         }
         startTravel(selectedZone.suburb, selectedZone.coords, duration); setSelectedZone(null); 
