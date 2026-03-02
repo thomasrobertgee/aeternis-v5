@@ -125,13 +125,13 @@ const PlayerHeader = () => {
   };
 
   return (
-    <SafeAreaView className="bg-zinc-950 border-b border-zinc-900">
+    <SafeAreaView edges={['top', 'left', 'right']} className="bg-zinc-950 border-b border-zinc-900">
       {/* Level / XP Bar Overlay */}
       <View className="h-1 bg-zinc-900 w-full overflow-hidden">
         <View className="h-full bg-cyan-400" style={{ width: `${(player.xp / player.maxXp) * 100}%` }} />
       </View>
 
-      <View className="px-4 py-2.5 flex-row justify-between items-center">
+      <View className="px-4 pt-2.5 pb-2 flex-row justify-between items-center">
         {/* Level & Profile Button */}
         <TouchableOpacity 
           onPress={() => setShowProfile(true)}
@@ -246,6 +246,22 @@ const PlayerHeader = () => {
                     <Text className="text-[10px] text-zinc-600 uppercase tracking-widest">{player.settings.musicEnabled ? 'Operational' : 'Disabled'}</Text>
                   </View>
                   <View className={`w-4 h-4 rounded-full border-2 ${player.settings.musicEnabled ? 'bg-cyan-500 border-cyan-400' : 'border-zinc-800'}`} />
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={() => player.toggleTempUnit()}
+                  className={`h-16 rounded-2xl flex-row items-center px-6 border bg-zinc-950 border-zinc-800`}
+                >
+                  <View className="p-2 rounded-lg mr-4 bg-zinc-900">
+                    <Settings size={18} color="#06b6d4" />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-white font-bold">Temperature Unit</Text>
+                    <Text className="text-[10px] text-zinc-600 uppercase tracking-widest">Currently: {player.settings.tempUnit}</Text>
+                  </View>
+                  <View className="bg-zinc-900 px-3 py-1 rounded-lg border border-zinc-800">
+                    <Text className="text-cyan-400 font-black text-xs">{player.settings.tempUnit === 'Celsius' ? '°C' : '°F'}</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
 

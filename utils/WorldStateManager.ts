@@ -57,3 +57,13 @@ export const getWeatherForSuburb = (suburb: string): WeatherType => {
   const weathers = Object.values(WeatherType);
   return weathers[hash % weathers.length];
 };
+
+/**
+ * Deterministically get the temperature for a suburb (in Celsius).
+ */
+export const getTemperatureForSuburb = (suburb: string): number => {
+  const hour = new Date().getHours();
+  const hash = suburb.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + hour;
+  // Return a temp between 10 and 35 degrees Celsius
+  return 10 + (hash % 26);
+};

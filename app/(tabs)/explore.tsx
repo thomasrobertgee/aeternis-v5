@@ -6,7 +6,7 @@ import { geocodeCity, reverseGeocode } from '../../utils/GeoService';
 import { getBiomeFromKeyword, getFactionForZone, BiomeType, FactionType } from '../../utils/BiomeMapper';
 import { getProceduralZone, generateAtmosphericIntro } from '../../utils/ProceduralEngine';
 import { getDeterministicEnemy, getBossByBiome } from '../../utils/EnemyFactory';
-import { getWeatherForSuburb, WEATHER_EFFECTS } from '../../utils/WorldStateManager';
+import { getWeatherForSuburb, getTemperatureForSuburb, WeatherType, WEATHER_EFFECTS } from '../../utils/WorldStateManager';
 import WikipediaService from '../../utils/WikipediaService';
 import ZoneSynthesizer from '../../utils/ZoneSynthesizer';
 import ZoneEventManager from '../../utils/ZoneEventManager';
@@ -18,7 +18,7 @@ import QuestTracker from '../../components/QuestTracker';
 import DialogueView from '../../components/DialogueView';
 import enrollmentDialogue from '../../assets/dialogue/faction_enrollment.json';
 import specializationDialogue from '../../assets/dialogue/specialization_choice.json';
-import { Coffee, ShieldCheck, Home, Activity, Skull, Package, Focus, Compass, Flame } from 'lucide-react-native';
+import { Coffee, ShieldCheck, Home, Activity, Skull, Package, Focus, Compass, Flame, Clock, Cloud, Thermometer, MapPin as MapPinIcon } from 'lucide-react-native';
 import Animated, { 
   FadeIn, 
   SlideInDown, 
@@ -69,7 +69,8 @@ export default function ExploreScreen() {
     tutorialMarker, 
     isInSettlement, 
     isTutorialComplete,
-    setErrorNotification
+    setErrorNotification,
+    settings
   } = usePlayerStore();
   const { initiateCombat } = useCombatStore();
   const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName, totalTravelDuration } = useTravelStore();
@@ -80,6 +81,14 @@ export default function ExploreScreen() {
   const [showDiscovery, setShowDiscovery] = useState(false);
   const [activeDialogue, setActiveDialogue] = useState<any>(null);
   const [isGeocoding, setIsGeocoding] = useState(false);
+  
+  // Live Clock for Map Info Bar
+  const [currentTime, setCurrentTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
   const [mapRegion, setMapRegion] = useState({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 });
 
@@ -478,6 +487,46 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-zinc-950">
+      {/* Map Info Bar (Below Status Bar) */}
+      <View className="flex-row justify-between items-center px-4 h-12 bg-transparent z-[110]">
+        {/* Left: Live Time */}
+        <View className="flex-1 flex-row items-center">
+          <Clock size={12} color="#71717a" className="mr-1.5" />
+          <Text className="text-zinc-400 font-mono text-[10px] uppercase">
+            {currentTime.toLocaleTimeString('en-GB', { hour12: false })}
+          </Text>
+        </View>
+
+        {/* Center: Location */}
+        <View className="flex-[2] items-center justify-center flex-row">
+          <MapPinIcon size={12} color="#06b6d4" className="mr-1.5" />
+          <Text className="text-white font-bold text-[10px] uppercase tracking-widest" numberOfLines={1}>
+            {currentSuburb || homeCityName || "Fracture Zone"}, AU
+          </Text>
+        </View>
+
+        {/* Right: Weather & Temp */}
+        <View className="flex-1 flex-row items-center justify-end">
+          <View className="items-end mr-2">
+            <Text className="text-zinc-400 font-bold text-[8px] uppercase leading-tight">
+              {getWeatherForSuburb(currentSuburb || homeCityName || "Altona North")}
+            </Text>
+            <View className="flex-row items-center">
+              <Thermometer size={10} color="#71717a" className="mr-1" />
+              <Text className="text-zinc-200 font-mono text-[10px]">
+                {(() => {
+                  const celsius = getTemperatureForSuburb(currentSuburb || homeCityName || "Altona North");
+                  return settings.tempUnit === 'Celsius' 
+                    ? `${celsius}°C` 
+                    : `${Math.round((celsius * 9/5) + 32)}°F`;
+                })()}
+              </Text>
+            </View>
+          </View>
+          <Cloud size={14} color="#06b6d4" />
+        </View>
+      </View>
+
       {/* Full screen Sonar Ripple */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none" className="items-center justify-center z-[100]">
         <Animated.View 
@@ -496,7 +545,7 @@ export default function ExploreScreen() {
       <TransitView />
       {showDiscovery && selectedZone && <DiscoveryOverlay suburb={selectedZone.suburb} fracturedTitle={getProceduralZone(selectedZone.suburb).loreName} onComplete={() => setShowDiscovery(false)} />}
       <QuestTracker />
-      <View className="absolute bottom-32 right-6 z-50">
+      <View className="absolute bottom-10 right-6 z-50">
         <TouchableOpacity 
           onPress={handleRecenter} 
           activeOpacity={0.6}

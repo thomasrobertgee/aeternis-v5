@@ -126,6 +126,7 @@ interface PlayerState {
   dungeonModifiers: DungeonModifier[];
   settings: {
     musicEnabled: boolean;
+    tempUnit: 'Celsius' | 'Fahrenheit';
   };
   setPlayerLocation: (location: Coords) => void;
   setPlayerName: (name: string) => void;
@@ -134,6 +135,7 @@ interface PlayerState {
   setTutorialComplete: (complete: boolean) => void;
   setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
   toggleMusic: () => void;
+  toggleTempUnit: () => void;
   gainXp: (amount: number) => void;
   addItem: (item: Item) => void;
   removeItem: (itemId: string) => void;
@@ -277,6 +279,7 @@ export const usePlayerStore = create<PlayerState>()(
                               dungeonModifiers: [],
                               settings: {
                                 musicEnabled: true,
+                                tempUnit: 'Celsius',
                               },
             
                               setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
@@ -289,6 +292,9 @@ export const usePlayerStore = create<PlayerState>()(
                               setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
                               toggleMusic: () => set((state) => ({
                                 settings: { ...state.settings, musicEnabled: !state.settings.musicEnabled }
+                              })),
+                              toggleTempUnit: () => set((state) => ({
+                                settings: { ...state.settings, tempUnit: state.settings.tempUnit === 'Celsius' ? 'Fahrenheit' : 'Celsius' }
                               })),
             gainXp: (amount) => set((state) => {
               let newXp = state.xp + amount;
@@ -681,6 +687,7 @@ export const usePlayerStore = create<PlayerState>()(
         dungeonModifiers: [],
         settings: {
           musicEnabled: true,
+          tempUnit: 'Celsius',
         },
       }),
       updateTutorial: (progress) => set((state) => {
