@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
 import { usePlayerStore } from '../utils/usePlayerStore';
-import { Scroll, CheckCircle2, Gift, X, Sparkles, Trophy, Navigation } from 'lucide-react-native';
+import { Scroll, CheckCircle2, Gift, X, Sparkles, Award, Navigation } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInRight, SlideInDown } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useUIStore } from '../utils/useUIStore';
@@ -128,7 +128,7 @@ const QuestTracker = () => {
                       <Text className="text-cyan-400 font-bold text-xs">+{quest.rewardXp} XP</Text>
                     </View>
                     <View className="bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-800 flex-row items-center">
-                      <Trophy size={12} color="#f59e0b" className="mr-2" />
+                      <Award size={12} color="#f59e0b" className="mr-2" />
                       <Text className="text-amber-500 font-bold text-xs">{quest.rewardGold} A</Text>
                     </View>
                   </View>

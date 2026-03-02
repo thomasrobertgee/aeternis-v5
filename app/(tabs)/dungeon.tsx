@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
-import { useDungeonStore, DungeonChoice, DungeonModifier } from '../utils/useDungeonStore';
-import { usePlayerStore } from '../utils/usePlayerStore';
-import { useCombatStore } from '../utils/useCombatStore';
+import { useDungeonStore, DungeonChoice, DungeonModifier } from '../../utils/useDungeonStore';
+import { usePlayerStore } from '../../utils/usePlayerStore';
+import { useCombatStore } from '../../utils/useCombatStore';
 import { useRouter } from 'expo-router';
 import { Sword, Package, Zap, Skull, Coffee, Flame, Shield, ChevronRight, Activity, Sparkles, Info } from 'lucide-react-native';
 import Animated, { FadeIn, FadeInDown, SlideInDown, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { getDeterministicEnemy, getBossByBiome } from '../utils/EnemyFactory';
-import { BiomeType } from '../utils/BiomeMapper';
+import { getDeterministicEnemy, getBossByBiome } from '../../utils/EnemyFactory';
+import { BiomeType } from '../../utils/BiomeMapper';
 
 export default function DungeonScreen() {
   const router = useRouter();
@@ -17,6 +17,7 @@ export default function DungeonScreen() {
   const combat = useCombatStore();
   const [isProcessing, setIsActionProcessing] = useState(false);
   const [selectedModifier, setSelectedModifier] = useState<DungeonModifier | null>(null);
+  const [acquiredModifier, setAcquiredModifier] = useState<Omit<DungeonModifier, 'id'> | null>(null);
 
   const currentStage = dungeon.currentStage;
   const choices = dungeon.stageChoices;
@@ -59,7 +60,11 @@ export default function DungeonScreen() {
       // Free loot!
       const goldGain = 100 + (currentStage * 50);
       player.setStats({ gold: player.gold + goldGain });
-      Alert.alert("Dungeon Cache", `You found ${goldGain} Aetium inside the container.`);
+      
+      // Record stat to dungeon store
+      dungeon.recordStat('chest');
+      dungeon.recordStat('aetium', goldGain);
+
       dungeon.nextStage();
     } else if (choice.type === 'Altar') {
       const isBuff = Math.random() < 0.5;
@@ -67,11 +72,9 @@ export default function DungeonScreen() {
       const mod = pool[Math.floor(Math.random() * pool.length)];
       
       dungeon.addModifier(mod);
-      Alert.alert(
-        isBuff ? "Altar Blessing" : "Altar Curse",
-        `The obelisk shimmers. ${mod.name}: ${mod.type === 'buff' ? 'Granting' : 'Inflicting'} modifiers to your ${mod.stat}.`
-      );
-      dungeon.nextStage();
+      dungeon.recordStat('altar');
+      setAcquiredModifier(mod);
+      // We don't call dungeon.nextStage() here anymore, the popup handles it
     }
     setIsActionProcessing(false);
   };
@@ -88,6 +91,7 @@ export default function DungeonScreen() {
       router.push('/battle');
     } else {
       player.rest();
+      dungeon.recordStat('rest');
       Alert.alert("Rest Area", "You find a moment of peace. Your Vitality and MP have been restored.");
       dungeon.nextStage();
     }
@@ -97,13 +101,10 @@ export default function DungeonScreen() {
   // Completion effect
   useEffect(() => {
     if (currentStage > 10 && dungeon.isInsideDungeon) {
-      if (player.tutorialProgress.currentStep === 43) {
-        player.updateTutorial({ currentStep: 44, isTutorialActive: true });
-      }
       dungeon.exitDungeon();
       router.replace('/(tabs)/explore');
     }
-  }, [currentStage, dungeon.isInsideDungeon, player.tutorialProgress.currentStep]);
+  }, [currentStage, dungeon.isInsideDungeon]);
 
   const renderStageContent = () => {
     if (currentStage === 5) {
@@ -194,13 +195,9 @@ export default function DungeonScreen() {
   };
 
   return (
-    <View className="flex-1 bg-black px-6 pt-16">
-      {/* Header */}
-      <View className="flex-row justify-between items-center mb-8">
-        <View>
-          <Text className="text-zinc-500 font-black text-[10px] uppercase tracking-[4px]">Dungeon Protocol</Text>
-          <Text className="text-white text-3xl font-black">{dungeon.currentDungeonId || 'The Depths'}</Text>
-        </View>
+    <View className="flex-1 bg-zinc-950 px-6 pt-6">
+      {/* Abandon Button Moved to Top Right Corner */}
+      <View className="absolute top-4 right-6 z-50">
         <TouchableOpacity 
           onPress={() => {
             Alert.alert("Abandon Dungeon", "Are you sure you want to retreat? All progress will be lost.", [
@@ -208,16 +205,19 @@ export default function DungeonScreen() {
               { text: "Retreat", style: "destructive", onPress: () => { dungeon.exitDungeon(); router.replace('/(tabs)/explore'); } }
             ]);
           }}
-          className="bg-zinc-900 p-3 rounded-2xl border border-zinc-800"
+          className="bg-zinc-900/50 p-3 rounded-2xl border border-zinc-800"
         >
           <X size={20} color="#71717a" />
         </TouchableOpacity>
       </View>
 
-      {/* Progress Bar */}
+      {/* Progress Bar and Title */}
       <View className="mb-10">
         <View className="flex-row justify-between items-end mb-2 px-1">
-          <Text className="text-cyan-500 font-bold text-[8px] uppercase tracking-widest">Progress</Text>
+          <View>
+            <Text className="text-zinc-500 font-black text-[8px] uppercase tracking-[4px]">Dungeon Protocol</Text>
+            <Text className="text-white text-xl font-black">{dungeon.currentDungeonId || 'The Depths'}</Text>
+          </View>
           <Text className="text-white font-mono text-[10px]">Stage {currentStage} / 10</Text>
         </View>
         <View className="h-2 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
@@ -252,6 +252,42 @@ export default function DungeonScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+        </View>
+      )}
+
+      {/* Altar Acquisition Summary Popup */}
+      {acquiredModifier && (
+        <View style={StyleSheet.absoluteFill} className="bg-black/80 items-center justify-center p-6 z-[200]">
+          <Animated.View 
+            entering={FadeIn.duration(400)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-[40px] p-8 shadow-2xl items-center"
+          >
+            <View className={`p-6 rounded-3xl mb-6 border-2 ${acquiredModifier.type === 'buff' ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-red-500/10 border-red-500/30'}`}>
+              {acquiredModifier.type === 'buff' ? <Sparkles size={48} color="#10b981" /> : <Info size={48} color="#ef4444" />}
+            </View>
+
+            <Text className={`${acquiredModifier.type === 'buff' ? 'text-emerald-500' : 'text-red-500'} font-black text-xs uppercase tracking-[6px] mb-2`}>
+              {acquiredModifier.type === 'buff' ? 'Resonance Synchronized' : 'Static Interference'}
+            </Text>
+            
+            <Text className="text-white text-3xl font-black text-center mb-4">{acquiredModifier.name}</Text>
+            
+            <View className="bg-zinc-950 border border-zinc-800 rounded-3xl p-6 mb-8 w-full">
+              <Text className="text-zinc-400 text-center text-sm leading-5">
+                Your connection to the dungeon alters. Total {acquiredModifier.stat} {acquiredModifier.type === 'buff' ? 'increased' : 'decreased'} by {Math.abs(Math.round((acquiredModifier.value - 1) * 100))}%.
+              </Text>
+            </View>
+
+            <TouchableOpacity 
+              onPress={() => {
+                setAcquiredModifier(null);
+                dungeon.nextStage();
+              }}
+              className={`w-full h-16 rounded-2xl items-center justify-center shadow-lg ${acquiredModifier.type === 'buff' ? 'bg-emerald-600 shadow-emerald-900/40' : 'bg-red-600 shadow-red-900/40'}`}
+            >
+              <Text className="text-white font-black uppercase tracking-[4px]">Proceed</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       )}
 

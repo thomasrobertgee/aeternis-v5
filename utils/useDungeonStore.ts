@@ -28,6 +28,18 @@ interface DungeonState {
   stageChoices: DungeonChoice[];
   
   lastStageUpdate: number;
+
+  // Run Stats
+  enemiesKilled: number;
+  totalDamageDealt: number;
+  totalDamageReceived: number;
+  lootAcquired: string[];
+  chestsOpened: number;
+  altarsUsed: number;
+  restAreasFound: number;
+  aetiumGained: number;
+  showDungeonSummary: boolean;
+
   // Actions
   enterDungeon: (dungeonId: string) => void;
   exitDungeon: () => void;
@@ -36,6 +48,8 @@ interface DungeonState {
   addModifier: (mod: Omit<DungeonModifier, 'id'>) => void;
   clearModifiers: () => void;
   resetDungeon: () => void;
+  recordStat: (stat: 'kill' | 'damageDealt' | 'damageReceived' | 'loot' | 'chest' | 'aetium' | 'altar' | 'rest', value?: any) => void;
+  setShowDungeonSummary: (show: boolean) => void;
 }
 
 const MODIFIER_POOL: Omit<DungeonModifier, 'id'>[] = [
@@ -59,13 +73,38 @@ export const useDungeonStore = create<DungeonState>()(
       stageChoices: [],
       lastStageUpdate: 0,
 
+      // Run Stats Initial
+      enemiesKilled: 0,
+      totalDamageDealt: 0,
+      totalDamageReceived: 0,
+      lootAcquired: [],
+      chestsOpened: 0,
+      altarsUsed: 0,
+      restAreasFound: 0,
+      aetiumGained: 0,
+      showDungeonSummary: false,
+
       enterDungeon: (dungeonId) => {
+        // Clear settlement state when entering a dungeon
+        const player = require('./usePlayerStore').usePlayerStore.getState();
+        if (player.setIsInSettlement) player.setIsInSettlement(false);
+
         set({ 
           isInsideDungeon: true, 
           currentDungeonId: dungeonId, 
           currentStage: 1, 
           modifiers: [],
-          lastStageUpdate: Date.now()
+          lastStageUpdate: Date.now(),
+          // Reset Stats for new run
+          enemiesKilled: 0,
+          totalDamageDealt: 0,
+          totalDamageReceived: 0,
+          lootAcquired: [],
+          chestsOpened: 0,
+          altarsUsed: 0,
+          restAreasFound: 0,
+          aetiumGained: 0,
+          showDungeonSummary: false
         });
         get().generateChoices();
       },
@@ -76,8 +115,25 @@ export const useDungeonStore = create<DungeonState>()(
         currentStage: 1, 
         modifiers: [],
         stageChoices: [],
-        lastStageUpdate: 0
+        lastStageUpdate: 0,
+        showDungeonSummary: false
       }),
+
+      recordStat: (stat, value) => set((state) => {
+        switch(stat) {
+          case 'kill': return { enemiesKilled: state.enemiesKilled + 1 };
+          case 'damageDealt': return { totalDamageDealt: state.totalDamageDealt + (value || 0) };
+          case 'damageReceived': return { totalDamageReceived: state.totalDamageReceived + (value || 0) };
+          case 'loot': return { lootAcquired: [...state.lootAcquired, value] };
+          case 'chest': return { chestsOpened: state.chestsOpened + 1 };
+          case 'altar': return { altarsUsed: state.altarsUsed + 1 };
+          case 'rest': return { restAreasFound: state.restAreasFound + 1 };
+          case 'aetium': return { aetiumGained: state.aetiumGained + (value || 0) };
+          default: return state;
+        }
+      }),
+
+      setShowDungeonSummary: (show) => set({ showDungeonSummary: show }),
 
       nextStage: () => {
         const now = Date.now();

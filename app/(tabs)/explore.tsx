@@ -18,7 +18,7 @@ import QuestTracker from '../../components/QuestTracker';
 import DialogueView from '../../components/DialogueView';
 import enrollmentDialogue from '../../assets/dialogue/faction_enrollment.json';
 import specializationDialogue from '../../assets/dialogue/specialization_choice.json';
-import { Coffee, ShieldCheck, Home, Activity, Radar, Skull, Flame, Package, Focus, Compass } from 'lucide-react-native';
+import { Coffee, ShieldCheck, Home, Activity, Skull, Package, Focus, Compass, Flame } from 'lucide-react-native';
 import Animated, { 
   FadeIn, 
   SlideInDown, 
@@ -103,7 +103,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = !isTutorialComplete && (tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 59 || tutorialProgress.currentStep === 60));
+  const isTutorialRestricted = !isTutorialComplete && (tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 58 || tutorialProgress.currentStep === 59 || tutorialProgress.currentStep === 60 || tutorialProgress.currentStep === 61 || tutorialProgress.currentStep === 62));
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -127,8 +127,8 @@ export default function ExploreScreen() {
         }, 500);
       }
 
-      // Special handling for Step 59: Zoom to Altona Gate
-      if (tutorialProgress.currentStep === 59 && mapRef.current) {
+      // Special handling for Step 58: Zoom to Altona Gate
+      if (tutorialProgress.currentStep === 58 && mapRef.current) {
         setTimeout(() => {
           mapRef.current?.animateToRegion({
             ...ALTONA_GATE_COORDS,
@@ -141,7 +141,7 @@ export default function ExploreScreen() {
       tutorialPulseScale.value = 1;
       tutorialPulseOpacity.value = 0;
     }
-  }, [isTutorialRestricted, tutorialMarker]);
+  }, [isTutorialRestricted, tutorialMarker, tutorialProgress.currentStep]);
 
   const animatedTutorialPulse = useAnimatedStyle(() => ({
     transform: [{ scale: tutorialPulseScale.value }],
@@ -156,7 +156,6 @@ export default function ExploreScreen() {
 
   const handleRecenter = () => { mapRef.current?.animateToRegion({ ...playerLocation, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 1000); };
   const BASE_HIT_RADIUS = 0.1;
-  const ZOOM_THRESHOLD = 0.12;
   const pulseScale = useSharedValue(0);
   const pulseOpacity = useSharedValue(0);
 
@@ -199,10 +198,10 @@ export default function ExploreScreen() {
       }
 
       // Auto-trigger tutorial if arriving at Altona Gate during correct step
-      if (tutorialProgress.currentStep === 60 &&
+      if (tutorialProgress.currentStep === 58 &&
           Math.abs(destinationCoords.latitude - ALTONA_GATE_COORDS.latitude) < 0.0001 && 
           Math.abs(destinationCoords.longitude - ALTONA_GATE_COORDS.longitude) < 0.0001) {
-        updateTutorial({ isTutorialActive: true });
+        updateTutorial({ currentStep: 59, isTutorialActive: true });
       }
     } 
   }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
@@ -243,8 +242,8 @@ export default function ExploreScreen() {
   useEffect(() => {
     const checkpoints = [
       18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
-      31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 
-      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58, 60, 61, 62
+      31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 46,
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
     ];
     
     // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
@@ -337,6 +336,7 @@ export default function ExploreScreen() {
 
   const handleRegionChange = async (region: any) => {
     setMapRegion(region);
+
     if (!hasSetHomeCity) return;
     const coords = { latitude: region.latitude, longitude: region.longitude };
     let resolvedName = BoundaryService.getSuburbAtPoint(coords);
@@ -355,34 +355,6 @@ export default function ExploreScreen() {
 
   const homeCityHoles = useMemo(() => { if (!homeCityName) return []; const feature = BoundaryService.getSuburbFeature(homeCityName); if (!feature || !feature.geometry) return []; if (feature.geometry.type === 'Polygon') { return [feature.geometry.coordinates[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))]; } if (feature.geometry.type === 'MultiPolygon') { return feature.geometry.coordinates.map((poly: any) => poly[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))); } return []; }, [homeCityName]);
   const biomeColors = useMemo(() => { return { fill: 'rgba(212, 212, 216, 0.25)', stroke: 'rgba(6, 182, 212, 0.8)' }; }, []);
-
-  useEffect(() => { if (hasSetHomeCity && (!hostileSignals || hostileSignals.length === 0) && !hideScanner) { handleScanArea(); } }, [hasSetHomeCity, hideScanner]);
-
-  const handleScanArea = () => {
-    triggerRadarPulse();
-    const activeSuburb = currentSuburb || homeCityName;
-    const currentBiome = getBiomeFromKeyword(activeSuburb);
-    const feature = BoundaryService.getSuburbFeature(activeSuburb);
-    const polygon = feature?.geometry?.type === 'Polygon' ? feature.geometry.coordinates[0] : 
-                    feature?.geometry?.type === 'MultiPolygon' ? feature.geometry.coordinates[0][0] : null;
-
-    const findPointInZone = (base: any, radius: number) => {
-      if (!polygon) return { latitude: base.latitude + (Math.random() - 0.5) * radius, longitude: base.longitude + (Math.random() - 0.5) * radius };
-      for (let i = 0; i < 25; i++) {
-        const pt = { latitude: base.latitude + (Math.random() - 0.5) * 0.1, longitude: base.longitude + (Math.random() - 0.5) * 0.1 };
-        if (BoundaryService.isPointInPolygon(pt, polygon)) return pt;
-      }
-      return { latitude: base.latitude + (Math.random() - 0.5) * 0.005, longitude: base.longitude + (Math.random() - 0.5) * 0.005 };
-    };
-
-    setHostileSignals(Array.from({ length: 5 }).map((_, i) => ({ id: `hostile-${i}-${Date.now()}`, biome: currentBiome, coords: findPointInZone(playerLocation, 0.03) })));
-  };
-
-  const handleTriggerRift = () => {
-    triggerRadarPulse();
-    const currentBiome = getBiomeFromKeyword(currentSuburb);
-    triggerRift({ latitude: playerLocation.latitude + (Math.random() - 0.5) * 0.015, longitude: playerLocation.longitude + (Math.random() - 0.5) * 0.015 }, currentBiome);
-  };
 
   const [selectedZone, setSelectedZone] = useState<{ suburb: string; biome: BiomeType; faction: FactionType; description: string; coords: { latitude: number; longitude: number }; isHostile: boolean; isBoss?: boolean; isTutorialMarker?: boolean; isDungeon?: boolean; isSettlement?: boolean; signalId?: string; } | null>(null);
 
@@ -440,7 +412,7 @@ export default function ExploreScreen() {
       const distance = getDistance(playerLocation, selectedZone.coords) * 1000;
       if (distance <= 100) {
         useDungeonStore.getState().enterDungeon("MILLERS JUNCTION DEPTHS");
-        router.push('/dungeon');
+        router.replace('/(tabs)/dungeon');
         setSelectedZone(null);
       } else {
         setErrorNotification({ title: "Signal Lost", message: "You must be within 100m of the depths entrance to descend." });
@@ -524,26 +496,6 @@ export default function ExploreScreen() {
       <TransitView />
       {showDiscovery && selectedZone && <DiscoveryOverlay suburb={selectedZone.suburb} fracturedTitle={getProceduralZone(selectedZone.suburb).loreName} onComplete={() => setShowDiscovery(false)} />}
       <QuestTracker />
-      {isTutorialComplete && (
-        <View className="absolute top-32 right-6 z-50 flex-col gap-3">
-          <TouchableOpacity 
-            onPress={handleScanArea} 
-            activeOpacity={0.6}
-            className="bg-red-950/60 border border-red-500/40 p-3 rounded-2xl flex-row items-center shadow-lg active:scale-95"
-          >
-            <Radar size={16} color="#ef4444" className="mr-2" />
-            <Text className="text-red-500 font-black text-[10px] uppercase tracking-widest">Scan Area</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={handleTriggerRift} 
-            activeOpacity={0.6}
-            className="bg-purple-950/60 border border-purple-500/40 p-3 rounded-2xl flex-row items-center shadow-lg active:scale-95"
-          >
-            <Flame size={16} color="#a855f7" className="mr-2" />
-            <Text className="text-purple-400 font-black text-[10px] uppercase tracking-widest">Rift Event</Text>
-          </TouchableOpacity>
-        </View>
-      )}
       <View className="absolute bottom-32 right-6 z-50">
         <TouchableOpacity 
           onPress={handleRecenter} 
@@ -668,6 +620,7 @@ export default function ExploreScreen() {
           );
         })}
       </MapView>
+
       {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} isSettlement={selectedZone.isSettlement} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
         if (isInSettlement) {
           setErrorNotification({ title: "Link Blocked", message: "The Aether-Link is currently synchronized to local Enclave protocols. You must exit the settlement perimeter before jumping." });

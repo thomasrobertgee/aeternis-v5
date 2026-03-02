@@ -280,27 +280,10 @@ export const usePlayerStore = create<PlayerState>()(
                               },
             
                               setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
-                              setStats: (stats) => set((state) => {
-                                let newNotifications = state.globalNotification;
-                                
-                                // Trigger Aetium notification if gold increases
-                                if (stats.gold !== undefined && stats.gold > state.gold) {
-                                  const amount = stats.gold - state.gold;
-                                  const aetiumNotif: GlobalNotification = {
-                                    id: `aetium-${Date.now()}-${Math.random()}`,
-                                    title: 'Aetium Synchronized',
-                                    message: `+${amount} Aetium crystals merged with your vault.`,
-                                    type: 'Aetium'
-                                  };
-                                  newNotifications = [...newNotifications, aetiumNotif];
-                                }
-                                
-                                return { 
-                                  ...state, 
-                                  ...stats,
-                                  globalNotification: newNotifications
-                                };
-                              }),
+                              setStats: (stats) => set((state) => ({ 
+        ...state, 
+        ...stats 
+      })),
                               setIsInSettlement: (inSettlement) => set({ isInSettlement: inSettlement }),
                               setTutorialComplete: (complete) => set({ isTutorialComplete: complete }),
                               setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
@@ -358,16 +341,8 @@ export const usePlayerStore = create<PlayerState>()(
               };
             }),
             addItem: (item) => set((state) => {
-              const itemNotif: GlobalNotification = {
-                id: `item-${Date.now()}-${Math.random()}`,
-                title: 'Item Acquired',
-                message: `${item.name} has been synchronized to your inventory.`,
-                type: 'Item'
-              };
-
               return { 
-                inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }],
-                globalNotification: [...state.globalNotification, itemNotif]
+                inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }]
               };
             }),
             removeItem: (itemId) => set((state) => {
@@ -464,19 +439,9 @@ export const usePlayerStore = create<PlayerState>()(
         const quest = state.activeQuests.find(q => q.id === id);
         if (!quest || !quest.isCompleted) return state;
 
-        let newNotifications = [...state.globalNotification];
-
         // Custom reward for Miller's Junction Depths (Tutorial Pouch)
         let goldReward = quest.rewardGold;
         if (id === 'q-millers-junction-depths') goldReward = 500;
-
-        // Trigger Aetium notification
-        newNotifications.push({
-          id: `aetium-${Date.now()}-${Math.random()}`,
-          title: 'Aetium Synchronized',
-          message: `+${goldReward} Aetium crystals merged with your vault.`,
-          type: 'Aetium'
-        });
 
         let itemReward: Item | null = null;
         if (state.enrolledFaction === 'the-cogwheel') {
@@ -489,15 +454,6 @@ export const usePlayerStore = create<PlayerState>()(
           ? [...state.inventory, { ...itemReward, id: `${itemReward.id}-${Math.random().toString(36).substr(2, 9)}` }]
           : state.inventory;
 
-        if (itemReward) {
-          newNotifications.push({
-            id: `item-${Date.now()}-${Math.random()}`,
-            title: 'Item Acquired',
-            message: `${itemReward.name} has been synchronized to your inventory.`,
-            type: 'Item'
-          });
-        }
-
         let newXp = state.xp + quest.rewardXp;
         let newLevel = state.level;
         let newMaxXp = state.maxXp;
@@ -507,6 +463,7 @@ export const usePlayerStore = create<PlayerState>()(
         let newMana = state.mana;
         let newAttack = state.attack;
         let newDefense = state.defense;
+        let newNotifications = [...state.globalNotification];
 
         while (newXp >= newMaxXp) {
           newXp -= newMaxXp;

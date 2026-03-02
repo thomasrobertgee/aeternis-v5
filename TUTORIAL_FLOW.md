@@ -79,7 +79,7 @@ This document outlines the step-by-step narrative, choices, and logic of the ini
     *   [take a look around] -> Step 43
 *   **Step 43**: Observation of crumbling buildings.
     *   [proceed] -> Tutorial Overlay Hides (Enables Dungeon Entry)
-*   **Step 44**: **Active Dungeon State**. Player explores and clears the 10-stage instance.
+*   **Step 44**: **Active Dungeon State**. Player explores and clears the 10-stage instance. Includes full **Dungeon Summary** upon completion.
 
 ## 7. Meeting Jeff & Settlement
 *   **Step 45**: Post-Dungeon Proximity Trigger (Must be back on Map + Clear Dungeon).
@@ -89,14 +89,18 @@ This document outlines the step-by-step narrative, choices, and logic of the ini
 *   **Step 47**: Jeff thanks the "Otherworlder".
 *   **Steps 48-54**: Deep Lore Dump (The Collapse, Otherworlders, the Purpose).
 *   **Step 55**: Jeff rewards player with Aetium crystals -> Step 56
-*   **Step 56**: Player receives crystals -> Step 57
-*   **Step 57**: "anyway, what is your name?"
-    *   [my name is...] -> Opens Name Entry
-*   **Step 58**: **Name Entry Sequence**. User enters name and saves. -> Step 59
-*   **Step 59**: "settlement nearby..."
+*   **Step 56**: "anyway, what is your name?"
+    *   [my name is...] -> Opens Name Entry interface.
+*   **Step 57**: "Nice to meet you, {name}." -> Step 58
+*   **Step 58**: Travel Invitation.
     *   [lead the way] -> **Auto-Zoom to Altona Gate**. Tutorial Overlay Hides.
-*   **Step 60**: **Tutorial End Sequence**.
-    *   [finish] -> Final completion.
+*   **Step 59**: **Follow Objective**. Player must physically arrive at the settlement coordinates.
+*   **Step 60**: Arrival narrative at Altona Gate.
+    *   [continue] -> Step 61
+*   **Step 61**: Jeff begins the tour.
+    *   [explore] -> Step 62 (Tutorial Hides)
+*   **Step 62**: **Tutorial Complete**. Final farewell.
+    *   [finish] -> Step 63 (Unlocks **Near Me** scanner and full world persistence).
 
 ---
-*Last Updated: February 24, 2026*
+*Last Updated: February 27, 2026*

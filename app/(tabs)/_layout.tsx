@@ -1,15 +1,17 @@
 import { Tabs } from 'expo-router';
-import { Map, Sword, User, Briefcase, Store } from 'lucide-react-native';
+import { Map, Sword, User, Briefcase, Store, Radar } from 'lucide-react-native';
 import PlayerHeader from '../../components/PlayerHeader';
 import GlobalNotification from '../../components/GlobalNotification';
 import SaveIndicator from '../../components/SaveIndicator';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useCombatStore } from '../../utils/useCombatStore';
+import { useDungeonStore } from '../../utils/useDungeonStore';
 import TutorialView from '../../components/TutorialView';
 
 export default function TabLayout() {
   const { tutorialProgress, isTutorialComplete } = usePlayerStore();
   const { isInCombat } = useCombatStore();
+  const { isInsideDungeon } = useDungeonStore();
   const currentStep = tutorialProgress.currentStep;
   
   // Hide tabs until specific milestones OR tutorial is fully complete
@@ -55,22 +57,22 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: (e) => {
-            if (isInCombat) e.preventDefault();
+            if (isInCombat || isInsideDungeon) e.preventDefault();
           },
         }}
       />
       <Tabs.Screen
         name="battle"
         options={{
-          title: 'Battle',
-          href: hideOthers ? null : undefined,
+          title: 'Near Me',
+          href: !isTutorialComplete ? null : undefined,
           tabBarIcon: ({ color, size }) => (
-            <Sword size={size} color={color} strokeWidth={2.5} />
+            <Radar size={size} color={color} strokeWidth={2.5} />
           ),
         }}
         listeners={{
           tabPress: (e) => {
-            if (isTutorialRestricted || hideOthers) e.preventDefault();
+            if (isTutorialRestricted || !isTutorialComplete) e.preventDefault();
           },
         }}
       />
@@ -119,6 +121,13 @@ export default function TabLayout() {
           tabPress: (e) => {
             if (hideOthers) e.preventDefault();
           },
+        }}
+      />
+      <Tabs.Screen
+        name="dungeon"
+        options={{
+          href: null,
+          headerShown: true,
         }}
       />
       <Tabs.Screen

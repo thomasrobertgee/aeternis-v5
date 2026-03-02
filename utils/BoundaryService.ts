@@ -90,6 +90,39 @@ class BoundaryService {
       return featureName.includes(normalized) || normalized.includes(featureName);
     }) || null;
   }
+
+  /**
+   * Calculates the approximate center of a suburb.
+   */
+  public getSuburbCenter(name: string): Coords | null {
+    const feature = this.getSuburbFeature(name);
+    if (!feature || !feature.geometry) return null;
+
+    let coords: number[][] = [];
+    if (feature.geometry.type === 'Polygon') {
+      coords = feature.geometry.coordinates[0];
+    } else if (feature.geometry.type === 'MultiPolygon') {
+      // Use the largest polygon for Multipolygons
+      coords = feature.geometry.coordinates.reduce((prev: any, current: any) => 
+        (current[0].length > prev[0].length) ? current : prev
+      )[0];
+    }
+
+    if (coords.length === 0) return null;
+
+    let minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+    coords.forEach(pt => {
+      minLon = Math.min(minLon, pt[0]);
+      maxLon = Math.max(maxLon, pt[0]);
+      minLat = Math.min(minLat, pt[1]);
+      maxLat = Math.max(maxLat, pt[1]);
+    });
+
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLon + maxLon) / 2
+    };
+  }
 }
 
 export default BoundaryService.getInstance();

@@ -11,7 +11,7 @@ import Animated, {
   Easing,
   runOnJS
 } from 'react-native-reanimated';
-import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll, User, Package, Home } from 'lucide-react-native';
+import { Brain, Eye, Sparkles, ChevronRight, AlertCircle, CheckCircle2, Skull, Briefcase, Activity, Scroll, User, Package, Home, Navigation } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter, usePathname } from 'expo-router';
 import { useUIStore } from '../utils/useUIStore';
@@ -358,18 +358,23 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     text: "\"Sorry, I just wanted to be completely sure. These crystals are what we used to trade in our world, and only with Otherworlders do they disappear when held.\"",
-    choices: [{ label: "I see...", nextStep: 57 }],
+    choices: [{ label: "I see...", nextStep: 56 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"Anyway, what is your name, Otherworlder?\"",
-    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 58 }],
+    choices: [{ label: "My name is...", isNameTrigger: true, nextStep: 57 }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "\"Nice to meet you, {name}. Listen, I'm from a settlement not far from here. There are others you can talk to, vendors who sell supplies, and apparently you can set it as a 'safe respawn'—whatever that means.\"",
-    choices: [{ label: "Lead the way", updates: { isTutorialActive: false, currentStep: 59 } }],
+    choices: [{ label: "Lead the way", updates: { isTutorialActive: false, currentStep: 58 } }],
     icon: <User size={32} color="#a855f7" />
+  },
+  {
+    text: "Follow Jeff to Altona Gate. It's marked on your HUD scanner.",
+    choices: [],
+    icon: <Navigation size={32} color="#06b6d4" />
   },
   {
     text: "You arrive at the settlement with Jeff. Altona Gate, from your memory as one of the busiest shopping centres in the Altona North region, now appears run down, with camping tents set up in the carpark, people walking around, and stalls that appear to be vendors.",
@@ -383,7 +388,7 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     text: "The tutorial is now complete. Welcome to the Fracture.",
-    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 62 } }],
+    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 63, isTutorialComplete: true } }],
     icon: <Sparkles size={32} color="#10b981" />
   }
 ];
@@ -392,7 +397,7 @@ const TutorialView = () => {
   const router = useRouter();
   const pathname = usePathname();
   const setHeroTab = useUIStore(s => s.setHeroTab);
-  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem, setStats, gold, setPlayerName, playerName } = usePlayerStore();
+  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem, setStats, gold, setPlayerName, playerName, setTutorialComplete } = usePlayerStore();
   
   const [nameInput, setNameInput] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);
@@ -603,6 +608,22 @@ const TutorialView = () => {
       if (choice.updates.gold !== undefined) {
         setStats({ gold: gold + choice.updates.gold });
       }
+
+      if (choice.updates.isTutorialComplete !== undefined) {
+        setTutorialComplete(choice.updates.isTutorialComplete);
+      }
+      
+      // Special handling for step 58 'Lead the way'
+      if (choice.updates.currentStep === 58) {
+        const { ALTONA_GATE_COORDS } = require('../utils/Constants');
+        useUIStore.getState().setPendingMapAction({
+          type: 'center',
+          coords: ALTONA_GATE_COORDS,
+          zoom: 0.005
+        });
+        router.replace('/explore');
+      }
+
       updateTutorial(choice.updates);
     }
     if (choice.nextStep !== undefined) {
@@ -658,7 +679,7 @@ const TutorialView = () => {
                       if (nameInput.trim().length > 0) {
                         setPlayerName(nameInput.trim());
                         setShowNameInput(false);
-                        const nextStep = 59; // Correctly go to 'Nice to meet you'
+                        const nextStep = 57; // Correctly go to 'Nice to meet you'
                         updateTutorial({ currentStep: nextStep, isTutorialActive: true });
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         pendingNextStepRef.current = null;

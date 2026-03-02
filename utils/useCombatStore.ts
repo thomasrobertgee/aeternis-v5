@@ -29,6 +29,13 @@ interface CombatState {
   turnCount: number;
   combatLogs: CombatLog[];
 
+  // Summary State
+  showSummary: boolean;
+  totalDamageDealt: number;
+  totalDamageReceived: number;
+  lootedAetium: number;
+  lootedItems: string[];
+
   // Actions
   initiateCombat: (enemyName: string, enemyMaxHp: number, playerHp: number, maxPlayerHp: number, playerMana: number, maxPlayerMana: number, sourceId?: string, damageModifier?: number, biome?: BiomeType) => void;
   updateHp: (target: 'player' | 'enemy', amount: number) => void;
@@ -37,6 +44,8 @@ interface CombatState {
   addLog: (message: string, type: 'player' | 'enemy' | 'system') => void;
   endCombat: () => void;
   syncStats: () => void;
+  recordLoot: (aetium: number, items: string[]) => void;
+  setShowSummary: (show: boolean) => void;
 }
 
 export const useCombatStore = create<CombatState>((set) => ({
@@ -57,6 +66,12 @@ export const useCombatStore = create<CombatState>((set) => ({
   isPlayerTurn: true,
   turnCount: 1,
   combatLogs: [],
+
+  showSummary: false,
+  totalDamageDealt: 0,
+  totalDamageReceived: 0,
+  lootedAetium: 0,
+  lootedItems: [],
 
   initiateCombat: (enemyName, enemyMaxHp, playerHp, maxPlayerHp, playerMana, maxPlayerMana, sourceId, damageModifier = 1.0, biome) => {
     const playerStore = usePlayerStore.getState();
@@ -95,6 +110,11 @@ export const useCombatStore = create<CombatState>((set) => ({
         message: `A ${enemyName} manifests from the static!`,
         type: 'system'
       }],
+      showSummary: false,
+      totalDamageDealt: 0,
+      totalDamageReceived: 0,
+      lootedAetium: 0,
+      lootedItems: [],
     });
   },
 
@@ -102,10 +122,16 @@ export const useCombatStore = create<CombatState>((set) => ({
     if (target === 'player') {
       const newHp = Math.max(0, Math.min(state.maxPlayerHp, state.playerHp + amount));
       usePlayerStore.getState().setStats({ hp: newHp });
-      return { playerHp: newHp };
+      return { 
+        playerHp: newHp,
+        totalDamageReceived: amount < 0 ? state.totalDamageReceived + Math.abs(amount) : state.totalDamageReceived
+      };
     } else {
       const newHp = Math.max(0, Math.min(state.maxEnemyHp, state.enemyHp + amount));
-      return { enemyHp: newHp };
+      return { 
+        enemyHp: newHp,
+        totalDamageDealt: amount < 0 ? state.totalDamageDealt + Math.abs(amount) : state.totalDamageDealt
+      };
     }
   }),
 
@@ -136,7 +162,17 @@ export const useCombatStore = create<CombatState>((set) => ({
     damageModifier: 1.0,
     biome: undefined,
     isPlayerTurn: true,
-    turnCount: 1
+    turnCount: 1,
+    showSummary: false
+  }),
+
+  recordLoot: (aetium, items) => set({
+    lootedAetium: aetium,
+    lootedItems: items
+  }),
+
+  setShowSummary: (show) => set({
+    showSummary: show
   }),
 
   syncStats: () => {

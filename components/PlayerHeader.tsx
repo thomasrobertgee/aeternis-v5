@@ -3,7 +3,8 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet, Alert, DevSettings } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayerStore } from '../utils/usePlayerStore';
 import { useCombatStore } from '../utils/useCombatStore';
-import { User, X, Trash2, ShieldAlert, Settings, Music, Music2, Home } from 'lucide-react-native';
+import { useDungeonStore } from '../utils/useDungeonStore';
+import { User, X, Trash2, ShieldAlert, Settings, Music, Music2, Home, Flame } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import Animated, { FadeIn, SlideInDown, withRepeat, withSequence, withTiming, useSharedValue, useAnimatedStyle, Easing } from 'react-native-reanimated';
@@ -15,16 +16,21 @@ const PlayerHeader = () => {
   const pathname = usePathname();
   const player = usePlayerStore();
   const combat = useCombatStore();
+  const dungeon = useDungeonStore();
   const resetStore = usePlayerStore((state) => state.resetStore);
   const [showProfile, setShowProfile] = useState(false);
 
   const isInBattleScreen = pathname === '/battle';
   const isInSettlementScreen = pathname === '/settlement' || pathname === '/(tabs)/settlement';
+  const isInDungeonScreen = pathname === '/dungeon' || pathname === '/(tabs)/dungeon';
+  
   const showBackToBattle = combat.isInCombat && !isInBattleScreen;
-  const showBackToSettlement = player.isInSettlement && !isInSettlementScreen;
+  const showBackToSettlement = player.isInSettlement && !isInSettlementScreen && !combat.isInCombat;
+  const showBackToDungeon = dungeon.isInsideDungeon && !isInDungeonScreen && !combat.isInCombat;
 
   const battlePulse = useSharedValue(1);
   const settlementPulse = useSharedValue(1);
+  const dungeonPulse = useSharedValue(1);
 
   useEffect(() => {
     if (showBackToBattle) {
@@ -52,12 +58,29 @@ const PlayerHeader = () => {
     }
   }, [showBackToSettlement]);
 
+  useEffect(() => {
+    if (showBackToDungeon) {
+      dungeonPulse.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 900 }),
+          withTiming(1, { duration: 900 })
+        ),
+        -1,
+        true
+      );
+    }
+  }, [showBackToDungeon]);
+
   const battleButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: battlePulse.value }],
   }));
 
   const settlementButtonStyle = useAnimatedStyle(() => ({
     transform: [{ scale: settlementPulse.value }],
+  }));
+
+  const dungeonButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: dungeonPulse.value }],
   }));
 
   // Use combat stats if in battle, otherwise use global player stats
@@ -108,7 +131,7 @@ const PlayerHeader = () => {
         <View className="h-full bg-cyan-400" style={{ width: `${(player.xp / player.maxXp) * 100}%` }} />
       </View>
 
-      <View className="px-4 py-3 flex-row justify-between items-center">
+      <View className="px-4 py-2.5 flex-row justify-between items-center">
         {/* Level & Profile Button */}
         <TouchableOpacity 
           onPress={() => setShowProfile(true)}
@@ -126,7 +149,9 @@ const PlayerHeader = () => {
               className="bg-red-600 px-3 py-2 rounded-xl border border-red-400 shadow-lg shadow-red-900/40 flex-row items-center"
             >
               <ShieldAlert size={12} color="#fff" className="mr-1.5" />
-              <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Battle</Text>
+              <Text className="text-white font-black text-[8px] uppercase tracking-widest">
+                {combat.showSummary ? 'Battle Summary' : 'In Battle'}
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -139,6 +164,18 @@ const PlayerHeader = () => {
             >
               <Home size={12} color="#fff" className="mr-1.5" />
               <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Settlement</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
+        {showBackToDungeon && (
+          <Animated.View entering={FadeIn} style={dungeonButtonStyle} className="mr-4">
+            <TouchableOpacity 
+              onPress={() => router.replace('/(tabs)/dungeon')}
+              className="bg-purple-600 px-3 py-2 rounded-xl border border-purple-400 shadow-lg shadow-purple-900/40 flex-row items-center"
+            >
+              <Flame size={12} color="#fff" className="mr-1.5" />
+              <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Dungeon</Text>
             </TouchableOpacity>
           </Animated.View>
         )}

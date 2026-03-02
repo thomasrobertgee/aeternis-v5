@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { useCombatStore } from '../../utils/useCombatStore';
 import { usePlayerStore } from '../../utils/usePlayerStore';
 import { useUIStore } from '../../utils/useUIStore';
 import { getLootForEnemy } from '../../utils/LootTable';
-import { Sword, Zap, Briefcase, Footprints, ShieldAlert, Skull, Package, Activity, Navigation, Radar } from 'lucide-react-native';
+import { Sword, Zap, Briefcase, Footprints, ShieldAlert, Skull, Package, Activity, Navigation, Radar, Home, Flame, MapPin, Award } from 'lucide-react-native';
 import Animated, { 
   FadeIn, 
   FadeInDown,
@@ -21,12 +21,13 @@ import { getDistance, formatDistance } from '../../utils/MathUtils';
 import * as Haptics from 'expo-haptics';
 import SoundService from '../../utils/SoundService';
 import { useDungeonStore } from '../../utils/useDungeonStore';
+import { MILLERS_JUNCTION_DEPTHS_COORDS, ALTONA_GATE_COORDS } from '../../utils/Constants';
 
 export default function BattleScreen() {
   const router = useRouter();
   const player = usePlayerStore();
   const dungeon = useDungeonStore();
-  const { activeWorldEvent } = useUIStore();
+  const { activeWorldEvent, setPendingMapAction } = useUIStore();
   const { hostileSignals, removeSignal, recordEncounter, recordDefeat } = player;
   
   const { 
@@ -50,7 +51,14 @@ export default function BattleScreen() {
     initiateCombat,
     sourceId,
     damageModifier,
-    biome
+    biome,
+    showSummary,
+    setShowSummary,
+    totalDamageDealt,
+    totalDamageReceived,
+    lootedAetium,
+    lootedItems,
+    recordLoot
   } = useCombatStore();
 
   const setGlobalStats = usePlayerStore((state) => state.setStats);
@@ -63,36 +71,76 @@ export default function BattleScreen() {
 
   // Reset local processing state when combat starts/ends
   useEffect(() => {
-    if (isInCombat) {
+    if (isInCombat && !showSummary) {
       setIsActionProcessing(false);
       setIsResolving(false);
     }
-  }, [isInCombat]);
+  }, [isInCombat, showSummary]);
 
-  // Filter and sort nearby threats (within 10km) that are NOT on cooldown
-  const nearbyThreats = (hostileSignals || [])
-    .filter(s => !s.respawnAt) // Only show active signals
-    .map(signal => ({
-      ...signal,
-      distance: getDistance(player.playerLocation, signal.coords)
-    }))
-    .filter(signal => signal.distance <= 10)
-    .sort((a, b) => a.distance - b.distance);
+  // Combine and sort ALL nearby points of interest (within 20km)
+  const nearbyPOI = useMemo(() => {
+    const pois = [];
 
-  const handleEngage = (signal: any) => {
-    // This is for direct engage from the scanner list
-    initiateCombat('Fracture Manifestation', 60, player.hp, player.maxHp, player.mana, player.maxMana, signal.id);
+    // 1. Hostile Signals
+    (hostileSignals || []).filter(s => !s.respawnAt).forEach(s => {
+      pois.push({
+        id: s.id,
+        title: s.type === 'Boss' ? 'Fracture Rift' : 'Hostile Entity',
+        type: 'Hostile',
+        coords: s.coords,
+        distance: getDistance(player.playerLocation, s.coords),
+        biome: s.biome,
+        signalType: s.type
+      });
+    });
+
+    // 2. Settlements
+    pois.push({
+      id: 'poi-settlement-altona-gate',
+      title: 'Altona Gate Enclave',
+      type: 'Settlement',
+      coords: ALTONA_GATE_COORDS,
+      distance: getDistance(player.playerLocation, ALTONA_GATE_COORDS)
+    });
+
+    // 3. Dungeons
+    pois.push({
+      id: 'poi-dungeon-millers-junction',
+      title: "Miller's Junction Depths",
+      type: 'Dungeon',
+      coords: MILLERS_JUNCTION_DEPTHS_COORDS,
+      distance: getDistance(player.playerLocation, MILLERS_JUNCTION_DEPTHS_COORDS)
+    });
+
+    return pois
+      .filter(p => p.distance <= 20)
+      .sort((a, b) => a.distance - b.distance);
+  }, [hostileSignals, player.playerLocation]);
+
+  const handleAction = (poi: any) => {
+    if (poi.type === 'Hostile') {
+      initiateCombat(poi.title === 'Fracture Rift' ? 'Rift Entity' : 'Fracture Manifestation', 60, player.hp, player.maxHp, player.mana, player.maxMana, poi.id);
+      return;
+    }
+    
+    // For non-combat POIs, center map on them and navigate to Explore
+    setPendingMapAction({
+      type: 'center',
+      coords: poi.coords,
+      zoom: 0.005
+    });
+    router.replace('/explore');
   };
 
   // Record encounter and switch music when combat starts
   useEffect(() => {
-    if (isInCombat && enemyName) {
+    if (isInCombat && enemyName && !showSummary) {
       recordEncounter(enemyName);
       SoundService.playBattle();
-    } else if (!isInCombat) {
+    } else if (!isInCombat || showSummary) {
       SoundService.playAmbient();
     }
-  }, [isInCombat, enemyName]);
+  }, [isInCombat, enemyName, showSummary]);
 
   // Animations
   const enemyShake = useSharedValue(0);
@@ -125,7 +173,7 @@ export default function BattleScreen() {
 
   // Resolution Logic
   useEffect(() => {
-    if (!isInCombat) return;
+    if (!isInCombat || showSummary) return;
 
     if (enemyHp <= 0 && !isResolving) {
       setIsResolving(true);
@@ -137,10 +185,6 @@ export default function BattleScreen() {
 
       // Bestiary Update
       recordDefeat(enemyName);
-
-      if (sourceId === 'dungeon-boss') {
-        player.updateTutorial({ currentStep: 44, isTutorialActive: true }); // Congratulations
-      }
 
       if (isTutorialDog || isMultiTutorialDog) {
         // Special Tutorial Logic
@@ -163,15 +207,17 @@ export default function BattleScreen() {
         addItem(mpPotion as any);
         addLog(`Acquired: Health Potion, Mana Potion`, 'system');
 
+        const battleLootItems = ['Health Potion', 'Mana Potion'];
+
         if (isMultiTutorialDog) {
           updateQuestProgress('q-tutorial-dogs', 1);
 
           const quest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-tutorial-dogs');
           if (quest && quest.currentCount >= quest.targetCount) {
-            player.updateTutorial({ currentStep: 36, isTutorialActive: true }); // Narrative checkpoint: "You collapse..."
+            player.updateTutorial({ currentStep: 36 }); // Narrative checkpoint: "You collapse..."
           }
         } else {
-          player.updateTutorial({ currentStep: 24, isTutorialActive: true }); // Narrative checkpoint: "After finally defeating..."
+          player.updateTutorial({ currentStep: 24 }); // Narrative checkpoint: "After finally defeating..."
         }
         
         setTimeout(() => {
@@ -182,21 +228,25 @@ export default function BattleScreen() {
             gold: currentGold + goldLoot
           });
           gainXp(xpReward);
-          endCombat();
           
-          if (dungeon.isInsideDungeon) {
-            dungeon.nextStage();
-            router.replace('/dungeon');
-          } else {
-            router.replace('/explore');
-          }
+          recordLoot(goldLoot, battleLootItems);
+          setShowSummary(true);
           setIsResolving(false);
-        }, 2500);
+        }, 2000);
         return;
       }
 
       // Standard Combat Logic
-      updateQuestProgress('q-secure-the-west', 1);
+      if (sourceId === 'dungeon-boss') {
+        updateQuestProgress('q-millers-junction-depths', 1);
+      } else {
+        // Update all active culling quests if appropriate
+        player.activeQuests.forEach(q => {
+          if (q.id === 'q-secure-the-west' || q.title.toLowerCase().includes('culling') || q.title.toLowerCase().includes('defeat')) {
+            updateQuestProgress(q.id, 1);
+          }
+        });
+      }
 
       // Remove from map/list and trigger respawn timer
       if (sourceId) {
@@ -216,15 +266,16 @@ export default function BattleScreen() {
       
       // Calculate Item loot
       const itemLoot = getLootForEnemy(enemyName, biome);
+      const battleLootItems: string[] = [];
       if (itemLoot) {
         let finalItem = itemLoot;
         if (activeWorldEvent?.lootMultiplier[itemLoot.name]) {
           addLog(`EVENT BONUS: Extra ${itemLoot.name} recovered!`, 'system');
-          // For now, "doubling" just means we give it to them. 
-          // Future: actually add 2 to inventory if we update addItem to support counts
           addItem(itemLoot); 
+          battleLootItems.push(itemLoot.name);
         }
         addItem(finalItem);
+        battleLootItems.push(finalItem.name);
         addLog(`Acquired: ${finalItem.name}`, 'system');
       }
       
@@ -236,24 +287,11 @@ export default function BattleScreen() {
           gold: currentGold + goldLoot
         });
         gainXp(xpGained);
-        endCombat();
-
-        if (dungeon.isInsideDungeon) {
-          if (dungeon.currentStage === 10) {
-            // Dungeon Cleared!
-            updateQuestProgress('q-millers-junction-depths', 1);
-            player.updateTutorial({ currentStep: 44, isTutorialActive: false });
-            dungeon.exitDungeon();
-            router.replace('/explore');
-          } else {
-            dungeon.nextStage();
-            router.replace('/dungeon');
-          }
-        } else {
-          router.replace('/explore');
-        }
+        
+        recordLoot(goldLoot, battleLootItems);
+        setShowSummary(true);
         setIsResolving(false);
-      }, 2500);
+      }, 2000);
     }
 
     if (playerHp <= 0 && !isResolving) {
@@ -273,7 +311,208 @@ export default function BattleScreen() {
         }
       }, 3000);
     }
-  }, [enemyHp, playerHp]);
+  }, [enemyHp, playerHp, showSummary]);
+
+    const handleContinue = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      if (dungeon.isInsideDungeon) {
+        // Record Stats to Dungeon Store before ending combat
+        dungeon.recordStat('damageDealt', totalDamageDealt);
+        dungeon.recordStat('damageReceived', totalDamageReceived);
+        dungeon.recordStat('kill');
+        lootedItems.forEach(item => dungeon.recordStat('loot', item));
+        dungeon.recordStat('aetium', lootedAetium);
+  
+        if (dungeon.currentStage === 10) {
+          // Dungeon Cleared! Show Dungeon Summary
+          dungeon.setShowDungeonSummary(true);
+          // We don't endCombat() yet because showDungeonSummary is rendered in this screen
+        } else {
+          dungeon.nextStage();
+          endCombat();
+          router.replace('/(tabs)/dungeon');
+        }
+      } else {
+        endCombat();
+        router.replace('/explore');
+      }
+    };
+  
+    const handleDungeonFinish = () => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      player.updateTutorial({ currentStep: 44 });
+      dungeon.exitDungeon();
+      endCombat();
+      router.replace('/explore');
+    };
+  
+    const renderDungeonSummary = () => (
+      <Animated.View 
+        entering={FadeIn.duration(800)}
+        className="flex-1 bg-zinc-950 px-6 pt-16 justify-center"
+      >
+        <View className="items-center mb-10">
+          <View className="bg-purple-500/10 p-8 rounded-[40px] border-2 border-purple-500/30 mb-6 shadow-2xl shadow-purple-500/20">
+            <Flame size={64} color="#a855f7" />
+          </View>
+          <Text className="text-purple-500 font-black text-xs uppercase tracking-[8px] mb-2">Structure Destabilized</Text>
+          <Text className="text-white text-4xl font-black text-center mb-1">Dungeon Cleared</Text>
+          <Text className="text-zinc-500 font-bold uppercase tracking-[4px] text-[10px]">{dungeon.currentDungeonId || 'The Depths'}</Text>
+        </View>
+  
+        <ScrollView showsVerticalScrollIndicator={false} className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 mb-8 max-h-[400px]">
+          <View className="flex-row justify-between mb-6">
+            <View>
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Enemies Purged</Text>
+              <Text className="text-white text-2xl font-black">{dungeon.enemiesKilled}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Caches Looted</Text>
+              <Text className="text-white text-2xl font-black">{dungeon.chestsOpened}</Text>
+            </View>
+          </View>
+
+          <View className="flex-row justify-between mb-6">
+            <View>
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Altars Activated</Text>
+              <Text className="text-white text-2xl font-black">{dungeon.altarsUsed}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Rest Areas Found</Text>
+              <Text className="text-white text-2xl font-black">{dungeon.restAreasFound}</Text>
+            </View>
+          </View>
+  
+          <View className="flex-row justify-between mb-6">
+            <View>
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Total Damage Dealt</Text>
+              <Text className="text-cyan-400 text-2xl font-black">{dungeon.totalDamageDealt}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Total Damage Received</Text>
+              <Text className="text-red-400 text-2xl font-black">{dungeon.totalDamageReceived}</Text>
+            </View>
+          </View>
+  
+          <View className="h-[1px] bg-zinc-800 mb-6" />
+  
+          <View className="mb-6">
+            <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-3">Total Run Loot</Text>
+            
+            <View className="flex-row items-center mb-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+              <View className="bg-amber-500/20 p-2 rounded-lg mr-4">
+                <Award size={20} color="#f59e0b" />
+              </View>
+              <View className="flex-row items-baseline">
+                <Text className="text-white font-bold text-lg">{dungeon.aetiumGained}</Text>
+                <Text className="text-amber-500 font-bold text-lg ml-2">Aetium</Text>
+              </View>
+            </View>
+  
+            {dungeon.modifiers.length > 0 && (
+              <View className="mb-4">
+                <Text className="text-zinc-600 font-black text-[7px] uppercase tracking-[3px] mb-2 px-1">Active Resonance (Altars)</Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {dungeon.modifiers.map((mod) => (
+                    <View key={mod.id} className="bg-purple-950/20 border border-purple-500/30 px-3 py-1.5 rounded-xl">
+                      <Text className="text-purple-400 text-[9px] font-bold uppercase">{mod.name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+  
+            {dungeon.lootAcquired.length > 0 ? (
+              dungeon.lootAcquired.map((item, idx) => (
+                <View key={idx} className="flex-row items-center mb-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+                  <View className="bg-cyan-500/20 p-2 rounded-lg mr-4">
+                    <Package size={20} color="#06b6d4" />
+                  </View>
+                  <Text className="text-white font-bold text-lg">{item}</Text>
+                </View>
+              ))
+            ) : (
+              <View className="py-2">
+                <Text className="text-zinc-700 text-[10px] italic text-center">No structural artifacts recovered.</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+  
+        <TouchableOpacity 
+          onPress={handleDungeonFinish}
+          className="bg-purple-600 h-20 rounded-[30px] items-center justify-center shadow-xl shadow-purple-900/40 border border-purple-400"
+        >
+          <Text className="text-white font-black uppercase tracking-[6px]">Return to World</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  
+    const renderSummary = () => (      <Animated.View 
+        entering={FadeIn.duration(800)}
+        className="flex-1 bg-zinc-950 px-6 pt-16 justify-center"
+      >
+        <View className="items-center mb-12">
+          <View className="bg-emerald-500/10 p-8 rounded-[40px] border-2 border-emerald-500/30 mb-6">
+            <Award size={64} color="#10b981" />
+          </View>
+          <Text className="text-emerald-500 font-black text-xs uppercase tracking-[8px] mb-2">Purge Successful</Text>
+          <Text className="text-white text-4xl font-black text-center">Battle Summary</Text>
+        </View>
+  
+        <View className="bg-zinc-900/40 border border-zinc-800 rounded-[32px] p-8 mb-8">
+          <View className="flex-row justify-between mb-6">
+            <View>
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Total Damage Dealt</Text>
+              <Text className="text-cyan-400 text-2xl font-black">{totalDamageDealt}</Text>
+            </View>
+            <View className="items-end">
+              <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-1">Total Damage Received</Text>
+              <Text className="text-red-400 text-2xl font-black">{totalDamageReceived}</Text>
+            </View>
+          </View>
+  
+          <View className="h-[1px] bg-zinc-800 mb-6" />
+  
+          <View className="mb-6">
+            <Text className="text-zinc-500 font-bold text-[8px] uppercase tracking-widest mb-3">Loot Recovered</Text>
+            
+            <View className="flex-row items-center mb-4 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+              <View className="bg-amber-500/20 p-2 rounded-lg mr-4">
+                <Award size={20} color="#f59e0b" />
+              </View>
+              <View className="flex-row items-baseline">
+                <Text className="text-white font-bold text-lg">{lootedAetium}</Text>
+                <Text className="text-amber-500 font-bold text-lg ml-2">Aetium</Text>
+              </View>
+            </View>
+  
+            {lootedItems.map((item, idx) => (
+              <View key={idx} className="flex-row items-center mb-3 bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+                <View className="bg-cyan-500/20 p-2 rounded-lg mr-4">
+                  <Package size={20} color="#06b6d4" />
+                </View>
+                <Text className="text-white font-bold text-lg">{item}</Text>
+              </View>
+            ))}
+            
+            {lootedItems.length === 0 ? (
+              <View className="py-2">
+                <Text className="text-zinc-700 text-[10px] italic text-center">No items recovered from the static.</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+  
+        <TouchableOpacity 
+          onPress={handleContinue}
+          className="bg-white h-20 rounded-[30px] items-center justify-center shadow-xl shadow-black"
+        >
+          <Text className="text-black font-black uppercase tracking-[6px]">Continue</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
 
   // Player Actions
   const handleAttack = () => {
@@ -360,67 +599,93 @@ export default function BattleScreen() {
     }
   }, [isPlayerTurn, isInCombat, isResolving, playerDefense, activeWorldEvent]);
 
+  if (dungeon.showDungeonSummary) {
+    return renderDungeonSummary();
+  }
+
+  if (showSummary) {
+    return renderSummary();
+  }
+
   if (!isInCombat) {
     return (
       <ScrollView className="flex-1 bg-zinc-950 px-6 pt-16">
         <View className="mb-8">
           <View className="flex-row items-center mb-2">
-            <Radar size={24} color="#ef4444" className="mr-2" />
-            <Text className="text-red-500 font-bold uppercase tracking-[4px] text-xs">
+            <Radar size={24} color="#06b6d4" className="mr-2" />
+            <Text className="text-cyan-500 font-bold uppercase tracking-[4px] text-xs">
               Scanner: Operational
             </Text>
           </View>
-          <Text className="text-white text-4xl font-black tracking-tight">Nearby Threats</Text>
+          <Text className="text-white text-4xl font-black tracking-tight">Near Me</Text>
           <Text className="text-zinc-500 text-sm font-medium uppercase tracking-[2px]">
-            Hostile signals detected in your perimeter
+            Points of interest in your perimeter
           </Text>
         </View>
 
-        {nearbyThreats.length > 0 ? (
+        {nearbyPOI.length > 0 ? (
           <View className="space-y-4">
-            {nearbyThreats.map((signal, index) => (
+            {nearbyPOI.map((poi, index) => (
               <Animated.View 
-                key={signal.id} 
+                key={poi.id} 
                 entering={FadeInDown.delay(index * 100).duration(500)}
                 className="bg-zinc-900/50 border border-zinc-800 p-5 rounded-3xl mb-4"
               >
                 <View className="flex-row justify-between items-center mb-4">
                   <View className="flex-row items-center flex-1">
-                    <View className="bg-red-500/10 p-3 rounded-2xl mr-4 border border-red-500/20">
-                      <Activity size={20} color="#ef4444" />
+                    <View className={`p-3 rounded-2xl mr-4 border ${
+                      poi.type === 'Hostile' ? 'bg-red-500/10 border-red-500/20' :
+                      poi.type === 'Settlement' ? 'bg-emerald-500/10 border-emerald-500/20' :
+                      'bg-purple-500/10 border-purple-500/20'
+                    }`}>
+                      {poi.type === 'Hostile' ? (
+                        poi.signalType === 'Boss' ? <Skull size={20} color="#ef4444" /> : <Activity size={20} color="#ef4444" />
+                      ) : poi.type === 'Settlement' ? (
+                        <Home size={20} color="#10b981" />
+                      ) : (
+                        <Flame size={20} color="#a855f7" />
+                      )}
                     </View>
                     <View className="flex-1">
-                      <Text className="text-white font-bold text-lg">Fracture Signal</Text>
+                      <Text className="text-white font-bold text-lg">{poi.title}</Text>
                       <View className="flex-row items-center mt-0.5">
                         <Navigation size={10} color="#71717a" className="mr-1" />
                         <Text className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
-                          Distance: {formatDistance(signal.distance)}
+                          Distance: {formatDistance(poi.distance)}
                         </Text>
                       </View>
                     </View>
                   </View>
                   <TouchableOpacity 
-                    onPress={() => handleEngage(signal)}
-                    className="bg-red-600 px-5 py-2.5 rounded-xl shadow-lg shadow-red-900/40"
+                    onPress={() => handleAction(poi)}
+                    className={`${
+                      poi.type === 'Hostile' ? 'bg-red-600 shadow-red-900/40' :
+                      poi.type === 'Settlement' ? 'bg-emerald-600 shadow-emerald-900/40' :
+                      'bg-purple-600 shadow-purple-900/40'
+                    } px-5 py-2.5 rounded-xl shadow-lg`}
                   >
-                    <Text className="text-white font-black text-[10px] uppercase">Engage</Text>
+                    <Text className="text-white font-black text-[10px] uppercase">
+                      {poi.type === 'Hostile' ? 'Engage' : 'Locate'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
                 
                 <Text className="text-zinc-500 text-[10px] italic">
-                  Signal strength is stable. Manifestation confirmed in this sector.
+                  {poi.type === 'Hostile' ? 'Signal strength is stable. Manifestation confirmed.' : 
+                   poi.type === 'Settlement' ? 'Verified Enclave. Sanctuary protocols available.' :
+                   'High-resonance structure detected. Access with caution.'}
                 </Text>
               </Animated.View>
             ))}
           </View>
         ) : (
           <View className="items-center justify-center py-20 bg-zinc-900/30 rounded-[40px] border border-dashed border-zinc-800">
-            <ShieldAlert size={48} color="#3f3f46" />
+            <MapPin size={48} color="#3f3f46" />
             <Text className="text-zinc-500 font-bold uppercase tracking-widest mt-4">
-              Clear Perimeter
+              Perimeter Quiet
             </Text>
             <Text className="text-zinc-700 text-xs mt-2 text-center px-10">
-              No hostile manifestations within 10km. Travel to new sectors to locate targets.
+              No significant signals within 20km. Move to new sectors to expand your horizon.
             </Text>
           </View>
         )}
