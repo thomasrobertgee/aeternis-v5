@@ -27,7 +27,7 @@ const QuestTracker = () => {
   const rewardHint = getRewardHint();
 
   return (
-    <View className="absolute top-24 right-4 w-48 z-10">
+    <View className="absolute top-24 right-4 w-36 z-10">
       {activeQuests.map((quest, index) => (
         <Animated.View 
           key={quest.id}
@@ -36,27 +36,26 @@ const QuestTracker = () => {
           <TouchableOpacity 
             activeOpacity={0.9}
             onPress={() => setShowDetails(true)}
-            className="bg-zinc-900/90 border border-zinc-800 p-3 rounded-2xl mb-3 shadow-xl"
+            className="bg-transparent px-3 py-4 mb-3 items-end"
           >
-            <View className="flex-row items-center mb-1.5">
-              <Scroll size={12} color="#06b6d4" className="mr-2" />
-              <Text className="text-white font-bold text-[10px] flex-1" numberOfLines={1}>
+            <View className="flex-row items-center justify-end mb-2">
+              {quest.isCompleted && <CheckCircle2 size={12} color="#10b981" className="mr-2" />}
+              <Text className="text-white font-bold text-[10px] text-right" numberOfLines={1}>
                 {quest.title}
               </Text>
-              {quest.isCompleted && <CheckCircle2 size={12} color="#10b981" />}
             </View>
             
-            <Text className="text-zinc-500 text-[8px] leading-3 mb-2">
+            <Text className="text-zinc-500 text-[8px] leading-3 mb-2 text-right">
               {quest.description}
             </Text>
 
             {!quest.isCompleted ? (
-              <View>
-                <View className="flex-row justify-between items-center mb-1">
-                  <Text className="text-zinc-400 text-[8px] font-bold">Progress</Text>
+              <View className="w-full items-end">
+                <View className="flex-row justify-end items-center mb-1">
                   <Text className="text-cyan-400 text-[8px] font-mono">{quest.currentCount} / {quest.targetCount}</Text>
+                  <Text className="text-zinc-400 text-[8px] font-bold ml-2">Progress</Text>
                 </View>
-                <View className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                <View className="h-1 bg-zinc-800/50 rounded-full overflow-hidden w-2/3">
                   <View 
                     className="h-full bg-cyan-500" 
                     style={{ width: `${(quest.currentCount / quest.targetCount) * 100}%` }} 
@@ -67,7 +66,7 @@ const QuestTracker = () => {
               <TouchableOpacity 
                 onPress={() => handleComplete(quest.id)}
                 activeOpacity={0.7}
-                className="bg-emerald-500/20 border border-emerald-500/40 py-2 rounded-xl flex-row items-center justify-center"
+                className="bg-emerald-500/20 border border-emerald-500/40 py-2 px-4 rounded-xl flex-row items-center justify-center self-end"
               >
                 <Gift size={10} color="#10b981" className="mr-2" />
                 <Text className="text-emerald-500 font-black text-[8px] uppercase tracking-widest">Complete</Text>

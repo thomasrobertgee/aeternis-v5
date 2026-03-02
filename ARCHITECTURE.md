@@ -26,67 +26,56 @@ The primary source of truth for character state and persistence.
 ### 2.2 `useCombatStore`
 Manages active turn-based encounters.
 *   **Live Metrics**: Tracks total damage dealt and received during a battle.
-*   **Summary State**: Controls the post-battle results overlay, recording loot and XP before returning to the overworld.
+*   **Summary State**: Post-battle results overlay, recording loot and XP.
 
 ### 2.3 `useDungeonStore`
 Manages instanced roguelite runs.
-*   **Run Tracking**: Persists statistics across all 10 stages, including enemies killed, caches looted, and altars activated.
-*   **Instance Summary**: Triggers a comprehensive "Dungeon Cleared" console upon completion, providing a total run breakdown.
+*   **Run Tracking**: Persists statistics (Kills, Damage, Altars, Loot) across 10 stages.
+*   **Instance Summary**: Comprehensive "Dungeon Cleared" console upon completion.
 
 ### 2.4 `useUIStore`
 Coordinates global UI state and cross-component actions.
-*   **Dynamic State**: `heroTab` (active character screen), `isSaving` indicator, `activeWorldEvent`.
-*   **Map Control**: `pendingMapAction` allows components (like Quests or Scanner) to request smooth panning/zooming to specific coordinates.
+*   **Map Control**: `pendingMapAction` for programmatic panning/zooming.
 
 ## 3. RPG Systems
 
 ### 3.1 Geospatial Intelligence
-*   **BoundaryService**: Loads high-fidelity GeoJSON polygons for precise, offline-capable location detection. Includes centroid calculation for zone-centered labeling.
-*   **Visual Layering (z-index)**: Implements a strict rendering hierarchy:
-    *   **Z-Index 999**: Status indicator buttons (In Battle/Dungeon).
-    *   **Z-Index 110**: Map Info Bar (Clock/Weather).
-    *   **Z-Index 50**: Traveller (Player) Marker.
-    *   **Z-Index 2**: Instability Fog (Level 10 restriction).
-    *   **Z-Index 1**: Suburb Boundary Highlight (Biome-tinted).
-*   **WikipediaService**: Fetches real-world historical/industrial summaries for zone synthesis.
-*   **ZoneSynthesizer**: An "AI" layer that generates Factions, Difficulty, and Unique NPCs based on locality context.
+*   **BoundaryService**: High-fidelity GeoJSON detection with centroid calculation for future sector labeling.
+*   **Visual Layering (z-index)**:
+    *   **Z-Index 999**: Combat/Dungeon status buttons.
+    *   **Z-Index 110**: Map Info Bar (Tactical Overlay).
+    *   **Z-Index 50**: Player Marker.
+    *   **Z-Index 10**: Floating Quest HUD.
 
 ### 3.2 Tactical Map & Discovery
-*   **"Near Me" Scanner**: Replaces manual scan buttons. A unified tab that identifies all hostile signals, settlements, and dungeons within 20km. Features "Locate" actions that auto-pan the map to POIs.
-*   **Map Info Bar**: A transparent tactical overlay providing live local time (with seconds), geographic location (Suburb, AU), and deterministic environmental data (Weather/Temp).
-*   **Active Zone Highlight**: The current suburb is rendered with a biome-tinted overlay using high-fidelity OSM polygons.
-*   **Dungeon System**: Instanced, 10-stage challenges with branching paths and "Resonance Result" feedback for modifiers.
-*   **Settlement System**: Persistent safe-zones (e.g., Altona Gate) with rest facilities and marketplaces.
+*   **Map Info Bar**: Transparent tactical overlay with live clock (seconds), geographic location, and real-world weather conditions (Sunny, Rain, etc.).
+*   **Minimalist Quest HUD**: Right-aligned, fully transparent floating cards for active objectives. Features compact progress bars and removes redundant iconography.
+*   **"Near Me" Scanner**: Unified POI detection (Hostiles, Settlements, Dungeons) within 20km.
+*   **Active Zone Highlight**: Biome-tinted polygon overlays.
+*   **Dungeon System**: 10-stage challenges with branching paths and "Resonance Result" feedback.
+*   **Settlement System**: Persistent safe-zones (e.g., Altona Gate).
 *   **Marketplace Enhancements**:
-    *   **Purchase Verification**: Detailed confirmation modal with side-by-side equipment stat comparison.
-    *   **Post-Trade Sync**: "Equip Now" prompt for immediate synchronization of purchased gear.
+    *   **Verification**: Purchase confirmation with gear stat comparison.
+    *   **Ownership**: "Owned: X" badges on items.
+    *   **Instant Sync**: "Equip Now" post-purchase feature.
 
 ### 3.3 Combat & Feedback
-*   **Battle Summary**: Automated post-defeat screen displaying total damage dealt/received and recovered loot.
-*   **Dungeon Summary**: Comprehensive results screen celebrating run-wide accomplishments (Altars, Kills, Total Loot).
+*   **Summaries**: Automated post-defeat/completion screens for both Battles and Dungeons.
 *   **UI Optimization**:
-    *   **Status Bar**: Streamlined height reduction for a more compact tactical feel.
-    *   **Recenter Control**: Ergonomic bottom-right placement for quick map orientation.
+    *   **Status Bar**: Reduced height for optimized screen real estate.
+    *   **Recenter Control**: Ergonomic bottom-right positioning.
 
 ### 3.4 Tutorial & Narrative Flow
-*   **Proximity-Gated Narrative**: Critical story beats utilize precise coordinate-based triggers and quest-completion checks.
-*   **Automated Navigation**: "Lead the way" tutorial choices automatically pan and zoom the map to destination sectors.
+*   **Automated Navigation**: "Lead the way" tutorial choices automatically pan the map.
+*   **Proximity Logic**: Narrative resumption based on coordinate arrival and quest state.
 
-## 4. Platform & Web Compatibility
-*   **ESM Support**: Configured for modern ESM libraries like Zustand v5 on web.
-*   **Bundler Fixes**: Optimized for Metro's package exports and React 19 compatibility.
-
-## 5. Completed Milestones
+## 4. Completed Milestones
 - [x] Initial Expo + NativeWind scaffolding.
-- [x] Web-based geocoding (GeoService) with procedural fallback.
 - [x] Home City Sanctuary system with Rest mechanic.
-- [x] Animated Battle Arena with Enemy AI and Stat Scaling.
-- [x] Global Sound System (Ambient & Battle tracks).
-- [x] **Cinematic Title Screen and Entry Flow.**
-- [x] **Tutorial Narrative System with persistent state and world markers.**
-- [x] **"Near Me" Unified Scanner (consolidated POI detection).**
-- [x] **Battle & Dungeon Summary systems with run-wide tracking.**
+- [x] **Tutorial Narrative System with world markers.**
+- [x] **"Near Me" Unified Scanner.**
+- [x] **Battle & Dungeon Summary systems.**
 - [x] **Marketplace Stat Comparison & Ownership tracking.**
-- [x] **Map Info Bar (Live Time, Weather, and Geographic Context).**
-- [x] **Temperature Unit Toggle (Celsius/Fahrenheit settings).**
-- [x] **UI Ergonomics: Status bar height & Recenter button optimization.**
+- [x] **Map Info Bar (Live Time, Weather, and Location).**
+- [x] **Minimalist Quest HUD (Transparent, Right-aligned).**
+- [x] **UI Layout Optimization (Status bar height & Recenter button).**

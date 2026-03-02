@@ -6,11 +6,11 @@
 import { BiomeType } from './BiomeMapper';
 
 export enum WeatherType {
-  CLEAR = 'Clear Skies',
-  RAINFALL = 'Imaginum Rain',
-  WINDY = 'Static Winds',
-  STORM = 'Fracture Storm',
-  MIST = 'Spectral Mist'
+  CLEAR = 'Sunny',
+  CLOUDY = 'Partly Cloudy',
+  RAINFALL = 'Light Rain',
+  STORM = 'Thunderstorm',
+  MIST = 'Overcast'
 }
 
 export interface WeatherEffect {
@@ -23,27 +23,27 @@ export const WEATHER_EFFECTS: Record<WeatherType, WeatherEffect> = {
   [WeatherType.CLEAR]: {
     damageModifier: 1.0,
     manaModifier: 1.0,
-    description: 'The Imaginum is stable. No environmental modifiers active.'
+    description: 'The Imaginum is stable under the clear sky. No environmental modifiers active.'
+  },
+  [WeatherType.CLOUDY]: {
+    damageModifier: 1.0,
+    manaModifier: 1.0,
+    description: 'Imaginum density is fluctuating behind the clouds. Stable conditions.'
   },
   [WeatherType.RAINFALL]: {
     damageModifier: 0.95,
     manaModifier: 1.1,
-    description: 'Liquid Imaginum dampens the impact of physical strikes (-5% Damage), but increases mental resonance (+10% Mana recovery potential).'
-  },
-  [WeatherType.WINDY]: {
-    damageModifier: 1.05,
-    manaModifier: 0.9,
-    description: 'Static winds accelerate kinetic energy (+5% Damage), but make focusing difficult (-10% Mana efficiency).'
+    description: 'Liquid Imaginum falling as rain dampens the impact of physical strikes (-5% Damage), but increases mental resonance (+10% Mana recovery potential).'
   },
   [WeatherType.STORM]: {
     damageModifier: 1.15,
     manaModifier: 1.15,
-    description: 'High-intensity fracture discharge. All energy manifestations are amplified (+15% Damage & Mana efficiency).'
+    description: 'High-intensity fracture discharge during the storm. All energy manifestations are amplified (+15% Damage & Mana efficiency).'
   },
   [WeatherType.MIST]: {
     damageModifier: 0.9,
     manaModifier: 1.0,
-    description: 'Dense spectral mist obscures targets and softens blows (-10% Damage).'
+    description: 'Dense spectral overcast obscures targets and softens blows (-10% Damage).'
   }
 };
 

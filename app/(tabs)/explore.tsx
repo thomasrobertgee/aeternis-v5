@@ -491,7 +491,6 @@ export default function ExploreScreen() {
       <View className="flex-row justify-between items-center px-4 h-12 bg-transparent z-[110]">
         {/* Left: Live Time */}
         <View className="flex-1 flex-row items-center">
-          <Clock size={12} color="#71717a" className="mr-1.5" />
           <Text className="text-zinc-400 font-mono text-[10px] uppercase">
             {currentTime.toLocaleTimeString('en-GB', { hour12: false })}
           </Text>
@@ -500,7 +499,7 @@ export default function ExploreScreen() {
         {/* Center: Location */}
         <View className="flex-[2] items-center justify-center flex-row">
           <MapPinIcon size={12} color="#06b6d4" className="mr-1.5" />
-          <Text className="text-white font-bold text-[10px] uppercase tracking-widest" numberOfLines={1}>
+          <Text className="text-white font-bold text-[10px] uppercase tracking-[4px]" numberOfLines={1}>
             {currentSuburb || homeCityName || "Fracture Zone"}, AU
           </Text>
         </View>
@@ -508,12 +507,12 @@ export default function ExploreScreen() {
         {/* Right: Weather & Temp */}
         <View className="flex-1 flex-row items-center justify-end">
           <View className="items-end mr-2">
-            <Text className="text-zinc-400 font-bold text-[8px] uppercase leading-tight">
+            <Text className="text-zinc-200 font-black text-[10px] uppercase leading-tight">
               {getWeatherForSuburb(currentSuburb || homeCityName || "Altona North")}
             </Text>
             <View className="flex-row items-center">
               <Thermometer size={10} color="#71717a" className="mr-1" />
-              <Text className="text-zinc-200 font-mono text-[10px]">
+              <Text className="text-zinc-400 font-mono text-[8px] font-bold">
                 {(() => {
                   const celsius = getTemperatureForSuburb(currentSuburb || homeCityName || "Altona North");
                   return settings.tempUnit === 'Celsius' 
