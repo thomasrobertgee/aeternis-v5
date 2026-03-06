@@ -95,12 +95,10 @@ This document outlines the step-by-step narrative, choices, and logic of the ini
 *   **Step 58**: Travel Invitation.
     *   [lead the way] -> **Auto-Zoom to Altona Gate** (Includes automatic `setSelectedZone` trigger to allow immediate entry). Tutorial Overlay Hides.
 *   **Step 59**: **Follow Objective**. Player must physically arrive at the settlement coordinates.
-*   **Step 60**: Arrival narrative at Altona Gate.
-    *   [continue] -> Step 61
-*   **Step 61**: Jeff begins the tour.
-    *   [explore] -> Step 62 (Tutorial Hides)
-*   **Step 62**: **Tutorial Complete**. Final farewell.
-    *   [finish] -> Step 63 (Unlocks **Near Me** scanner and full world persistence).
+*   **Step 60**: Jeff begins the tour.
+    *   [explore] -> Step 61 (Tutorial Hides, player explores settlement).
+*   **Step 61**: **Tutorial Complete**. Final farewell (Triggered upon 'Rest' or leaving settlement).
+    *   [finish] -> Unlocks **Near Me** scanner and full world persistence.
 
 ---
 *Last Updated: March 6, 2026*

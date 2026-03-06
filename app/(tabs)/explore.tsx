@@ -127,7 +127,7 @@ export default function ExploreScreen() {
   const sonarScale = useSharedValue(0);
   const sonarOpacity = useSharedValue(0);
 
-  const isTutorialRestricted = !isTutorialComplete && (tutorialProgress.isTutorialActive === false && (tutorialProgress.currentStep === 6 || tutorialProgress.currentStep === 7 || tutorialProgress.currentStep === 8 || tutorialProgress.currentStep === 23 || tutorialProgress.currentStep === 24 || tutorialProgress.currentStep === 35 || tutorialProgress.currentStep === 41 || tutorialProgress.currentStep === 46 || tutorialProgress.currentStep === 57 || tutorialProgress.currentStep === 58 || tutorialProgress.currentStep === 59 || tutorialProgress.currentStep === 60 || tutorialProgress.currentStep === 61 || tutorialProgress.currentStep === 62));
+  const isTutorialRestricted = !isTutorialComplete && !tutorialProgress.isTutorialActive;
 
   useEffect(() => {
     if (isTutorialRestricted) {
@@ -259,7 +259,7 @@ export default function ExploreScreen() {
     const checkpoints = [
       18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
       31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 46,
-      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60
     ];
     
     // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
@@ -281,14 +281,14 @@ export default function ExploreScreen() {
       return;
     }
 
-    if (isFocused && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
+    if (isFocused && !isTutorialComplete && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
       // Add a small delay to ensure navigation has completed before resuming overlay
       const timer = setTimeout(() => {
         if (isFocused) updateTutorial({ isTutorialActive: true });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused]);
+  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused, isTutorialComplete]);
 
   // Handle step 23 (spawn tutorial enemy)
   useEffect(() => {

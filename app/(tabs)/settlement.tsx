@@ -29,6 +29,10 @@ export default function SettlementScreen() {
     Alert.alert("Leave Settlement", "Return to the wild Fracture?", [
       { text: "Stay" },
       { text: "Leave", style: "destructive", onPress: () => {
+        // Trigger Final Tutorial Step if applicable
+        if (!player.isTutorialComplete && player.tutorialProgress.currentStep >= 60) {
+          player.updateTutorial({ currentStep: 61, isTutorialActive: true });
+        }
         player.setIsInSettlement(false);
         router.replace('/(tabs)/explore');
       }}
@@ -144,10 +148,11 @@ export default function SettlementScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     player.rest();
     
-    // Complete the tutorial if it hasn't been already
-    if (!player.isTutorialComplete) {
-      player.setTutorialComplete(true);
+    // Final Tutorial Step Trigger
+    if (!player.isTutorialComplete && player.tutorialProgress.currentStep === 60) {
+      player.updateTutorial({ currentStep: 61, isTutorialActive: true });
     }
+
 
     Alert.alert("Sanctuary Found", "The warmth of the lodge restores your spirit. Vitality and MP fully synchronized.");
   };

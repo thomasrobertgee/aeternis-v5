@@ -27,6 +27,7 @@ This document provides a chronological history of requests, features, and bug fi
 *   **Combat Pacing**: Halved almost all combat-related `setTimeout` durations (Enemy AI: 1500ms -> 750ms; Resolve: 2000ms -> 1000ms).
 *   **Map Logic Cleanup**: Consolidated map zoom logic. Blocked automatic "Recenter on Player" logic during tutorial steps 40 and 58 to allow the scripted pans to finish uninterrupted.
 *   **New Project Mandate**: Established a core rule in `gemini.md` requiring all documentation to be synchronized and updated automatically whenever a push to GitHub is requested.
+*   **Final Tutorial Loop Fix**: Resolved a critical bug where the final tutorial step would loop indefinitely. Added `isTutorialComplete` synchronization to `ExploreScreen` effects and `TutorialView` render guards.
 
 ---
 

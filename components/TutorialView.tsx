@@ -377,13 +377,13 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     icon: <Home size={32} color="#10b981" />
   },
   {
-    text: "\"How about I show you around,\" Jeff begins...",
+    text: "\"How about I show you around,\" Jeff begins. \"The Lodge is where we rest and recover. It's the only place where the static truly fades. You should try resting there—it might help stabilize your resonance.\"",
     choices: [{ label: "Explore", updates: { isTutorialActive: false, currentStep: 60 } }],
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "The tutorial is now complete. Welcome to the Fracture.",
-    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 61, isTutorialComplete: true } }],
+    text: "You feel much better. The tutorial is now complete. Welcome to the Fracture, Otherworlder.",
+    choices: [{ label: "Finish", updates: { isTutorialActive: false, isTutorialComplete: true } }],
     icon: <Sparkles size={32} color="#10b981" />
   }
 ];
@@ -626,6 +626,12 @@ const TutorialView = () => {
         router.replace('/(tabs)/explore');
         return;
       }
+
+      // Handle generic updates (e.g. step 59 'Explore')
+      setIsTyping(true);
+      setDisplayedText("");
+      updateTutorial(choice.updates);
+      return;
     }
     if (choice.nextStep !== undefined) {
       setIsTyping(true);
@@ -637,7 +643,7 @@ const TutorialView = () => {
 
   // Only show tutorial on explore (map), battle, character, social or title screen
   const isAllowedPath = pathname === '/' || pathname === '/explore' || pathname === '/battle' || pathname === '/character' || pathname === '/social' || pathname.includes('(tabs)');
-  if (!isTutorialActive || !step || !isAllowedPath) return null;
+  if (isTutorialComplete || !isTutorialActive || !step || !isAllowedPath) return null;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 10000 }]}>
