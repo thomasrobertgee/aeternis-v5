@@ -48,33 +48,48 @@ export default function ExploreScreen() {
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
   const isFocused = useIsFocused();
-  const { 
-    playerLocation, 
-    setPlayerLocation, 
-    rest, 
-    hasSetHomeCity, 
-    homeCityName, 
-    sanctuaryLocation, 
-    enrolledFaction, 
-    specialization, 
-    level, 
-    hostileSignals, 
-    setHostileSignals, 
-    respawnSignals, 
-    triggerRift, 
-    saveZoneProfile, 
-    cleanupZones, 
-    tutorialProgress, 
-    updateTutorial, 
-    tutorialMarker, 
-    isInSettlement, 
-    isTutorialComplete,
-    setErrorNotification,
-    settings
-  } = usePlayerStore();
-  const { initiateCombat } = useCombatStore();
-  const { isTraveling, travelTimeRemaining, startTravel, tickTravel, completeTravel, destinationCoords, destinationName, totalTravelDuration } = useTravelStore();
-  const { pendingMapAction, setPendingMapAction } = useUIStore();
+
+  // Selectors for Player Store
+  const playerLocation = usePlayerStore((state) => state.playerLocation);
+  const setPlayerLocation = usePlayerStore((state) => state.setPlayerLocation);
+  const rest = usePlayerStore((state) => state.rest);
+  const hasSetHomeCity = usePlayerStore((state) => state.hasSetHomeCity);
+  const homeCityName = usePlayerStore((state) => state.homeCityName);
+  const sanctuaryLocation = usePlayerStore((state) => state.sanctuaryLocation);
+  const enrolledFaction = usePlayerStore((state) => state.enrolledFaction);
+  const specialization = usePlayerStore((state) => state.specialization);
+  const level = usePlayerStore((state) => state.level);
+  const hostileSignals = usePlayerStore((state) => state.hostileSignals);
+  const setHostileSignals = usePlayerStore((state) => state.setHostileSignals);
+  const respawnSignals = usePlayerStore((state) => state.respawnSignals);
+  const triggerRift = usePlayerStore((state) => state.triggerRift);
+  const saveZoneProfile = usePlayerStore((state) => state.saveZoneProfile);
+  const cleanupZones = usePlayerStore((state) => state.cleanupZones);
+  const tutorialProgress = usePlayerStore((state) => state.tutorialProgress);
+  const updateTutorial = usePlayerStore((state) => state.updateTutorial);
+  const tutorialMarker = usePlayerStore((state) => state.tutorialMarker);
+  const isInSettlement = usePlayerStore((state) => state.isInSettlement);
+  const isTutorialComplete = usePlayerStore((state) => state.isTutorialComplete);
+  const setErrorNotification = usePlayerStore((state) => state.setErrorNotification);
+  const settings = usePlayerStore((state) => state.settings);
+
+  // Selectors for Combat Store
+  const initiateCombat = useCombatStore((state) => state.initiateCombat);
+
+  // Selectors for Travel Store
+  const isTraveling = useTravelStore((state) => state.isTraveling);
+  const travelTimeRemaining = useTravelStore((state) => state.travelTimeRemaining);
+  const startTravel = useTravelStore((state) => state.startTravel);
+  const tickTravel = useTravelStore((state) => state.tickTravel);
+  const completeTravel = useTravelStore((state) => state.completeTravel);
+  const destinationCoords = useTravelStore((state) => state.destinationCoords);
+  const destinationName = useTravelStore((state) => state.destinationName);
+  const totalTravelDuration = useTravelStore((state) => state.totalTravelDuration);
+
+  // Selectors for UI Store
+  const pendingMapAction = useUIStore((state) => state.pendingMapAction);
+  const setPendingMapAction = useUIStore((state) => state.setPendingMapAction);
+
   const [currentSuburb, setCurrentSuburb] = useState<string>("");
   const [currentSuburbPolygon, setCurrentSuburbPolygon] = useState<{latitude: number, longitude: number}[] | null>(null);
   const [isInEncounter, setIsInEncounter] = useState(false);
@@ -136,7 +151,7 @@ export default function ExploreScreen() {
         }, 500);
       }
 
-      // Special handling for Step 58: Zoom to Altona Gate
+      // Special handling for Step 58: Zoom to Altona Gate and trigger Zone Card
       if (tutorialProgress.currentStep === 58 && mapRef.current) {
         setTimeout(() => {
           mapRef.current?.animateToRegion({
@@ -144,6 +159,17 @@ export default function ExploreScreen() {
             latitudeDelta: 0.005,
             longitudeDelta: 0.005
           }, 1500);
+          
+          // Force select the settlement zone so the player can enter it
+          setSelectedZone({ 
+            suburb: "ALTONA GATE SETTLEMENT", 
+            biome: BiomeType.SHATTERED_SUBURBIA, 
+            faction: FactionType.NEO_TECHNOCRATS, 
+            description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
+            coords: ALTONA_GATE_COORDS, 
+            isHostile: false,
+            isSettlement: true
+          });
         }, 500);
       }
     } else {
@@ -210,7 +236,7 @@ export default function ExploreScreen() {
       if (tutorialProgress.currentStep === 58 &&
           Math.abs(destinationCoords.latitude - ALTONA_GATE_COORDS.latitude) < 0.0001 && 
           Math.abs(destinationCoords.longitude - ALTONA_GATE_COORDS.longitude) < 0.0001) {
-        updateTutorial({ currentStep: 59, isTutorialActive: true });
+        updateTutorial({ isTutorialActive: true });
       }
     } 
   }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
@@ -252,7 +278,7 @@ export default function ExploreScreen() {
     const checkpoints = [
       18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
       31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 46,
-      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63
+      47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61
     ];
     
     // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
@@ -457,7 +483,7 @@ export default function ExploreScreen() {
         const enemy = selectedZone.isBoss ? getBossByBiome(selectedZone.biome) : getDeterministicEnemy(selectedZone.signalId || "generic", selectedZone.biome);
         initiateCombat(enemy.name, enemy.maxHp, usePlayerStore.getState().hp, usePlayerStore.getState().maxHp, usePlayerStore.getState().mana, usePlayerStore.getState().maxMana, selectedZone.signalId, 1.0, selectedZone.biome);
       }
-      router.push('/battle');
+      router.push('/(tabs)/battle');
       setSelectedZone(null);
     } else {
       const { discoveredZones } = usePlayerStore.getState();

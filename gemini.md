@@ -68,6 +68,8 @@ The game features a comprehensive 60+ step tutorial that introduces players to t
 - [x] Full Tutorial Narrative (Steps 0-63).
 - [x] Instanced Dungeon & Settlement systems.
 - [x] Web/ESM Compatibility fixes.
+- [x] Navigation Context Stabilization & NativeWind Refactor.
+- [x] Tutorial Flow fixes (Button flashing, Step 58 map panning).
 
 ### Immediate Next Steps
 1.  Implement specialized "Boss" mechanics for Rift events.
@@ -76,8 +78,7 @@ The game features a comprehensive 60+ step tutorial that introduces players to t
 4.  Implement visual "Instability Fog" for Level-gated high-level zones.
 
 ## 7. Known Issues
-*   The "Back to Battle" navigation can occasionally trigger a double-render on lower-end devices.
 *   Map markers for hostile signals may jitter slightly during high-speed travel transitions.
 
 ---
-*Last Updated: February 26, 2026*
+*Last Updated: March 6, 2026*

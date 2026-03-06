@@ -93,7 +93,7 @@ This document outlines the step-by-step narrative, choices, and logic of the ini
     *   [my name is...] -> Opens Name Entry interface.
 *   **Step 57**: "Nice to meet you, {name}." -> Step 58
 *   **Step 58**: Travel Invitation.
-    *   [lead the way] -> **Auto-Zoom to Altona Gate**. Tutorial Overlay Hides.
+    *   [lead the way] -> **Auto-Zoom to Altona Gate** (Includes automatic `setSelectedZone` trigger to allow immediate entry). Tutorial Overlay Hides.
 *   **Step 59**: **Follow Objective**. Player must physically arrive at the settlement coordinates.
 *   **Step 60**: Arrival narrative at Altona Gate.
     *   [continue] -> Step 61
@@ -103,4 +103,4 @@ This document outlines the step-by-step narrative, choices, and logic of the ini
     *   [finish] -> Step 63 (Unlocks **Near Me** scanner and full world persistence).
 
 ---
-*Last Updated: February 27, 2026*
+*Last Updated: March 6, 2026*

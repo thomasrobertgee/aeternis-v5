@@ -55,7 +55,7 @@ export default function DungeonScreen() {
         1.0,
         BiomeType.RUST_FIELDS // Use a default or pass from dungeon
       );
-      router.push('/battle');
+      router.push('/(tabs)/battle');
     } else if (choice.type === 'Chest') {
       // Free loot!
       const goldGain = 100 + (currentStage * 50);
@@ -88,7 +88,7 @@ export default function DungeonScreen() {
       const name = type === 'Miniboss' ? 'Sector Guardian' : 'THE VOID SOVEREIGN';
       const hp = type === 'Miniboss' ? 200 : 500;
       combat.initiateCombat(name, hp, player.hp, player.maxHp, player.mana, player.maxMana, `dungeon-${type.toLowerCase()}`);
-      router.push('/battle');
+      router.push('/(tabs)/battle');
     } else {
       player.rest();
       dungeon.recordStat('rest');

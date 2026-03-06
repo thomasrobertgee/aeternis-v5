@@ -9,9 +9,11 @@ import { useDungeonStore } from '../../utils/useDungeonStore';
 import TutorialView from '../../components/TutorialView';
 
 export default function TabLayout() {
-  const { tutorialProgress, isTutorialComplete } = usePlayerStore();
-  const { isInCombat } = useCombatStore();
-  const { isInsideDungeon } = useDungeonStore();
+  const tutorialProgress = usePlayerStore((state) => state.tutorialProgress);
+  const isTutorialComplete = usePlayerStore((state) => state.isTutorialComplete);
+  const isInCombat = useCombatStore((state) => state.isInCombat);
+  const isInsideDungeon = useDungeonStore((state) => state.isInsideDungeon);
+  
   const currentStep = tutorialProgress.currentStep;
   
   // Hide tabs until specific milestones OR tutorial is fully complete

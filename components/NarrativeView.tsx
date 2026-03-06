@@ -49,7 +49,7 @@ const NarrativeView = ({ suburb, loreName, category, biome, description, profile
     const enemy = getDeterministicEnemy(suburb, biome);
     const playerState = usePlayerStore.getState();
     initiateCombat(enemy.name, enemy.maxHp, playerState.hp, playerState.maxHp, playerState.mana, playerState.maxMana, "");
-    router.push('/battle');
+    router.push('/(tabs)/battle');
   };
 
   useEffect(() => {

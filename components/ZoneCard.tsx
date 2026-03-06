@@ -57,46 +57,58 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isSettleme
     });
   };
 
+  const getStyleProps = () => {
+    if (isHostile) return { bg: 'rgba(69, 10, 10, 0.95)', border: '#991b1b', shadow: '#7f1d1d', accent: '#ef4444' };
+    if (isDungeon) return { bg: 'rgba(59, 7, 100, 0.95)', border: '#6b21a8', shadow: '#581c87', accent: '#a855f7' };
+    if (isSettlement) return { bg: 'rgba(6, 70, 53, 0.95)', border: '#065f46', shadow: '#064e3b', accent: '#10b981' };
+    return { bg: 'rgba(9, 9, 11, 0.95)', border: '#27272a', shadow: '#000000', accent: '#06b6d4' };
+  };
+
+  const styleProps = getStyleProps();
+
   return (
     <View style={StyleSheet.absoluteFill} className="items-center justify-center p-6 z-[2500]" pointerEvents="box-none">
       <Animated.View 
-        style={animatedStyle}
-        className={`w-full border p-8 rounded-[40px] shadow-2xl ${
-          isHostile ? 'bg-red-950/95 border-red-800' : 
-          isDungeon ? 'bg-purple-950/95 border-purple-800' :
-          isSettlement ? 'bg-emerald-950/95 border-emerald-800' :
-          'bg-zinc-950/95 border-zinc-800'
-        }`}
+        style={[
+          animatedStyle,
+          {
+            backgroundColor: styleProps.bg,
+            borderColor: styleProps.border,
+            shadowColor: styleProps.shadow,
+            shadowOffset: { width: 0, height: 12 },
+            shadowOpacity: 0.5,
+            shadowRadius: 16,
+            elevation: 20
+          }
+        ]}
+        className="w-full border p-8 rounded-[40px]"
       >
       {/* Glow Effect Decor */}
-      <View className={`absolute -top-px left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent to-transparent ${
-        isHostile ? 'via-red-500/50' : 
-        isDungeon ? 'via-purple-500/50' :
-        isSettlement ? 'via-emerald-500/50' :
-        'via-cyan-500/50'
-      }`} />
+      <View 
+        className="absolute -top-px left-1/4 right-1/4 h-px" 
+        style={{ backgroundColor: styleProps.accent, opacity: 0.5 }}
+      />
 
       {/* Header */}
       <View className="flex-row justify-between items-start mb-5">
         <View className="flex-row items-center flex-1">
-          <View className={`p-3 rounded-2xl mr-4 border ${
-            isHostile ? 'bg-red-500/10 border-red-500/20' : 
-            isDungeon ? 'bg-purple-500/10 border-purple-500/20' :
-            isSettlement ? 'bg-emerald-500/10 border-emerald-500/20' :
-            'bg-cyan-500/10 border-cyan-500/20'
-          }`}>
+          <View 
+            className="p-3 rounded-2xl mr-4 border"
+            style={{ 
+              backgroundColor: `${styleProps.accent}1A`, // 10% opacity hex
+              borderColor: `${styleProps.accent}33` // 20% opacity hex
+            }}
+          >
             {isHostile ? <ShieldAlert size={22} color="#ef4444" /> : 
              isDungeon ? <Skull size={22} color="#a855f7" /> :
              isSettlement ? <Home size={22} color="#10b981" /> :
              <MapPin size={22} color="#06b6d4" />}
           </View>
           <View className="flex-1">
-            <Text className={`font-bold uppercase tracking-[3px] text-[10px] mb-1 ${
-              isHostile ? 'text-red-500' : 
-              isDungeon ? 'text-purple-500' :
-              isSettlement ? 'text-emerald-500' :
-              'text-cyan-500'
-            }`}>
+            <Text 
+              className="font-bold uppercase tracking-[3px] text-[10px] mb-1"
+              style={{ color: styleProps.accent }}
+            >
               {isHostile ? 'Hostile Manifestation' : 
                isDungeon ? 'Dungeon Manifestation' :
                isSettlement ? 'Communal Settlement' :
@@ -113,18 +125,22 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isSettleme
         </TouchableOpacity>
       </View>
 
-      <View className="flex-row items-center mb-4 bg-zinc-900/50 self-start px-3 py-1.5 rounded-full border border-zinc-800">
+      <View 
+        className="flex-row items-center mb-4 self-start px-3 py-1.5 rounded-full border border-zinc-800"
+        style={{ backgroundColor: 'rgba(24, 24, 27, 0.5)' }}
+      >
         <Cloud size={12} color="#94a3b8" className="mr-2" />
         <Text className="text-zinc-400 font-bold text-[9px] uppercase tracking-widest">{weather}</Text>
       </View>
 
       {/* Lore Context */}
-      <View className={`mb-6 p-4 rounded-2xl border ${
-        isHostile ? 'bg-red-900/20 border-red-800/30' : 
-        isDungeon ? 'bg-purple-900/20 border-purple-800/30' :
-        isSettlement ? 'bg-emerald-900/20 border-emerald-800/30' :
-        'bg-zinc-900/50 border-zinc-800/50'
-      }`}>
+      <View 
+        className="mb-6 p-4 rounded-2xl border"
+        style={{ 
+          backgroundColor: `${styleProps.accent}0D`, // 5% opacity hex roughly
+          borderColor: `${styleProps.accent}26`, // 15% opacity hex
+        }}
+      >
         <View className="flex-row items-center mb-2">
           {isHostile ? <Sword size={14} color="#ef4444" className="mr-2" /> : 
            isDungeon ? <Flame size={14} color="#a855f7" className="mr-2" /> :
@@ -137,12 +153,10 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isSettleme
              'The Fractured Realm'}
           </Text>
         </View>
-        <Text className={`text-lg font-semibold mb-2 ${
-          isHostile ? 'text-red-100' : 
-          isDungeon ? 'text-purple-100' :
-          isSettlement ? 'text-emerald-100' :
-          'text-cyan-100'
-        }`}>
+        <Text 
+          className="text-lg font-semibold mb-2"
+          style={{ color: isHostile ? '#fee2e2' : isDungeon ? '#f3e8ff' : isSettlement ? '#d1fae5' : '#ecfeff' }}
+        >
           {isHostile ? 'Fracture Anomaly' : 
            isDungeon ? 'The Depths' :
            isSettlement ? 'Safety and Order' :
@@ -172,12 +186,16 @@ const ZoneCard = ({ suburb, loreName, description, coords, isHostile, isSettleme
         <TouchableOpacity
           onPress={onExplore}
           activeOpacity={0.8}
-          className={`flex-1 h-16 rounded-2xl items-center justify-center shadow-lg border-t border-white/10 ${
-            isHostile ? 'bg-red-600 shadow-red-900/40' : 
-            isDungeon ? 'bg-purple-600 shadow-purple-900/40' :
-            isSettlement ? 'bg-emerald-600 shadow-emerald-900/40' :
-            'bg-cyan-600 shadow-cyan-900/40'
-          }`}
+          className={`flex-1 h-16 rounded-2xl items-center justify-center border-t`}
+          style={{
+            backgroundColor: styleProps.accent,
+            borderColor: 'rgba(255,255,255,0.1)',
+            shadowColor: styleProps.shadow,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.4,
+            shadowRadius: 15,
+            elevation: 10
+          }}
         >
           <Text className="text-white font-black text-sm uppercase tracking-[4px]">
             {isHostile ? 'Engage' : 

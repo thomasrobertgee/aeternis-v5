@@ -4,21 +4,11 @@ import { usePlayerStore } from './usePlayerStore';
 const AMBIENT_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'; // Placeholder low drone
 const BATTLE_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'; // Placeholder tense track
 
-class SoundService {
-  private static instance: SoundService;
-  private ambientSound: Audio.Sound | null = null;
-  private battleSound: Audio.Sound | null = null;
+const SoundService = {
+  ambientSound: null as Audio.Sound | null,
+  battleSound: null as Audio.Sound | null,
 
-  private constructor() {}
-
-  public static getInstance(): SoundService {
-    if (!SoundService.instance) {
-      SoundService.instance = new SoundService();
-    }
-    return SoundService.instance;
-  }
-
-  public async init() {
+  init: async () => {
     try {
       await Audio.setAudioModeAsync({
         playsInSilentModeIOS: true,
@@ -28,9 +18,9 @@ class SoundService {
     } catch (error) {
       console.error('Failed to initialize Audio Mode', error);
     }
-  }
+  },
 
-  public async playAmbient() {
+  playAmbient: async function() {
     const isEnabled = usePlayerStore.getState().settings.musicEnabled;
     if (!isEnabled) {
       await this.stopAll();
@@ -53,9 +43,9 @@ class SoundService {
     } catch (error) {
       console.error('Failed to play ambient sound', error);
     }
-  }
+  },
 
-  public async playBattle() {
+  playBattle: async function() {
     const isEnabled = usePlayerStore.getState().settings.musicEnabled;
     if (!isEnabled) {
       await this.stopAll();
@@ -78,17 +68,16 @@ class SoundService {
     } catch (error) {
       console.error('Failed to play battle sound', error);
     }
-  }
+  },
 
-  public async playCrit() {
+  playCrit: async function() {
     const isEnabled = usePlayerStore.getState().settings.musicEnabled;
     if (!isEnabled) return;
     try {
       const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' }, // Placeholder SFX
+        { uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3' },
         { shouldPlay: true, volume: 1.0 }
       );
-      // Unload sound after playing
       sound.setOnPlaybackStatusUpdate(async (status) => {
         if (status.isLoaded && status.didJustFinish) {
           await sound.unloadAsync();
@@ -97,14 +86,32 @@ class SoundService {
     } catch (error) {
       console.error('Failed to play crit SFX', error);
     }
-  }
+  },
 
-  public async playScan() {
+  playHit: async function() {
     const isEnabled = usePlayerStore.getState().settings.musicEnabled;
     if (!isEnabled) return;
     try {
       const { sound } = await Audio.Sound.createAsync(
-        { uri: 'https://github.com/rafaelrinaldi/sonar/raw/master/sonar.mp3' }, // Reliable Sonar SFX
+        { uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3' },
+        { shouldPlay: true, volume: 0.7 }
+      );
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.error('Failed to play hit SFX', error);
+    }
+  },
+
+  playScan: async function() {
+    const isEnabled = usePlayerStore.getState().settings.musicEnabled;
+    if (!isEnabled) return;
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: 'https://github.com/rafaelrinaldi/sonar/raw/master/sonar.mp3' },
         { shouldPlay: true, volume: 0.6 }
       );
       sound.setOnPlaybackStatusUpdate(async (status) => {
@@ -115,12 +122,12 @@ class SoundService {
     } catch (error) {
       console.error('Failed to play scan SFX', error);
     }
-  }
+  },
 
-  public async stopAll() {
+  stopAll: async function() {
     if (this.ambientSound) await this.ambientSound.stopAsync();
     if (this.battleSound) await this.battleSound.stopAsync();
   }
-}
+};
 
-export default SoundService.getInstance();
+export default SoundService;

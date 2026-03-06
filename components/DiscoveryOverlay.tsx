@@ -44,17 +44,29 @@ const DiscoveryOverlay = ({ suburb, fracturedTitle, onComplete }: DiscoveryOverl
     <Animated.View 
       entering={FadeIn.duration(800)}
       exiting={FadeOut.duration(800)}
-      style={StyleSheet.absoluteFill}
-      className="bg-black/95 z-[2000] items-center justify-center p-8"
+      style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.95)' }]}
+      className="z-[2000] items-center justify-center p-8"
     >
       {/* Decorative Background Elements */}
-      <View className="absolute inset-0 opacity-20">
-        <View className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-cyan-500/20 to-transparent" />
-        <View className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-cyan-500/20 to-transparent" />
+      <View className="absolute inset-0 opacity-20" pointerEvents="none">
+        <View 
+          className="absolute top-0 left-0 right-0 h-1/2" 
+          style={{ backgroundColor: 'rgba(6, 182, 212, 0.2)' }} // cyan-500/20
+        />
+        <View 
+          className="absolute bottom-0 left-0 right-0 h-1/2" 
+          style={{ backgroundColor: 'rgba(6, 182, 212, 0.2)' }} // cyan-500/20
+        />
       </View>
 
       <Animated.View entering={ZoomIn.delay(400).duration(1000)} className="mb-8">
-        <View className="w-24 h-24 rounded-full border-2 border-cyan-500/30 items-center justify-center bg-cyan-500/10">
+        <View 
+          className="w-24 h-24 rounded-full border-2 items-center justify-center"
+          style={{ 
+            borderColor: 'rgba(6, 182, 212, 0.3)', 
+            backgroundColor: 'rgba(6, 182, 212, 0.1)' 
+          }}
+        >
           <Compass size={48} color="#06b6d4" />
         </View>
       </Animated.View>
@@ -78,11 +90,15 @@ const DiscoveryOverlay = ({ suburb, fracturedTitle, onComplete }: DiscoveryOverl
         {/* Animated Divider */}
         <Animated.View 
           style={lineStyle}
-          className="h-px bg-cyan-500/50 mb-8"
+          className="h-px mb-8"
+          style={[lineStyle, { backgroundColor: 'rgba(6, 182, 212, 0.5)' }]}
         />
 
         <Animated.View entering={FadeIn.delay(1500).duration(1000)}>
-          <View className="flex-row items-center bg-zinc-900/50 px-6 py-3 rounded-full border border-zinc-800">
+          <View 
+            className="flex-row items-center px-6 py-3 rounded-full border border-zinc-800"
+            style={{ backgroundColor: 'rgba(24, 24, 27, 0.5)' }}
+          >
             <Sparkles size={16} color="#06b6d4" className="mr-2" />
             <Text className="text-zinc-400 font-black text-[10px] uppercase tracking-[4px]">
               Lore Recorded in Codex

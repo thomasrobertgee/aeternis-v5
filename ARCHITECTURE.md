@@ -8,7 +8,7 @@ This document outlines the current technical architecture and implementation sta
 *   **State Management**: Zustand (Global stores for Player, Combat, Dungeon, and Travel)
 *   **Persistence**: Zustand Persist + Async Storage
 *   **Animations**: React Native Reanimated (Springs, Sequences, Layout Transitions)
-*   **Styling**: NativeWind v4 (Tailwind CSS)
+*   **Styling**: NativeWind v4 (Tailwind CSS) with inline style fallback for high-risk props (shadows, opacities) to prevent Expo Router navigation context race conditions.
 *   **Audio**: Expo AV (Global SoundService with Ambient/Battle transitions)
 *   **Haptics**: Expo Haptics (Tactile combat, quest, and travel feedback)
 *   **Location**: Web-based Geocoding (OSM Nominatim API) + Local GeoJSON Boundaries
@@ -79,3 +79,5 @@ Coordinates global UI state and cross-component actions.
 - [x] **Map Info Bar (Live Time, Weather, and Location).**
 - [x] **Minimalist Quest HUD (Transparent, Right-aligned).**
 - [x] **UI Layout Optimization (Status bar height & Recenter button).**
+- [x] **Navigation Context Stabilization (Refactored high-risk NativeWind classes to inline styles).**
+- [x] **Tutorial Transition Improvements (Fixed button flashing and Step 58 map panning).**

@@ -50,6 +50,16 @@ interface DungeonState {
   resetDungeon: () => void;
   recordStat: (stat: 'kill' | 'damageDealt' | 'damageReceived' | 'loot' | 'chest' | 'aetium' | 'altar' | 'rest', value?: any) => void;
   setShowDungeonSummary: (show: boolean) => void;
+  batchRecordStats: (stats: { 
+    damageDealt?: number; 
+    damageReceived?: number; 
+    kill?: boolean; 
+    loot?: string[]; 
+    aetium?: number;
+    chest?: boolean;
+    altar?: boolean;
+    rest?: boolean;
+  }) => void;
 }
 
 const MODIFIER_POOL: Omit<DungeonModifier, 'id'>[] = [
@@ -134,6 +144,17 @@ export const useDungeonStore = create<DungeonState>()(
       }),
 
       setShowDungeonSummary: (show) => set({ showDungeonSummary: show }),
+
+      batchRecordStats: (stats) => set((state) => ({
+        enemiesKilled: state.enemiesKilled + (stats.kill ? 1 : 0),
+        totalDamageDealt: state.totalDamageDealt + (stats.damageDealt || 0),
+        totalDamageReceived: state.totalDamageReceived + (stats.damageReceived || 0),
+        lootAcquired: [...state.lootAcquired, ...(stats.loot || [])],
+        chestsOpened: state.chestsOpened + (stats.chest ? 1 : 0),
+        altarsUsed: state.altarsUsed + (stats.altar ? 1 : 0),
+        restAreasFound: state.restAreasFound + (stats.rest ? 1 : 0),
+        aetiumGained: state.aetiumGained + (stats.aetium || 0)
+      })),
 
       nextStage: () => {
         const now = Date.now();

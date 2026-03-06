@@ -20,7 +20,7 @@ const PlayerHeader = () => {
   const resetStore = usePlayerStore((state) => state.resetStore);
   const [showProfile, setShowProfile] = useState(false);
 
-  const isInBattleScreen = pathname === '/battle';
+  const isInBattleScreen = pathname === '/battle' || pathname === '/(tabs)/battle';
   const isInSettlementScreen = pathname === '/settlement' || pathname === '/(tabs)/settlement';
   const isInDungeonScreen = pathname === '/dungeon' || pathname === '/(tabs)/dungeon';
   
@@ -145,8 +145,15 @@ const PlayerHeader = () => {
         {showBackToBattle && (
           <Animated.View entering={FadeIn} style={battleButtonStyle} className="mr-4">
             <TouchableOpacity 
-              onPress={() => router.replace('/battle')}
-              className="bg-red-600 px-3 py-2 rounded-xl border border-red-400 shadow-lg shadow-red-900/40 flex-row items-center"
+              onPress={() => router.replace('/(tabs)/battle')}
+              className="bg-red-600 px-3 py-2 rounded-xl border border-red-400 flex-row items-center"
+              style={{
+                shadowColor: '#7f1d1d', // red-900
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4,
+                shadowRadius: 6,
+                elevation: 5
+              }}
             >
               <ShieldAlert size={12} color="#fff" className="mr-1.5" />
               <Text className="text-white font-black text-[8px] uppercase tracking-widest">
@@ -160,7 +167,14 @@ const PlayerHeader = () => {
           <Animated.View entering={FadeIn} style={settlementButtonStyle} className="mr-4">
             <TouchableOpacity 
               onPress={() => router.replace('/(tabs)/settlement')}
-              className="bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400 shadow-lg shadow-emerald-900/40 flex-row items-center"
+              className="bg-emerald-600 px-3 py-2 rounded-xl border border-emerald-400 flex-row items-center"
+              style={{
+                shadowColor: '#064e3b', // emerald-900
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4,
+                shadowRadius: 6,
+                elevation: 5
+              }}
             >
               <Home size={12} color="#fff" className="mr-1.5" />
               <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Settlement</Text>
@@ -169,10 +183,17 @@ const PlayerHeader = () => {
         )}
 
         {showBackToDungeon && (
-          <Animated.View entering={FadeIn} style={dungeonButtonStyle} className="mr-4">
+          <Animated.View entering={FadeIn} style={dungeonPulse && dungeonButtonStyle} className="mr-4">
             <TouchableOpacity 
               onPress={() => router.replace('/(tabs)/dungeon')}
-              className="bg-purple-600 px-3 py-2 rounded-xl border border-purple-400 shadow-lg shadow-purple-900/40 flex-row items-center"
+              className="bg-purple-600 px-3 py-2 rounded-xl border border-purple-400 flex-row items-center"
+              style={{
+                shadowColor: '#581c87', // purple-900
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.4,
+                shadowRadius: 6,
+                elevation: 5
+              }}
             >
               <Flame size={12} color="#fff" className="mr-1.5" />
               <Text className="text-white font-black text-[8px] uppercase tracking-widest">In Dungeon</Text>
@@ -187,13 +208,29 @@ const PlayerHeader = () => {
           animationType="none"
           onRequestClose={() => setShowProfile(false)}
         >
-          <View style={StyleSheet.absoluteFill} className="bg-black/80 items-center justify-center p-6">
+          <View 
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.8)' }]} 
+            className="items-center justify-center p-6"
+          >
             <Animated.View 
               entering={FadeIn.duration(300)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-[40px] p-8 shadow-2xl"
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-[40px] p-8"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 20 },
+                shadowOpacity: 0.5,
+                shadowRadius: 30,
+                elevation: 20
+              }}
             >
               <View className="flex-row justify-between items-start mb-8">
-                <View className="bg-cyan-500/10 p-4 rounded-3xl border border-cyan-500/20">
+                <View 
+                  className="p-4 rounded-3xl border"
+                  style={{ 
+                    backgroundColor: 'rgba(6, 182, 212, 0.1)', 
+                    borderColor: 'rgba(6, 182, 212, 0.2)' 
+                  }}
+                >
                   <User size={32} color="#06b6d4" />
                 </View>
                 <TouchableOpacity 
@@ -236,9 +273,16 @@ const PlayerHeader = () => {
                       }
                     }, 100);
                   }}
-                  className={`h-16 rounded-2xl flex-row items-center px-6 border ${player.settings.musicEnabled ? 'bg-cyan-950/20 border-cyan-500/40' : 'bg-zinc-950 border-zinc-800'}`}
+                  className="h-16 rounded-2xl flex-row items-center px-6 border"
+                  style={{
+                    backgroundColor: player.settings.musicEnabled ? 'rgba(8, 51, 68, 0.2)' : '#09090b', // cyan-950/20 or zinc-950
+                    borderColor: player.settings.musicEnabled ? 'rgba(6, 182, 212, 0.4)' : '#27272a'
+                  }}
                 >
-                  <View className={`p-2 rounded-lg mr-4 ${player.settings.musicEnabled ? 'bg-cyan-500/20' : 'bg-zinc-900'}`}>
+                  <View 
+                    className="p-2 rounded-lg mr-4"
+                    style={{ backgroundColor: player.settings.musicEnabled ? 'rgba(6, 182, 212, 0.2)' : '#18181b' }}
+                  >
                     {player.settings.musicEnabled ? <Music size={18} color="#06b6d4" /> : <Music2 size={18} color="#3f3f46" />}
                   </View>
                   <View className="flex-1">
@@ -250,7 +294,7 @@ const PlayerHeader = () => {
 
                 <TouchableOpacity 
                   onPress={() => player.toggleTempUnit()}
-                  className={`h-16 rounded-2xl flex-row items-center px-6 border bg-zinc-950 border-zinc-800`}
+                  className="h-16 rounded-2xl flex-row items-center px-6 border bg-zinc-950 border-zinc-800"
                 >
                   <View className="p-2 rounded-lg mr-4 bg-zinc-900">
                     <Settings size={18} color="#06b6d4" />
@@ -268,7 +312,11 @@ const PlayerHeader = () => {
               <View className="space-y-3">
                 <TouchableOpacity 
                   onPress={handleWipeData}
-                  className="bg-red-950/20 border border-red-500/40 h-16 rounded-2xl flex-row items-center justify-center mb-3"
+                  className="border h-16 rounded-2xl flex-row items-center justify-center mb-3"
+                  style={{ 
+                    backgroundColor: 'rgba(69, 10, 10, 0.2)', // red-950
+                    borderColor: 'rgba(239, 68, 68, 0.4)'
+                  }}
                 >
                   <Trash2 size={18} color="#ef4444" className="mr-3" />
                   <Text className="text-red-500 font-black text-xs uppercase tracking-[4px]">Reset All Data</Text>

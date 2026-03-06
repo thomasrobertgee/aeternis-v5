@@ -13,7 +13,16 @@ const SaveIndicator = () => {
     <Animated.View 
       entering={FadeIn}
       exiting={FadeOut}
-      className="absolute bottom-24 right-6 z-[999] flex-row items-center bg-zinc-900/80 px-3 py-1.5 rounded-full border border-zinc-800 shadow-lg"
+      className="absolute bottom-24 right-6 z-[999] flex-row items-center px-3 py-1.5 rounded-full border"
+      style={{
+        backgroundColor: 'rgba(24, 24, 27, 0.8)', // zinc-900
+        borderColor: '#27272a', // zinc-800
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 5
+      }}
     >
       <Save size={10} color="#06b6d4" className="mr-2" />
       <Text className="text-cyan-500 font-black text-[8px] uppercase tracking-widest">

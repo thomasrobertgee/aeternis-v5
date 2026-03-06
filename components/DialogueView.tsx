@@ -30,7 +30,7 @@ const DialogueView = ({ dialogueData, onExit }: DialogueViewProps) => {
     if (currentNodeId === 'battle_start') {
       const playerState = usePlayerStore.getState();
       initiateCombat('Cogwheel Scavenger', 60, playerState.hp, playerState.maxHp, playerState.mana, playerState.maxMana);
-      router.push('/battle');
+      router.push('/(tabs)/battle');
     }
   }, [currentNodeId]);
 

@@ -91,14 +91,14 @@ export default function InventoryScreen() {
       setSelectedItem(null);
       
       if (combat.isInCombat) {
-        router.replace('/battle');
+        router.replace('/(tabs)/battle');
       }
     } else {
       equipItem(actualItem);
       if (combat.isInCombat) {
         combat.syncStats();
         combat.addLog(`Equipped ${actualItem.name}.`, 'system');
-        router.replace('/battle');
+        router.replace('/(tabs)/battle');
       }
       setSelectedItem(null);
     }

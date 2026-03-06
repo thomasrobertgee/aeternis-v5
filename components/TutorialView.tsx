@@ -372,23 +372,18 @@ const TUTORIAL_STEPS: TutorialStep[] = [
     icon: <User size={32} color="#a855f7" />
   },
   {
-    text: "Follow Jeff to Altona Gate. It's marked on your HUD scanner.",
-    choices: [],
-    icon: <Navigation size={32} color="#06b6d4" />
-  },
-  {
     text: "You arrive at the settlement with Jeff. Altona Gate, from your memory as one of the busiest shopping centres in the Altona North region, now appears run down, with camping tents set up in the carpark, people walking around, and stalls that appear to be vendors.",
-    choices: [{ label: "Continue", nextStep: 60 }],
+    choices: [{ label: "Continue", nextStep: 59 }],
     icon: <Home size={32} color="#10b981" />
   },
   {
     text: "\"How about I show you around,\" Jeff begins...",
-    choices: [{ label: "Explore", updates: { isTutorialActive: false, currentStep: 61 } }],
+    choices: [{ label: "Explore", updates: { isTutorialActive: false, currentStep: 60 } }],
     icon: <User size={32} color="#a855f7" />
   },
   {
     text: "The tutorial is now complete. Welcome to the Fracture.",
-    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 63, isTutorialComplete: true } }],
+    choices: [{ label: "Finish", updates: { isTutorialActive: false, currentStep: 61, isTutorialComplete: true } }],
     icon: <Sparkles size={32} color="#10b981" />
   }
 ];
@@ -491,6 +486,8 @@ const TutorialView = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       flashOpacity.value = withTiming(1, { duration: 1500 }, (finished) => {
         if (finished) {
+          runOnJS(setIsTyping)(true);
+          runOnJS(setDisplayedText)("");
           runOnJS(clearTutorialMarker)();
           runOnJS(updateTutorial)({ currentStep: 12 });
           flashOpacity.value = withTiming(0, { duration: 2000 });
@@ -600,6 +597,8 @@ const TutorialView = () => {
       addItem(item);
       equipItem(item);
       learnSkill(skill);
+      setIsTyping(true);
+      setDisplayedText("");
       updateTutorial({ currentStep: 22 });
       return;
     }
@@ -621,12 +620,16 @@ const TutorialView = () => {
           coords: ALTONA_GATE_COORDS,
           zoom: 0.005
         });
-        router.replace('/explore');
+        router.replace('/(tabs)/explore');
       }
 
+      setIsTyping(true);
+      setDisplayedText("");
       updateTutorial(choice.updates);
     }
     if (choice.nextStep !== undefined) {
+      setIsTyping(true);
+      setDisplayedText("");
       updateTutorial({ currentStep: choice.nextStep });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     }
@@ -648,18 +651,46 @@ const TutorialView = () => {
           style={[StyleSheet.absoluteFill, flashStyle, { backgroundColor: 'white', zIndex: 10001 }]} 
           pointerEvents="none" 
         />
-        <View className="absolute inset-0 opacity-20">
-          <View className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-cyan-900/30 to-transparent" />
-          <View className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-purple-900/30 to-transparent" />
+        <View className="absolute inset-0 opacity-20" pointerEvents="none">
+          <View 
+            className="absolute top-0 left-0 right-0 h-1/2" 
+            style={{ backgroundColor: 'rgba(8, 47, 73, 0.3)' }} // cyan-900 with 0.3 opacity
+          />
+          <View 
+            className="absolute bottom-0 left-0 right-0 h-1/2" 
+            style={{ backgroundColor: 'rgba(88, 28, 135, 0.3)' }} // purple-900 with 0.3 opacity
+          />
         </View>
 
         <Animated.View entering={SlideInDown.delay(200).duration(800)} className="items-center w-full">
-          <View className="mb-10 bg-zinc-900/50 p-6 rounded-[40px] border border-zinc-800 shadow-2xl">
+          <View 
+            className="mb-10 p-6 rounded-[40px] border"
+            style={{ 
+              backgroundColor: 'rgba(24, 24, 27, 0.5)', 
+              borderColor: '#27272a',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 20 },
+              shadowOpacity: 0.6,
+              shadowRadius: 30,
+              elevation: 25
+            }}
+          >
             {step.icon}
           </View>
 
           <TouchableWithoutFeedback onPress={finishTyping}>
-            <View className="bg-zinc-900/40 border-l-2 border-cyan-500/30 p-8 rounded-tr-3xl rounded-br-3xl mb-12 shadow-inner w-full min-h-[140px]">
+            <View 
+              className="border-l-2 p-8 rounded-tr-3xl rounded-br-3xl mb-12 w-full min-h-[140px]"
+              style={{ 
+                backgroundColor: 'rgba(24, 24, 27, 0.4)', 
+                borderLeftColor: 'rgba(6, 182, 212, 0.3)',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 4
+              }}
+            >
               <Text className="text-cyan-50/90 text-xl leading-[34px] font-serif italic text-left">
                 {displayedText}
               </Text>
@@ -671,7 +702,11 @@ const TutorialView = () => {
                     onChangeText={setNameInput}
                     placeholder="Enter name..."
                     placeholderTextColor="#3f3f46"
-                    className="flex-1 bg-black/40 border border-cyan-500/20 rounded-xl px-4 py-3 text-white font-bold"
+                    className="flex-1 border rounded-xl px-4 py-3 text-white font-bold"
+                    style={{ 
+                      backgroundColor: 'rgba(0,0,0,0.4)', 
+                      borderColor: 'rgba(6, 182, 212, 0.2)' 
+                    }}
                     autoFocus
                   />
                   <Pressable 
@@ -680,6 +715,8 @@ const TutorialView = () => {
                         setPlayerName(nameInput.trim());
                         setShowNameInput(false);
                         const nextStep = 57; // Correctly go to 'Nice to meet you'
+                        setIsTyping(true);
+                        setDisplayedText("");
                         updateTutorial({ currentStep: nextStep, isTutorialActive: true });
                         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                         pendingNextStepRef.current = null;
@@ -733,6 +770,8 @@ const TutorialView = () => {
                   
                   if (currentStep < TUTORIAL_STEPS.length - 1) {
                     console.log(`[TUTORIAL] Continuing to Step ${currentStep + 1}`);
+                    setIsTyping(true);
+                    setDisplayedText("");
                     updateTutorial({ currentStep: currentStep + 1 });
                   } else if (currentStep === 63) {
                     console.log(`[TUTORIAL] Final step reached and confirmed. Closing tutorial.`);
@@ -740,7 +779,16 @@ const TutorialView = () => {
                   }
                 }
               }}
-              className="w-full h-20 bg-cyan-950/20 border border-cyan-500/30 rounded-3xl flex-row items-center justify-center shadow-lg active:scale-95"
+              className="w-full h-20 rounded-3xl flex-row items-center justify-center active:scale-95 border"
+              style={{
+                backgroundColor: 'rgba(8, 51, 68, 0.2)', // cyan-950
+                borderColor: 'rgba(6, 182, 212, 0.3)',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.4,
+                shadowRadius: 12,
+                elevation: 8
+              }}
             >
               <Text className="text-cyan-400 font-black text-xs uppercase tracking-[6px] mr-2">
                 Continue
