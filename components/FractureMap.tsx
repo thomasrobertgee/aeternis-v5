@@ -118,12 +118,12 @@ const FractureMap = ({
         </Marker>
       )}
 
-      {tutorialProgress.currentStep >= 59 && (
+      {(tutorialProgress.currentStep >= 58 || !tutorialProgress.isTutorialActive) && (
         <Marker 
           coordinate={ALTONA_GATE_COORDS} 
           anchor={{ x: 0.5, y: 0.5 }} 
           zIndex={70} 
-          tracksViewChanges={true} 
+          tracksViewChanges={shouldTrackMarkers}
           onPress={(e) => { 
             e.stopPropagation(); 
             setSelectedZone({ 

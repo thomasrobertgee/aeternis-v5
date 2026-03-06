@@ -615,17 +615,17 @@ const TutorialView = () => {
       // Special handling for step 58 'Lead the way'
       if (choice.updates.currentStep === 58) {
         const { ALTONA_GATE_COORDS } = require('../utils/Constants');
+        setIsTyping(true);
+        setDisplayedText("");
+        updateTutorial(choice.updates);
         useUIStore.getState().setPendingMapAction({
           type: 'center',
           coords: ALTONA_GATE_COORDS,
           zoom: 0.005
         });
         router.replace('/(tabs)/explore');
+        return;
       }
-
-      setIsTyping(true);
-      setDisplayedText("");
-      updateTutorial(choice.updates);
     }
     if (choice.nextStep !== undefined) {
       setIsTyping(true);

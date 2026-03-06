@@ -2,7 +2,10 @@
 
 Welcome to the **Aeternis: Odyssey** repository. This document serves as the primary source of truth for the project's architecture, systems, and development status.
 
-## 1. Game Overview
+## 1. Project Mandates
+*   **Documentation Synchronization**: Whenever a commit and push to GitHub is requested, all project documentation (including `ARCHITECTURE.md`, `changelog.md`, and `TUTORIAL_FLOW.md`) MUST be reviewed and updated to reflect the latest changes, bug fixes, and architectural shifts.
+
+## 2. Game Overview
 **Aeternis: Odyssey** is a location-based MMORPG built for mobile (iOS/Android) and Web. It leverages real-world geography to create a dynamic, reactive world shaped by the **Imaginum**—a cosmic essence that alters reality based on collective belief.
 
 *   **Genre**: Location-Based RPG / MMORPG.

@@ -267,7 +267,7 @@ export default function BattleScreen() {
           setShowSummary(true);
           setIsResolving(false);
           setIsActionProcessing(false);
-        }, 2000);
+        }, 1000);
         return;
       }
 
@@ -327,7 +327,7 @@ export default function BattleScreen() {
         setShowSummary(true);
         setIsResolving(false);
         setIsActionProcessing(false);
-      }, 2000);
+      }, 1000);
     }
 
     if (playerHpCombat <= 0 && !isResolving) {
@@ -341,7 +341,7 @@ export default function BattleScreen() {
           endCombat();
           router.replace('/(tabs)/explore');
         }, 0);
-      }, 3000);
+      }, 1500);
     }
   }, [enemyHp, playerHpCombat, showSummary, showDungeonSummary]);
 
@@ -424,7 +424,7 @@ export default function BattleScreen() {
       setTimeout(() => {
         setIsActionProcessing(false);
         nextTurn();
-      }, 1000);
+      }, 500);
     }
   };
 
@@ -446,7 +446,7 @@ export default function BattleScreen() {
       setTimeout(() => {
         setIsActionProcessing(false);
         nextTurn();
-      }, 1200);
+      }, 600);
     }
   };
 
@@ -460,7 +460,7 @@ export default function BattleScreen() {
         endCombat();
         router.replace('/(tabs)/explore');
       }, 0);
-    }, 1000);
+    }, 500);
   };
 
   // Enemy AI Effect
@@ -479,8 +479,8 @@ export default function BattleScreen() {
         setTimeout(() => {
           setIsActionProcessing(false);
           nextTurn();
-        }, 800);
-      }, 1500);
+        }, 400);
+      }, 750);
     }
   }, [isPlayerTurn, isInCombat, enemyHp, showSummary, showDungeonSummary]);
 

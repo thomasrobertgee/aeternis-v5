@@ -26,6 +26,7 @@ This document provides a chronological history of requests, features, and bug fi
     *   *Result*: Eliminated the "button flash" by ensuring UI elements remain hidden until the new narrative segment starts.
 *   **Combat Pacing**: Halved almost all combat-related `setTimeout` durations (Enemy AI: 1500ms -> 750ms; Resolve: 2000ms -> 1000ms).
 *   **Map Logic Cleanup**: Consolidated map zoom logic. Blocked automatic "Recenter on Player" logic during tutorial steps 40 and 58 to allow the scripted pans to finish uninterrupted.
+*   **New Project Mandate**: Established a core rule in `gemini.md` requiring all documentation to be synchronized and updated automatically whenever a push to GitHub is requested.
 
 ---
 

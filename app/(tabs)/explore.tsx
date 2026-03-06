@@ -142,33 +142,11 @@ export default function ExploreScreen() {
         false
       );
 
-      if (tutorialMarker && mapRef.current) {
+      if (tutorialMarker && mapRef.current && tutorialProgress.currentStep < 12) {
         setTimeout(() => {
           mapRef.current?.fitToCoordinates([playerLocation, tutorialMarker.coords], {
             edgePadding: { top: 150, right: 100, bottom: 150, left: 100 },
             animated: true,
-          });
-        }, 500);
-      }
-
-      // Special handling for Step 58: Zoom to Altona Gate and trigger Zone Card
-      if (tutorialProgress.currentStep === 58 && mapRef.current) {
-        setTimeout(() => {
-          mapRef.current?.animateToRegion({
-            ...ALTONA_GATE_COORDS,
-            latitudeDelta: 0.005,
-            longitudeDelta: 0.005
-          }, 1500);
-          
-          // Force select the settlement zone so the player can enter it
-          setSelectedZone({ 
-            suburb: "ALTONA GATE SETTLEMENT", 
-            biome: BiomeType.SHATTERED_SUBURBIA, 
-            faction: FactionType.NEO_TECHNOCRATS, 
-            description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
-            coords: ALTONA_GATE_COORDS, 
-            isHostile: false,
-            isSettlement: true
           });
         }, 500);
       }
@@ -245,19 +223,22 @@ export default function ExploreScreen() {
     if (hasSetHomeCity && playerLocation) { 
       handleRegionChange({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }); 
       const zoomTimer = setTimeout(() => { 
-        if (tutorialProgress.currentStep === 40) {
+        // Only recenter if there's no pending map action and we're not in a custom-zoom tutorial step
+        const isCustomZoomStep = tutorialProgress.currentStep === 40 || tutorialProgress.currentStep === 58;
+        if (!pendingMapAction && !isCustomZoomStep) {
+          handleRecenter(); 
+        } else if (tutorialProgress.currentStep === 40 && !pendingMapAction) {
+          // Fallback for step 40 if no pending action
           mapRef.current?.animateToRegion({
             ...MILLERS_JUNCTION_DEPTHS_COORDS,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005
           }, 1500);
-        } else {
-          handleRecenter(); 
         }
       }, 1000); 
       return () => clearTimeout(zoomTimer); 
     } 
-  }, [hasSetHomeCity, tutorialProgress.currentStep]);
+  }, [hasSetHomeCity, tutorialProgress.currentStep, pendingMapAction]);
   useEffect(() => { if (hasSetHomeCity) { if (level >= 10 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 15 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
   // Force markers to redraw once when they change
@@ -644,12 +625,12 @@ export default function ExploreScreen() {
           </Marker>
         )}
 
-        {tutorialProgress.currentStep >= 59 && (
+        {(isTutorialComplete || tutorialProgress.currentStep >= 58) && (
           <Marker 
             coordinate={ALTONA_GATE_COORDS} 
             anchor={{ x: 0.5, y: 0.5 }} 
             zIndex={70} 
-            tracksViewChanges={true} 
+            tracksViewChanges={shouldTrackMarkers}
             onPress={(e) => { 
               e.stopPropagation(); 
               setSelectedZone({ 
