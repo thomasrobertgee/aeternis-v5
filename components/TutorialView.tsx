@@ -392,7 +392,7 @@ const TutorialView = () => {
   const router = useRouter();
   const pathname = usePathname();
   const setHeroTab = useUIStore(s => s.setHeroTab);
-  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem, setStats, gold, setPlayerName, playerName, setTutorialComplete } = usePlayerStore();
+  const { tutorialProgress, updateTutorial, clearTutorialMarker, logChoice, addItem, startQuest, choicesLog, learnSkill, equipItem, setStats, gold, setPlayerName, playerName, setTutorialComplete, isTutorialComplete } = usePlayerStore();
   
   const [nameInput, setNameInput] = useState("");
   const [showNameInput, setShowNameInput] = useState(false);

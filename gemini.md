@@ -84,4 +84,4 @@ The game features a comprehensive 60+ step tutorial that introduces players to t
 *   Map markers for hostile signals may jitter slightly during high-speed travel transitions.
 
 ---
-*Last Updated: March 6, 2026*
+*Last Updated: March 6, 2026 (Final Stability Sync)*

@@ -28,6 +28,8 @@ This document provides a chronological history of requests, features, and bug fi
 *   **Map Logic Cleanup**: Consolidated map zoom logic. Blocked automatic "Recenter on Player" logic during tutorial steps 40 and 58 to allow the scripted pans to finish uninterrupted.
 *   **New Project Mandate**: Established a core rule in `gemini.md` requiring all documentation to be synchronized and updated automatically whenever a push to GitHub is requested.
 *   **Final Tutorial Loop Fix**: Resolved a critical bug where the final tutorial step would loop indefinitely. Added `isTutorialComplete` synchronization to `ExploreScreen` effects and `TutorialView` render guards.
+*   **ReferenceError Fix**: Resolved `isTutorialComplete` property error in `TutorialView.tsx` by adding missing store destructuring.
+*   **Settlement Flow Polish**: Implemented dual-trigger logic for the tutorial finale (triggered by either 'Resting' or 'Leaving' Altona Gate) to ensure player progression.
 
 ---
 
