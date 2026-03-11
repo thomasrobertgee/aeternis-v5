@@ -17,7 +17,7 @@ import { ShieldCheck, Sparkles } from 'lucide-react-native';
 
 export default function TitleScreen() {
   const router = useRouter();
-  const { tutorialProgress } = usePlayerStore();
+  const { tutorialProgress, isTutorialComplete } = usePlayerStore();
   const [localTutorialTrigger, setLocalTutorialTrigger] = useState(false);
   const pulse = useSharedValue(1);
 
@@ -45,8 +45,8 @@ export default function TitleScreen() {
   }));
 
   const handleEnter = () => {
-    if (tutorialProgress.isTutorialActive && tutorialProgress.currentStep === 0) {
-      setLocalTutorialTrigger(true);
+    if (!isTutorialComplete && tutorialProgress.currentStep === 0) {
+      router.push('/starting-location');
     } else {
       router.replace('/(tabs)/explore');
     }

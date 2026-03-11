@@ -13,6 +13,7 @@ export interface GeoResult {
   suburb: string;
   city: string;
   country: string;
+  geojson?: any; // Dynamic geometry for the area
 }
 
 // Hardcoded coordinates for major cities to ensure the game works even if API is down/rate-limited
@@ -28,6 +29,47 @@ const STABLE_ANCHORS: Record<string, Coords> = {
 
 // Simple in-memory cache to prevent duplicate API calls and stay within rate limits
 const GEO_CACHE: Record<string, GeoResult> = {};
+
+export interface GeoSearchResult {
+  display_name: string;
+  lat: string;
+  lon: string;
+  geojson?: any;
+  address?: {
+    suburb?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
+}
+
+/**
+ * Searches for locations matching a query string (Autocomplete).
+ * Requests GeoJSON to get real-world boundaries.
+ */
+export const searchLocations = async (query: string): Promise<GeoSearchResult[]> => {
+  if (!query || query.length < 3) return [];
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=5&polygon_geojson=1`,
+      {
+        headers: {
+          'User-Agent': 'AeternisOdyssey/1.0',
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) return [];
+    
+    const data = await response.json();
+    return data || [];
+  } catch (error) {
+    console.error('Location search failed:', error);
+    return [];
+  }
+};
 
 /**
  * Converts a city name to coordinates.
@@ -77,6 +119,7 @@ export const geocodeCity = async (cityName: string): Promise<Coords | null> => {
 
 /**
  * Converts coordinates to a suburb/city name.
+ * Requests GeoJSON to get real-world boundaries.
  */
 export const reverseGeocode = async (coords: Coords): Promise<GeoResult | null> => {
   // Use cache if available (rounded to ~100m precision)
@@ -87,7 +130,7 @@ export const reverseGeocode = async (coords: Coords): Promise<GeoResult | null> 
 
   try {
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
+      `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json&polygon_geojson=1`,
       {
         headers: {
           'User-Agent': 'AeternisOdyssey/1.0',
@@ -113,6 +156,7 @@ export const reverseGeocode = async (coords: Coords): Promise<GeoResult | null> 
         suburb: data.address.suburb || data.address.neighbourhood || data.address.village || data.address.town || data.address.city_district || data.address.city || "Sector Alpha",
         city: data.address.city || data.address.state || "The Gray Void",
         country: data.address.country || "Fractured Earth",
+        geojson: data.geojson
       };
       // Save to cache
       GEO_CACHE[cacheKey] = result;

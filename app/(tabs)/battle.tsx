@@ -22,6 +22,7 @@ import { getDistance, formatDistance } from '../../utils/MathUtils';
 import * as Haptics from 'expo-haptics';
 import SoundService from '../../utils/SoundService';
 import { useDungeonStore } from '../../utils/useDungeonStore';
+import { useBehaviourStore } from '../../utils/useBehaviourStore';
 import { MILLERS_JUNCTION_DEPTHS_COORDS, ALTONA_GATE_COORDS } from '../../utils/Constants';
 
 export default function BattleScreen() {
@@ -248,6 +249,7 @@ export default function BattleScreen() {
           const latestQuests = usePlayerStore.getState().activeQuests;
           const quest = latestQuests.find(q => q.id === 'q-tutorial-dogs');
           if (quest && quest.currentCount >= quest.targetCount) {
+            useBehaviourStore.getState().recordAction('COMPLETE_FIRST_QUEST');
             updateTutorial({ currentStep: 36 }); // Narrative checkpoint: "You collapse..."
           }
         } else {
@@ -273,6 +275,7 @@ export default function BattleScreen() {
 
       // Standard Combat Logic
       if (sourceId === 'dungeon-boss') {
+        useBehaviourStore.getState().recordAction('DEFEAT_BOSS');
         updateQuestProgress('q-millers-junction-depths', 1);
       } else {
         // Update all active culling quests if appropriate
@@ -454,6 +457,14 @@ export default function BattleScreen() {
     if (isResolving || isActionProcessing || sourceId?.startsWith('tutorial-dog') || showSummary || showDungeonSummary) return;
     setIsActionProcessing(true);
     addLog("You attempt to slip back into the static...", "system");
+
+    const hpPercent = playerHpCombat / maxPlayerHpCombat;
+    if (hpPercent < 0.3) {
+      useBehaviourStore.getState().recordAction('FLEE_COMBAT_LOW_HP');
+    } else {
+      useBehaviourStore.getState().recordAction('FLEE_COMBAT_HIGH_HP');
+    }
+
     setTimeout(() => {
       setGlobalStats({ hp: playerHpCombat, mana: playerManaCombat });
       setTimeout(() => {

@@ -84,6 +84,21 @@ export interface TutorialProgress {
 
 export type SpecializationID = 'aether-bumper' | 'wildfire-mage' | 'search-and-rescue';
 
+export interface ActiveZoneContext {
+  zoneTheme: {
+    biomeName: string;
+    weatherState: string;
+    description: string;
+  };
+  primarySettlement: {
+    name: string;
+    chieftain: { name: string; lore: string };
+    vendor: { name: string; specialty: string };
+  };
+  enemies: { name: string; type: string; description: string }[];
+  dungeon: { name: string; theme: string };
+}
+
 interface PlayerState {
   playerLocation: Coords;
   level: number;
@@ -111,29 +126,38 @@ interface PlayerState {
   tutorialProgress: TutorialProgress;
   tutorialMarker: { coords: Coords; label: string } | null;
   choicesLog: string[];
-  enrolledFaction: string | null;
+  enrolledFaction: FactionType | null;
   specialization: SpecializationID | null;
   setBonus: { name: string; bonus: Record<string, number> } | null;
   globalNotification: GlobalNotification[];
-  errorNotification: { id: string; title: string; message: string }[];
+  errorNotification: GlobalNotification[];
   playerName: string;
   hasSetHomeCity: boolean;
   homeCityName: string;
-  sanctuaryLocation: Coords | null;
+  sanctuaryLocation: Coords;
   isSaving: boolean;
   isInSettlement: boolean;
   isTutorialComplete: boolean;
   dungeonModifiers: DungeonModifier[];
+  activeZoneContext: ActiveZoneContext | null;
   settings: {
     musicEnabled: boolean;
     tempUnit: 'Celsius' | 'Fahrenheit';
   };
+  tutorialCoords: {
+    dungeon: Coords;
+    settlement: Coords;
+  };
+
   setPlayerLocation: (location: Coords) => void;
   setPlayerName: (name: string) => void;
-  setStats: (stats: Partial<{ hp: number; mana: number; gold: number }>) => void;
+  setStats: (stats: Partial<PlayerState>) => void;
   setIsInSettlement: (inSettlement: boolean) => void;
   setTutorialComplete: (complete: boolean) => void;
   setDungeonModifiers: (modifiers: DungeonModifier[]) => void;
+  setActiveZoneContext: (context: ActiveZoneContext) => void;
+  setTutorialMarker: (marker: { coords: Coords; label: string } | null) => void;
+  setTutorialCoords: (coords: { dungeon: Coords; settlement: Coords }) => void;
   toggleMusic: () => void;
   toggleTempUnit: () => void;
   gainXp: (amount: number) => void;
@@ -147,7 +171,7 @@ interface PlayerState {
   updateQuestProgress: (id: string, amount: number) => void;
   startQuest: (quest: Quest) => void;
   completeQuest: (id: string) => void;
-  enrollInFaction: (factionId: string) => void;
+  enrollInFaction: (factionId: FactionType) => void;
   setSpecialization: (specId: SpecializationID) => void;
   recordEncounter: (enemyName: string) => void;
   recordDefeat: (enemyName: string) => void;
@@ -157,7 +181,7 @@ interface PlayerState {
   triggerRift: (coords: Coords, biome: BiomeType) => void;
   setNotification: (notif: GlobalNotification | null) => void;
   removeNotification: (id: string) => void;
-  setErrorNotification: (error: { title: string; message: string } | null) => void;
+  setErrorNotification: (error: Omit<GlobalNotification, 'id' | 'type'> | null) => void;
   removeErrorNotification: (id: string) => void;
   setHomeCity: (city: string, location: Coords) => void;
   triggerSaving: () => void;
@@ -181,49 +205,6 @@ const INITIAL_REPUTATION: ReputationState = {
   'the-verdant': 0,
 };
 
-const STARTING_WEAPON: Item = {
-  id: 'starting-axe',
-  name: 'Heavy Iron Axe',
-  category: 'Weapon',
-  rarity: 'Common',
-  description: 'A weighted tool of survival, blunt but effective against the horrors of the fracture.',
-  stats: { attack: 12 },
-  grantedSkill: { id: 'skill-axe-sweep', name: 'Axe Sweep', level: 1, description: 'A wide horizontal arc that cleaves through static.', type: 'Active' },
-};
-
-const STARTING_ARMOR: Item = {
-  id: 'starting-armor',
-  name: 'Reflective Turnout Gear',
-  category: 'Armor',
-  rarity: 'Common',
-  description: 'High-visibility firefighter gear, repurposed to offer protection against both heat and spectral corruption.',
-  stats: { defense: 8 },
-};
-
-const STARTING_QUEST: Quest = {
-  id: 'q-secure-the-west',
-  title: 'Secure the West',
-  description: 'Defeat 3 enemies in the Rust Fields to stabilize the perimeter.',
-  targetCount: 3,
-  currentCount: 0,
-  biomeRequirement: 'Rust Fields',
-  isCompleted: false,
-  rewardXp: 150,
-  rewardGold: 1500,
-};
-
-const TUTORIAL_QUEST: Quest = {
-  id: 'q-tutorial-dogs',
-  title: 'Defeat Mutated Dogs',
-  description: 'Cleanse the perimeter of the remaining 5 mutated manifestations.',
-  targetCount: 5,
-  currentCount: 0,
-  biomeRequirement: 'Shattered Suburbia',
-  isCompleted: false,
-  rewardXp: 200,
-  rewardGold: 5,
-};
-
 export const usePlayerStore = create<PlayerState>()(
   persist(
     (set) => ({
@@ -238,200 +219,158 @@ export const usePlayerStore = create<PlayerState>()(
       gold: 0,
       attack: BASE_ATTACK,
       defense: BASE_DEFENSE,
-            equipment: {
-              weapon: null,
-              armor: null,
-              boots: null,
-            },
-            inventory: [],
-            skills: [],
-            reputation: INITIAL_REPUTATION,
-            discoveredZones: {},
-            activeQuests: [],
-            hostileSignals: [],
-            bestiary: {},
-            tutorialProgress: {
-              currentStep: 0,
-              hasLookedAround: false,
-              hasTriedToRemember: false,
-              isTutorialActive: true,
-            },
-            tutorialMarker: {
-              coords: {
-                latitude: INITIAL_LOCATION.latitude + 0.00225, // approx 250m north
-                longitude: INITIAL_LOCATION.longitude
-              },
-              label: "Glowing Blue Orb"
-            },
-            choicesLog: [],
-            enrolledFaction: null,
-                  specialization: null,
-                  setBonus: null,
-                        globalNotification: [],
-                              errorNotification: [],
-                              playerName: "Traveller",
-                              hasSetHomeCity: true,
-                              homeCityName: "Altona North",
-                              sanctuaryLocation: INITIAL_LOCATION,
-                              isSaving: false,
-                              isInSettlement: false,
-                              isTutorialComplete: false,
-                              dungeonModifiers: [],
-                              settings: {
-                                musicEnabled: true,
-                                tempUnit: 'Celsius',
-                              },
-            
-                              setPlayerLocation: (location) => set({ playerLocation: location }),      setPlayerName: (name) => set({ playerName: name }),
-                              setStats: (stats) => set((state) => ({ 
-        ...state, 
-        ...stats 
+      equipment: {
+        weapon: null,
+        armor: null,
+        boots: null,
+      },
+      inventory: [],
+      skills: [],
+      reputation: INITIAL_REPUTATION,
+      discoveredZones: {},
+      activeQuests: [],
+      hostileSignals: [],
+      bestiary: {},
+      tutorialProgress: {
+        currentStep: 0,
+        hasLookedAround: false,
+        hasTriedToRemember: false,
+        isTutorialActive: true,
+      },
+      tutorialMarker: {
+        coords: {
+          latitude: INITIAL_LOCATION.latitude + 0.00225,
+          longitude: INITIAL_LOCATION.longitude
+        },
+        label: "Glowing Blue Orb"
+      },
+      tutorialCoords: {
+        dungeon: { latitude: -37.84405, longitude: 144.84356 },
+        settlement: { latitude: -37.828, longitude: 144.847 }
+      },
+      choicesLog: [],
+      enrolledFaction: null,
+      specialization: null,
+      setBonus: null,
+      globalNotification: [],
+      errorNotification: [],
+      playerName: "Traveller",
+      hasSetHomeCity: false,
+      homeCityName: "",
+      sanctuaryLocation: INITIAL_LOCATION,
+      isSaving: false,
+      isInSettlement: false,
+      isTutorialComplete: false,
+      dungeonModifiers: [],
+      activeZoneContext: null,
+      settings: {
+        musicEnabled: true,
+        tempUnit: 'Celsius',
+      },
+
+      setPlayerLocation: (location) => set({ playerLocation: location }),
+      setPlayerName: (name) => set({ playerName: name }),
+      setStats: (stats) => set((state) => ({ ...state, ...stats })),
+      setIsInSettlement: (inSettlement) => set({ isInSettlement: inSettlement }),
+      setTutorialComplete: (complete) => set({ isTutorialComplete: complete }),
+      setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
+      setActiveZoneContext: (context) => set({ activeZoneContext: context }),
+      setTutorialMarker: (marker) => set({ tutorialMarker: marker }),
+      setTutorialCoords: (coords) => set({ tutorialCoords: coords }),
+
+      toggleMusic: () => set((state) => ({
+        settings: { ...state.settings, musicEnabled: !state.settings.musicEnabled }
       })),
-                              setIsInSettlement: (inSettlement) => set({ isInSettlement: inSettlement }),
-                              setTutorialComplete: (complete) => set({ isTutorialComplete: complete }),
-                              setDungeonModifiers: (modifiers) => set({ dungeonModifiers: modifiers }),
-                              toggleMusic: () => set((state) => ({
-                                settings: { ...state.settings, musicEnabled: !state.settings.musicEnabled }
-                              })),
-                              toggleTempUnit: () => set((state) => ({
-                                settings: { ...state.settings, tempUnit: state.settings.tempUnit === 'Celsius' ? 'Fahrenheit' : 'Celsius' }
-                              })),
-            gainXp: (amount) => set((state) => {
-              let newXp = state.xp + amount;
-              let newLevel = state.level;
-              let newMaxXp = state.maxXp;
-              let newMaxHp = state.maxHp;
-              let newMaxMana = state.maxMana;
-              let newHp = state.hp;
-              let newMana = state.mana;
-              let newAttack = state.attack;
-              let newDefense = state.defense;
-              let newNotifications = state.globalNotification;
-      
-              while (newXp >= newMaxXp) {
-                newXp -= newMaxXp;
-                newLevel += 1;
-                newMaxXp = Math.floor(newMaxXp * 1.5);
-                newMaxHp += 20;
-                newMaxMana += 10;
-                newAttack += 2;
-                newDefense += 1;
-              }
+      toggleTempUnit: () => set((state) => ({
+        settings: { ...state.settings, tempUnit: state.settings.tempUnit === 'Celsius' ? 'Fahrenheit' : 'Celsius' }
+      })),
+      gainXp: (amount) => set((state) => {
+        let newXp = state.xp + amount;
+        let newLevel = state.level;
+        let newMaxXp = state.maxXp;
+        let newMaxHp = state.maxHp;
+        let newMaxMana = state.maxMana;
+        let newHp = state.hp;
+        let newMana = state.mana;
+        let newAttack = state.attack;
+        let newDefense = state.defense;
+        let newNotifications = state.globalNotification;
 
-              // Fully restore to new maximums if a level was gained
-              if (newLevel > state.level) {
-                newHp = newMaxHp;
-                newMana = newMaxMana;
-                
-                // Trigger LevelUp notification
-                const levelNotif: GlobalNotification = {
-                  id: `level-${Date.now()}-${Math.random()}`,
-                  title: 'Level Resonance',
-                  message: `Your Imaginum expands. You have reached Level ${newLevel}.`,
-                  type: 'LevelUp'
-                };
-                newNotifications = [...newNotifications, levelNotif];
-              }
-      
-              return { 
-                xp: newXp, 
-                level: newLevel, 
-                maxXp: newMaxXp, 
-                maxHp: newMaxHp, 
-                maxMana: newMaxMana,
-                hp: newHp,
-                mana: newMana,
-                attack: newAttack,
-                defense: newDefense,
-                globalNotification: newNotifications
-              };
-            }),
-            addItem: (item) => set((state) => {
-              return { 
-                inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }]
-              };
-            }),
-            removeItem: (itemId) => set((state) => {
-              const index = state.inventory.findIndex(i => i.id === itemId);
-              if (index === -1) return state;
-              const newInventory = [...state.inventory];
-              newInventory.splice(index, 1);
-              return { inventory: newInventory };
-            }),
-            equipItem: (item) => set((state) => {
-              const newEquipment = { ...state.equipment };
-              let newSkills = [...state.skills];
+        while (newXp >= newMaxXp) {
+          newXp -= newMaxXp;
+          newLevel += 1;
+          newMaxXp = Math.floor(newMaxXp * 1.5);
+          newMaxHp += 20;
+          newMaxMana += 10;
+          newAttack += 2;
+          newDefense += 1;
+        }
 
-              if (item.category === 'Weapon') {
-                newEquipment.weapon = item;
-                // If the weapon has a skill, learn it (add or update in skills array)
-                if (item.grantedSkill) {
-                  const existingIdx = newSkills.findIndex(s => s.id === item.grantedSkill?.id);
-                  if (existingIdx > -1) {
-                    newSkills[existingIdx] = item.grantedSkill;
-                  } else {
-                    // Remove other active skills to keep it simple (one weapon skill at a time)
-                    newSkills = newSkills.filter(s => s.type !== 'Active');
-                    newSkills.push(item.grantedSkill);
-                  }
-                }
-              }
-              if (item.category === 'Armor') {
-                if (item.name.toLowerCase().includes('boots')) {
-                  newEquipment.boots = item;
-                } else {
-                  newEquipment.armor = item;
-                }
-              }
-              
-              let weaponBonus = newEquipment.weapon?.stats?.attack || 0;
-              let armorBonus = (newEquipment.armor?.stats?.defense || 0) + (newEquipment.boots?.stats?.defense || 0);
-              
-              let activeSetBonus = null;
-              if (newEquipment.armor?.name.includes('Plasteel') && 
-                  newEquipment.boots?.name.includes('Plasteel')) {
-                armorBonus += 5;
-                activeSetBonus = { name: 'Plasteel Reinforcement', bonus: { defense: 5 } };
-              }
-              
-              return { 
-                equipment: newEquipment,
-                skills: newSkills,
-                attack: BASE_ATTACK + weaponBonus,
-                defense: BASE_DEFENSE + armorBonus,
-                setBonus: activeSetBonus
-              };
-            }),
-            learnSkill: (skill) => set((state) => {
-              const existingIndex = state.skills.findIndex(s => s.id === skill.id);
-              if (existingIndex > -1) {
-                const newSkills = [...state.skills];
-                newSkills[existingIndex] = skill;
-                return { skills: newSkills };
-              }
-              return { skills: [...state.skills, skill] };
-            }),
-            updateReputation: (factionId, delta) => set((state) => ({
-              reputation: {
-                ...state.reputation,
-                [factionId]: (state.reputation[factionId] || 0) + delta,
-              },
-            })),
-            saveZoneProfile: (profile) => set((state) => ({
-              discoveredZones: {
-                ...state.discoveredZones,
-                [profile.suburb]: profile
-              }
-            })),
-            rest: () => set((state) => ({
-              hp: state.maxHp,
-              mana: state.maxMana
-            })),      updateQuestProgress: (id, amount) => set((state) => {
+        if (newLevel > state.level) {
+          newHp = newMaxHp;
+          newMana = newMaxMana;
+          newNotifications = [...newNotifications, {
+            id: `level-${Date.now()}-${Math.random()}`,
+            title: 'Level Resonance',
+            message: `Your Imaginum expands. You have reached Level ${newLevel}.`,
+            type: 'LevelUp'
+          }];
+        }
+
+        return { xp: newXp, level: newLevel, maxXp: newMaxXp, maxHp: newMaxHp, maxMana: newMaxMana, hp: newHp, mana: newMana, attack: newAttack, defense: newDefense, globalNotification: newNotifications };
+      }),
+      addItem: (item) => set((state) => ({ inventory: [...state.inventory, { ...item, id: `${item.id}-${Math.random().toString(36).substr(2, 9)}` }] })),
+      removeItem: (itemId) => set((state) => {
+        const index = state.inventory.findIndex(i => i.id === itemId);
+        if (index === -1) return state;
+        const newInventory = [...state.inventory];
+        newInventory.splice(index, 1);
+        return { inventory: newInventory };
+      }),
+      equipItem: (item) => set((state) => {
+        const newEquipment = { ...state.equipment };
+        let newSkills = [...state.skills];
+        if (item.category === 'Weapon') {
+          newEquipment.weapon = item;
+          if (item.grantedSkill) {
+            const existingIdx = newSkills.findIndex(s => s.id === item.grantedSkill?.id);
+            if (existingIdx > -1) newSkills[existingIdx] = item.grantedSkill;
+            else {
+              newSkills = newSkills.filter(s => s.type !== 'Active');
+              newSkills.push(item.grantedSkill);
+            }
+          }
+        }
+        if (item.category === 'Armor') {
+          if (item.name.toLowerCase().includes('boots')) newEquipment.boots = item;
+          else newEquipment.armor = item;
+        }
+        let weaponBonus = newEquipment.weapon?.stats?.attack || 0;
+        let armorBonus = (newEquipment.armor?.stats?.defense || 0) + (newEquipment.boots?.stats?.defense || 0);
+        let activeSetBonus = null;
+        if (newEquipment.armor?.name.includes('Plasteel') && newEquipment.boots?.name.includes('Plasteel')) {
+          armorBonus += 5;
+          activeSetBonus = { name: 'Plasteel Reinforcement', bonus: { defense: 5 } };
+        }
+        return { equipment: newEquipment, skills: newSkills, attack: BASE_ATTACK + weaponBonus, defense: BASE_DEFENSE + armorBonus, setBonus: activeSetBonus };
+      }),
+      learnSkill: (skill) => set((state) => {
+        const existingIndex = state.skills.findIndex(s => s.id === skill.id);
+        if (existingIndex > -1) {
+          const newSkills = [...state.skills];
+          newSkills[existingIndex] = skill;
+          return { skills: newSkills };
+        }
+        return { skills: [...state.skills, skill] };
+      }),
+      updateReputation: (factionId, delta) => set((state) => ({ reputation: { ...state.reputation, [factionId]: (state.reputation[factionId] || 0) + delta } })),
+      saveZoneProfile: (profile) => set((state) => ({ discoveredZones: { ...state.discoveredZones, [profile.suburb]: profile } })),
+      rest: () => set((state) => ({ hp: state.maxHp, mana: state.maxMana })),
+      updateQuestProgress: (id, amount) => set((state) => {
         const updatedQuests = state.activeQuests.map(q => {
           if (q.id === id && !q.isCompleted) {
             const newCount = Math.min(q.targetCount, q.currentCount + amount);
-            const isNowCompleted = newCount === q.targetCount;
-            return { ...q, currentCount: newCount, isCompleted: isNowCompleted };
+            return { ...q, currentCount: newCount, isCompleted: newCount === q.targetCount };
           }
           return q;
         });
@@ -444,22 +383,12 @@ export const usePlayerStore = create<PlayerState>()(
       completeQuest: (id) => set((state) => {
         const quest = state.activeQuests.find(q => q.id === id);
         if (!quest || !quest.isCompleted) return state;
-
-        // Custom reward for Miller's Junction Depths (Tutorial Pouch)
         let goldReward = quest.rewardGold;
         if (id === 'q-millers-junction-depths') goldReward = 500;
-
         let itemReward: Item | null = null;
-        if (state.enrolledFaction === 'the-cogwheel') {
-          itemReward = Math.random() > 0.5 ? LOOT_ITEMS.SCRAP_METAL : LOOT_ITEMS.AETHER_SHARDS;
-        } else if (state.enrolledFaction === 'the-verdant') {
-          itemReward = Math.random() > 0.5 ? LOOT_ITEMS.RATIONS : LOOT_ITEMS.FOCUS_POTION;
-        }
-
-        const updatedInventory = itemReward 
-          ? [...state.inventory, { ...itemReward, id: `${itemReward.id}-${Math.random().toString(36).substr(2, 9)}` }]
-          : state.inventory;
-
+        if (state.enrolledFaction === 'the-cogwheel') itemReward = Math.random() > 0.5 ? LOOT_ITEMS.SCRAP_METAL : LOOT_ITEMS.AETHER_SHARDS;
+        else if (state.enrolledFaction === 'the-verdant') itemReward = Math.random() > 0.5 ? LOOT_ITEMS.RATIONS : LOOT_ITEMS.FOCUS_POTION;
+        const updatedInventory = itemReward ? [...state.inventory, { ...itemReward, id: `${itemReward.id}-${Math.random().toString(36).substr(2, 9)}` }] : state.inventory;
         let newXp = state.xp + quest.rewardXp;
         let newLevel = state.level;
         let newMaxXp = state.maxXp;
@@ -470,7 +399,6 @@ export const usePlayerStore = create<PlayerState>()(
         let newAttack = state.attack;
         let newDefense = state.defense;
         let newNotifications = [...state.globalNotification];
-
         while (newXp >= newMaxXp) {
           newXp -= newMaxXp;
           newLevel += 1;
@@ -480,220 +408,62 @@ export const usePlayerStore = create<PlayerState>()(
           newAttack += 2;
           newDefense += 1;
         }
-
-        // Fully restore to new maximums if a level was gained
         if (newLevel > state.level) {
           newHp = newMaxHp;
           newMana = newMaxMana;
-          
-          // Trigger LevelUp notification
-          newNotifications.push({
-            id: `level-${Date.now()}-${Math.random()}`,
-            title: 'Level Resonance',
-            message: `Your Imaginum expands. You have reached Level ${newLevel}.`,
-            type: 'LevelUp'
-          });
+          newNotifications.push({ id: `level-${Date.now()}-${Math.random()}`, title: 'Level Resonance', message: `Your Imaginum expands. You have reached Level ${newLevel}.`, type: 'LevelUp' });
         }
-          
-        return {
-          gold: state.gold + goldReward,
-          inventory: updatedInventory,
-          xp: newXp,
-          level: newLevel,
-          maxXp: newMaxXp,
-          maxHp: newMaxHp,
-          maxMana: newMaxMana,
-          hp: newHp,
-          mana: newMana,
-          attack: newAttack,
-          defense: newDefense,
-          activeQuests: state.activeQuests.filter(q => q.id !== id),
-          globalNotification: newNotifications
-        };
+        return { gold: state.gold + goldReward, inventory: updatedInventory, xp: newXp, level: newLevel, maxXp: newMaxXp, maxHp: newMaxHp, maxMana: newMaxMana, hp: newHp, mana: newMana, attack: newAttack, defense: newDefense, activeQuests: state.activeQuests.filter(q => q.id !== id), globalNotification: newNotifications };
       }),
       enrollInFaction: (factionId) => set((state) => {
         if (state.enrolledFaction) return state;
-        
-        let bonusStats = {};
-        if (factionId === 'the-cogwheel') {
-          bonusStats = { attack: Math.floor(state.attack * 1.15) };
-        } else if (factionId === 'the-verdant') {
-          bonusStats = { defense: Math.floor(state.defense * 1.15) };
-        }
-
-        return { 
-          enrolledFaction: factionId,
-          ...bonusStats
-        };
+        let bonusStats = factionId === 'the-cogwheel' ? { attack: Math.floor(state.attack * 1.15) } : (factionId === 'the-verdant' ? { defense: Math.floor(state.defense * 1.15) } : {});
+        return { enrolledFaction: factionId, ...bonusStats };
       }),
       setSpecialization: (specId) => set((state) => {
         if (state.specialization) return state;
-
         let bonusStats = {};
-        if (specId === 'aether-bumper') {
-          bonusStats = { maxHp: state.maxHp + 50, hp: state.hp + 50, defense: Math.floor(state.defense * 1.2) };
-        } else if (specId === 'wildfire-mage') {
-          bonusStats = { maxMana: state.maxMana + 50, mana: state.mana + 50, attack: Math.floor(state.attack * 1.2) };
-        } else if (specId === 'search-and-rescue') {
-          bonusStats = { maxHp: state.maxHp + 25, hp: state.hp + 25, maxMana: state.maxMana + 25, mana: state.mana + 25 };
-        }
-
-        return {
-          specialization: specId,
-          ...bonusStats
-        };
+        if (specId === 'aether-bumper') bonusStats = { maxHp: state.maxHp + 50, hp: state.hp + 50, defense: Math.floor(state.defense * 1.2) };
+        else if (specId === 'wildfire-mage') bonusStats = { maxMana: state.maxMana + 50, mana: state.mana + 50, attack: Math.floor(state.attack * 1.2) };
+        else if (specId === 'search-and-rescue') bonusStats = { maxHp: state.maxHp + 25, hp: state.hp + 25, maxMana: state.maxMana + 25, mana: state.mana + 25 };
+        return { specialization: specId, ...bonusStats };
       }),
-      recordEncounter: (enemyName) => set((state) => {
-        const entry = state.bestiary[enemyName] || { encounters: 0, defeats: 0 };
-        return {
-          bestiary: {
-            ...state.bestiary,
-            [enemyName]: { ...entry, encounters: entry.encounters + 1 }
-          }
-        };
-      }),
-      recordDefeat: (enemyName) => set((state) => {
-        const entry = state.bestiary[enemyName] || { encounters: 1, defeats: 0 };
-        return {
-          bestiary: {
-            ...state.bestiary,
-            [enemyName]: { 
-              ...entry, 
-              defeats: entry.defeats + 1,
-              lastDefeatedAt: Date.now()
-            }
-          }
-        };
-      }),
-      removeSignal: (id) => set((state) => ({
-        hostileSignals: state.hostileSignals.filter(s => s.id !== id || s.expiresAt)
-          .map(s => s.id === id ? { ...s, respawnAt: Date.now() + 5 * 60 * 1000 } : s)
-      })),
+      recordEncounter: (enemyName) => set((state) => ({ bestiary: { ...state.bestiary, [enemyName]: { ...(state.bestiary[enemyName] || { encounters: 0, defeats: 0 }), encounters: (state.bestiary[enemyName]?.encounters || 0) + 1 } } })),
+      recordDefeat: (enemyName) => set((state) => ({ bestiary: { ...state.bestiary, [enemyName]: { ...(state.bestiary[enemyName] || { encounters: 1, defeats: 0 }), defeats: (state.bestiary[enemyName]?.defeats || 0) + 1, lastDefeatedAt: Date.now() } } })),
+      removeSignal: (id) => set((state) => ({ hostileSignals: state.hostileSignals.filter(s => s.id !== id || s.expiresAt).map(s => s.id === id ? { ...s, respawnAt: Date.now() + 5 * 60 * 1000 } : s) })),
       respawnSignals: () => set((state) => {
         const now = Date.now();
         const updated = state.hostileSignals.filter(s => !s.expiresAt || now < s.expiresAt).map(s => {
-          if (s.respawnAt && now > s.respawnAt) {
-            return {
-              ...s,
-              respawnAt: undefined,
-              coords: {
-                latitude: s.coords.latitude + (Math.random() - 0.5) * 0.002,
-                longitude: s.coords.longitude + (Math.random() - 0.5) * 0.002,
-              }
-            };
-          }
+          if (s.respawnAt && now > s.respawnAt) return { ...s, respawnAt: undefined, coords: { latitude: s.coords.latitude + (Math.random() - 0.5) * 0.002, longitude: s.coords.longitude + (Math.random() - 0.5) * 0.002 } };
           return s;
         });
         return { hostileSignals: updated };
       }),
       setHostileSignals: (signals) => set({ hostileSignals: signals }),
-      triggerRift: (coords, biome) => set((state) => {
-        const riftSignal: Signal = {
-          id: `rift-${Date.now()}`,
-          coords,
-          biome,
-          type: 'Boss',
-          expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
-        };
-        
-        const riftNotif: GlobalNotification = {
-          id: `rift-notif-${Date.now()}`,
-          title: 'FRACTURE RIFT DETECTED',
-          message: 'A massive energy spike has manifested nearby. A high-level entity is crossing over. Duration: 15m.',
-          type: 'Rift'
-        };
-
-        return {
-          hostileSignals: [...state.hostileSignals, riftSignal],
-          globalNotification: [...state.globalNotification, riftNotif]
-        };
-      }),
-                                    setNotification: (notif) => set((state) => ({ 
-                                      globalNotification: notif ? [...state.globalNotification, notif] : state.globalNotification 
-                                    })),
-                                    removeNotification: (id) => set((state) => ({
-                                      globalNotification: state.globalNotification.filter(n => n.id !== id)
-                                    })),
-                                    setErrorNotification: (error) => set((state) => ({ 
-                                      errorNotification: error ? [...state.errorNotification, { ...error, id: `error-${Date.now()}-${Math.random()}` }] : state.errorNotification 
-                                    })),
-                                    removeErrorNotification: (id) => set((state) => ({
-                                      errorNotification: state.errorNotification.filter(e => e.id !== id)
-                                    })),
-                                    setHomeCity: (city, location) => set({ 
-       
-        homeCityName: city, 
-        playerLocation: location, 
-        sanctuaryLocation: location,
-        hasSetHomeCity: true 
-      }),
+      triggerRift: (coords, biome) => set((state) => ({ hostileSignals: [...state.hostileSignals, { id: `rift-${Date.now()}`, coords, biome, type: 'Boss', expiresAt: Date.now() + 15 * 60 * 1000 }], globalNotification: [...state.globalNotification, { id: `rift-notif-${Date.now()}`, title: 'FRACTURE RIFT DETECTED', message: 'A massive energy spike has manifested nearby. A high-level entity is crossing over. Duration: 15m.', type: 'Rift' }] })),
+      setNotification: (notif) => set((state) => ({ globalNotification: notif ? [...state.globalNotification, notif] : state.globalNotification })),
+      removeNotification: (id) => set((state) => ({ globalNotification: state.globalNotification.filter(n => n.id !== id) })),
+      setErrorNotification: (error) => set((state) => ({ errorNotification: error ? [...state.errorNotification, { ...error, id: `error-${Date.now()}-${Math.random()}`, type: 'Warning' as const }] : state.errorNotification })),
+      removeErrorNotification: (id) => set((state) => ({ errorNotification: state.errorNotification.filter(e => e.id !== id) })),
+      setHomeCity: (city, location) => set({ homeCityName: city, playerLocation: location, sanctuaryLocation: location, hasSetHomeCity: true }),
       triggerSaving: () => {
         set({ isSaving: true });
         setTimeout(() => set({ isSaving: false }), 2000);
       },
-      cleanupZones: () => set({
-        discoveredZones: {},
-        hostileSignals: []
-      }),
+      cleanupZones: () => set({ discoveredZones: {}, hostileSignals: [] }),
       resetStore: () => set({
         playerLocation: INITIAL_LOCATION,
-        level: 1,
-        xp: 0,
-        maxXp: 100,
-        hp: 100,
-        maxHp: 100,
-        mana: 20,
-        maxMana: 20,
-        gold: 0,
-        attack: BASE_ATTACK,
-        defense: BASE_DEFENSE,
-        equipment: {
-          weapon: null,
-          armor: null,
-          boots: null,
-        },
-        inventory: [],
-        reputation: INITIAL_REPUTATION,
-        discoveredZones: {},
-        activeQuests: [],
-        hostileSignals: [],
-        bestiary: {},
-        tutorialProgress: {
-          currentStep: 0,
-          hasLookedAround: false,
-          hasTriedToRemember: false,
-          isTutorialActive: true,
-        },
-        tutorialMarker: {
-          coords: {
-            latitude: INITIAL_LOCATION.latitude + 0.00225,
-            longitude: INITIAL_LOCATION.longitude
-          },
-          label: "Glowing Blue Orb"
-        },
-        choicesLog: [],
-        enrolledFaction: null,
-        specialization: null,
-        setBonus: null,
-        globalNotification: [],
-        errorNotification: [],
-        playerName: "Traveller",
-        hasSetHomeCity: true,
-        homeCityName: "Altona North",
-        sanctuaryLocation: INITIAL_LOCATION,
-        isSaving: false,
-        isInSettlement: false,
-        isTutorialComplete: false,
-        dungeonModifiers: [],
-        settings: {
-          musicEnabled: true,
-          tempUnit: 'Celsius',
-        },
+        level: 1, xp: 0, maxXp: 100, hp: 100, maxHp: 100, mana: 20, maxMana: 20, gold: 0, attack: BASE_ATTACK, defense: BASE_DEFENSE,
+        equipment: { weapon: null, armor: null, boots: null }, inventory: [], skills: [], reputation: INITIAL_REPUTATION,
+        discoveredZones: {}, activeQuests: [], hostileSignals: [], bestiary: {},
+        tutorialProgress: { currentStep: 0, hasLookedAround: false, hasTriedToRemember: false, isTutorialActive: true },
+        tutorialMarker: { coords: { latitude: INITIAL_LOCATION.latitude + 0.00225, longitude: INITIAL_LOCATION.longitude }, label: "Glowing Blue Orb" },
+        tutorialCoords: { dungeon: { latitude: -37.84405, longitude: 144.84356 }, settlement: { latitude: -37.828, longitude: 144.847 } },
+        choicesLog: [], enrolledFaction: null, specialization: null, setBonus: null, globalNotification: [], errorNotification: [], playerName: "Traveller",
+        hasSetHomeCity: false, homeCityName: "", sanctuaryLocation: INITIAL_LOCATION, isSaving: false, isInSettlement: false, isTutorialComplete: false, dungeonModifiers: [], activeZoneContext: null,
+        settings: { musicEnabled: true, tempUnit: 'Celsius' },
       }),
-      updateTutorial: (progress) => set((state) => {
-        console.log(`[TUTORIAL] Updating progress:`, progress);
-        return { tutorialProgress: { ...state.tutorialProgress, ...progress } };
-      }),
+      updateTutorial: (progress) => set((state) => ({ tutorialProgress: { ...state.tutorialProgress, ...progress } })),
       clearTutorialMarker: () => set({ tutorialMarker: null }),
       logChoice: (choice) => set((state) => ({ choicesLog: [...state.choicesLog, choice] })),
     }),
@@ -701,9 +471,7 @@ export const usePlayerStore = create<PlayerState>()(
       name: 'aeternis-player-storage',
       storage: createJSONStorage(() => ({
         getItem: (name) => AsyncStorage.getItem(name),
-        setItem: (name, value) => {
-          return AsyncStorage.setItem(name, value);
-        },
+        setItem: (name, value) => AsyncStorage.setItem(name, value),
         removeItem: (name) => AsyncStorage.removeItem(name),
       })),
     }

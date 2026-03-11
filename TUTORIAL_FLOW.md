@@ -1,104 +1,59 @@
 # Aeternis: Odyssey - Tutorial Flow Documentation
 
-This document outlines the step-by-step narrative, choices, and logic of the initial onboarding sequence in the Fracture.
+This document outlines the adaptive onboarding sequence in the Fracture. All coordinates and names are now dynamically determined based on the player's chosen starting location.
 
 ## 1. Initial Awakening
-*   **Step 0**: "you wake up, dazed..."
-    *   [sit up] -> Step 1
-    *   [stand up] -> Step 2
-*   **Step 1**: "your arms and legs feel weak..." -> Step 3
-*   **Step 2**: "you try to stand up..." -> Step 3
+*   **Step 0**: Awakening in `{biome}`.
+    *   [look around] -> Step 1
+*   **Step 1**: "manage to sit up..." -> Step 2
+*   **Step 2**: **Core Choices**
+    *   [stand up] -> Step 6 (Requires `hasLookedAround` & `hasTriedToRemember`)
+    *   [take a look around] -> Step 3 (Sets `hasLookedAround`)
+    *   [try to remember] -> Step 4 (Sets `hasTriedToRemember`)
+*   **Steps 3-5**: Exploration/Memory flavor text.
 
-## 2. Exploration & Memory
-*   **Step 3**: "you are sitting on the cold ground..."
-    *   [stand up] -> Step 7 (Requires `hasLookedAround` & `hasTriedToRemember`)
-    *   [take a look around] -> Step 4 (Sets `hasLookedAround`)
-    *   [try to remember what happened] -> Step 5 (Sets `hasTriedToRemember`)
-*   **Step 4**: "nature seems to have taken over..." -> Back to Step 3
-*   **Step 5**: "memory is foggy..." -> Back to Step 3
-*   **Step 6**: "try to stand up... limbs lead" -> Back to Step 3
+## 2. The Imaginum Contact
+*   **Step 6**: Standing up and hearing the hum.
+*   **Step 7**: Moving towards the sound -> Map View Unlocks.
+*   **Step 8**: Arrival at **Glowing Blue Orb** (~250m North).
+    *   [touch the light] -> Step 9
+*   **Step 9**: Blinding Flash Transition -> Step 11
+*   **Step 11**: Waking up changed.
 
-## 3. The Sound & The Orb
-*   **Step 7**: "you finally manage to stand up... faint hum..."
-    *   [sit back down] -> Step 8
-    *   [move towards the sound] -> Map View Unlocks (Step 9 set as resume point)
-*   **Step 8**: "sit back down... grow restless..." -> Map View Unlocks
-*   **Step 9**: Arrival at Tutorial Marker (250m North)
-    *   **Interaction**: User clicks "Explore" on the Glowing Blue Orb.
-    *   [reach out and touch the light] -> Step 10
-    *   [back away] -> Step 11
-*   **Step 10**: Blinding Flash Transition -> Step 12
-*   **Step 11**: "light hypnotizes you..." -> Back to Step 10
+## 3. The HUD & First Blood
+*   **Step 12-13**: Discovery of the "internal resonance".
+*   **Step 14-15**: Persistent orb in vision.
+*   **Step 16**: **HUD Manifests**.
+*   **Step 17**: Language Translation.
+    *   [interact with screen] -> Step 18
+*   **Step 18-19**: Mutated Dog Encounter.
+*   **Step 20**: **Weapon Choice** (Stick/Door/Rocks).
+*   **Step 21**: Interaction Point. Tutorial hides. Player engages **Small Mutated Dog** on map.
 
-## 4. The HUD & First Blood
-*   **Step 12**: Second Awakening -> Step 13
-*   **Step 13**: "actually feel different..."
-    *   [assess yourself] -> Step 14
-    *   [take a look around] -> Step 15
-*   **Step 14**: "blue light rippling under skin..." -> Step 15
-*   **Step 15**: Persistent blue orb in vision.
-    *   [rub your eyes] -> Step 16
-    *   [focus on the orb] -> Step 17
-*   **Step 16**: "nope, its still there" -> Step 15
-*   **Step 17**: **HUD Unlocks** (Stats) -> Step 18
-*   **Step 18**: "language replaced..."
-    *   [interact with the screen] -> Opens Hero Tab -> Step 19
-*   **Step 19**: (Return to Map) Growl heard -> Step 20
-*   **Step 20**: "hideously mutated dog..." -> Step 21
-*   **Step 21**: **Weapon Choice**
-    *   [large stick] / [car door] / [rocks] -> Rewards Weapon + Skill -> Step 22
-*   **Step 22**: "you pick up the weapon..." -> Tutorial Overlay Hides (Enables Map Interaction)
-*   **Step 23**: **Active Battle Stage**. Player must click red marker on map.
-*   **Step 24**: Post-Battle narrative: "after finally defeating the dog... exhausted" -> Step 25
+## 4. Rewards & Quests
+*   **Step 23-26**: Post-battle loot discovery (Aetium Crystal).
+*   **Step 27**: Reception of first Aetium.
+*   **Step 31**: **Quest System Manifests**.
+    *   [read quest details] -> Step 32
+*   **Step 32**: Interaction Point. Tutorial hides. Player defeats 5 Dogs on map.
 
-## 5. Loot & Quests
-*   **Step 25**: Corpse shimmers.
-    *   [rub your eyes] / [observe] -> Step 26/27
-*   **Step 27**: Corpse disappears -> Step 28
-*   **Step 28**: Glowing crystal found.
-    *   [pick up crystal] -> Step 29 (Rewards 1 x Aetium)
-*   **Step 29**: "check your character..." -> Opens Hero Tab -> Step 30
-*   **Step 30**: (Return to Map) "cloud storage" -> Step 31
-*   **Step 31**: "ping" heard -> Step 32
-*   **Step 32**: "look around..." -> Step 33
-*   **Step 33**: More dogs circling. **Quest UI Manifests**.
-    *   [read quest details] -> Starts "Defeat Mutated Dogs" -> Opens Quests Tab -> Step 34
-*   **Step 34**: (Return to Map) Prepare for battle -> Tutorial Overlay Hides
-*   **Step 35**: **Active Quest Stage**. Player kills 5 Dogs on map.
-*   **Step 36**: Post-Quest narrative: "collapse on ground... spent" -> Step 37
+## 5. The Depths (Instance)
+*   **Step 35-37**: Marketplace unlock and Dungeon discovery.
+*   **Step 38**: **Dungeon Quest** for `{dungeon}` starts.
+*   **Step 40**: Arrival at `{dungeon}` entrance.
+*   **Step 41**: Interaction Point. Tutorial hides. Player clears the instanced dungeon.
 
-## 6. The Miller's Junction Depths
-*   **Step 37**: Notification "ding" -> Step 38
-*   **Step 38**: Marketplace unlock.
-    *   [marketplace..?] -> Opens Social Tab -> Step 39
-*   **Step 39**: (Return to Map) Another "ding" -> Step 40
-*   **Step 40**: **Dungeon Quest Manifests**.
-    *   [check quests] -> Starts "Clear Millers Junction Depths" -> Opens Quests Tab -> Step 41
-*   **Step 41**: (Return to Map) **Auto-Zoom to Miller's Junction**. User travels to entrance.
-*   **Step 42**: Arrival at Miller's Junction.
-    *   [take a look around] -> Step 43
-*   **Step 43**: Observation of crumbling buildings.
-    *   [proceed] -> Tutorial Overlay Hides (Enables Dungeon Entry)
-*   **Step 44**: **Active Dungeon State**. Player explores and clears the 10-stage instance. Includes full **Dungeon Summary** upon completion.
-
-## 7. Meeting Jeff & Settlement
-*   **Step 45**: Post-Dungeon Proximity Trigger (Must be back on Map + Clear Dungeon).
-    *   "shuffling of footsteps..." -> [draw weapon] -> Step 46
-*   **Step 46**: Jeff steps out.
-    *   [who are you?] -> Step 47
-*   **Step 47**: Jeff thanks the "Otherworlder".
-*   **Steps 48-54**: Deep Lore Dump (The Collapse, Otherworlders, the Purpose).
-*   **Step 55**: Jeff rewards player with Aetium crystals -> Step 56
-*   **Step 56**: "anyway, what is your name?"
-    *   [my name is...] -> Opens Name Entry interface.
-*   **Step 57**: "Nice to meet you, {name}." -> Step 58
-*   **Step 58**: Travel Invitation.
-    *   [lead the way] -> **Auto-Zoom to Altona Gate** (Includes automatic `setSelectedZone` trigger to allow immediate entry). Tutorial Overlay Hides.
-*   **Step 59**: **Follow Objective**. Player must physically arrive at the settlement coordinates.
-*   **Step 60**: Jeff begins the tour.
-    *   [explore] -> Step 61 (Tutorial Hides, player explores settlement).
-*   **Step 61**: **Tutorial Complete**. Final farewell (Triggered upon 'Rest' or leaving settlement).
-    *   [finish] -> Unlocks **Near Me** scanner and full world persistence.
+## 6. Meeting Jeff & Settlement
+*   **Step 43**: Jeff (Persistent NPC) introduction.
+*   **Steps 44-53**: Lore Dump regarding "Otherworlders" and the Imaginum.
+*   **Step 54**: Receives Aetium Pouch.
+*   **Step 55**: **Character Naming**. User enters their name.
+*   **Step 56**: Invitation to `{settlement}`.
+    *   [lead the way] -> **Auto-Zoom to Settlement**. Tutorial Hides.
+*   **Step 57**: Physical arrival at `{settlement}`.
+*   **Step 58**: The Lodge introduction.
+    *   [explore] -> Step 59.
+*   **Step 59**: **Tutorial Complete**. Welcome to the Odyssey.
 
 ---
-*Last Updated: March 6, 2026*
+*Last Updated: March 10, 2026*

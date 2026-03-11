@@ -37,10 +37,10 @@ import BoundaryService from '../../utils/BoundaryService';
 import { useTravelStore } from '../../utils/useTravelStore';
 import { useUIStore } from '../../utils/useUIStore';
 import { useDungeonStore } from '../../utils/useDungeonStore';
+import { useBehaviourStore } from '../../utils/useBehaviourStore';
 import SoundService from '../../utils/SoundService';
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, MapPressEvent } from 'react-native-maps';
 import FractureMap from '../../components/FractureMap';
-import { MILLERS_JUNCTION_DEPTHS_COORDS, ALTONA_GATE_COORDS } from '../../utils/Constants';
 
 const WORLD_BOUNDARY = [{ latitude: -85, longitude: -180 }, { latitude: -85, longitude: 180 }, { latitude: 85, longitude: 180 }, { latitude: 85, longitude: -180 }];
 
@@ -72,6 +72,8 @@ export default function ExploreScreen() {
   const isTutorialComplete = usePlayerStore((state) => state.isTutorialComplete);
   const setErrorNotification = usePlayerStore((state) => state.setErrorNotification);
   const settings = usePlayerStore((state) => state.settings);
+  const tutorialCoords = usePlayerStore((state) => state.tutorialCoords);
+  const activeZoneContext = usePlayerStore((state) => state.activeZoneContext);
 
   // Selectors for Combat Store
   const initiateCombat = useCombatStore((state) => state.initiateCombat);
@@ -116,7 +118,6 @@ export default function ExploreScreen() {
           latitudeDelta: zoom || 0.02,
           longitudeDelta: zoom || 0.02
         }, 1500);
-        // Clear the action after triggering
         setPendingMapAction(null);
       }, 500);
     }
@@ -172,21 +173,9 @@ export default function ExploreScreen() {
   const pulseScale = useSharedValue(0);
   const pulseOpacity = useSharedValue(0);
 
-  const triggerRadarPulse = () => {
-    pulseScale.value = 0; pulseOpacity.value = 0.6;
-    pulseScale.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.quad) });
-    pulseOpacity.value = withTiming(0, { duration: 2000, easing: Easing.out(Easing.quad) });
-    
-    // Full screen sonar
-    sonarScale.value = 0;
-    sonarOpacity.value = 0.8;
-    sonarScale.value = withTiming(4, { duration: 2500, easing: Easing.out(Easing.quad) });
-    sonarOpacity.value = withTiming(0, { duration: 2500, easing: Easing.out(Easing.quad) });
-    SoundService.playScan();
-  };
-
   useEffect(() => { const interval = setInterval(() => { respawnSignals(); }, 10000); return () => clearInterval(interval); }, [respawnSignals]);
   useEffect(() => { let interval: NodeJS.Timeout; if (isTraveling) { interval = setInterval(() => { tickTravel(); }, 1000); } return () => clearInterval(interval); }, [isTraveling]);
+  
   useEffect(() => { 
     if (!isTraveling && destinationCoords) { 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); 
@@ -203,34 +192,34 @@ export default function ExploreScreen() {
         updateTutorial({ isTutorialActive: true });
       }
 
-      // Auto-trigger tutorial if arriving at Millers Junction Depths during correct step
+      // Auto-trigger tutorial if arriving at dynamic dungeon location
       if (tutorialProgress.currentStep === 41 &&
-          Math.abs(destinationCoords.latitude - MILLERS_JUNCTION_DEPTHS_COORDS.latitude) < 0.0001 && 
-          Math.abs(destinationCoords.longitude - MILLERS_JUNCTION_DEPTHS_COORDS.longitude) < 0.0001) {
+          Math.abs(destinationCoords.latitude - tutorialCoords.dungeon.latitude) < 0.0001 && 
+          Math.abs(destinationCoords.longitude - tutorialCoords.dungeon.longitude) < 0.0001) {
         updateTutorial({ currentStep: 42, isTutorialActive: true });
       }
 
-      // Auto-trigger tutorial if arriving at Altona Gate during correct step
+      // Auto-trigger tutorial if arriving at dynamic settlement location
       if (tutorialProgress.currentStep === 58 &&
-          Math.abs(destinationCoords.latitude - ALTONA_GATE_COORDS.latitude) < 0.0001 && 
-          Math.abs(destinationCoords.longitude - ALTONA_GATE_COORDS.longitude) < 0.0001) {
+          Math.abs(destinationCoords.latitude - tutorialCoords.settlement.latitude) < 0.0001 && 
+          Math.abs(destinationCoords.longitude - tutorialCoords.settlement.longitude) < 0.0001) {
         updateTutorial({ isTutorialActive: true });
       }
     } 
-  }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep]);
+  }, [isTraveling, destinationCoords, tutorialMarker, tutorialProgress.currentStep, tutorialCoords]);
+
   useEffect(() => { const timer = setTimeout(() => setTracksViewChanges(false), 3000); return () => clearTimeout(timer); }, []);
+  
   useEffect(() => { 
     if (hasSetHomeCity && playerLocation) { 
       handleRegionChange({ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }); 
       const zoomTimer = setTimeout(() => { 
-        // Only recenter if there's no pending map action and we're not in a custom-zoom tutorial step
         const isCustomZoomStep = tutorialProgress.currentStep === 40 || tutorialProgress.currentStep === 58;
         if (!pendingMapAction && !isCustomZoomStep) {
           handleRecenter(); 
         } else if (tutorialProgress.currentStep === 40 && !pendingMapAction) {
-          // Fallback for step 40 if no pending action
           mapRef.current?.animateToRegion({
-            ...MILLERS_JUNCTION_DEPTHS_COORDS,
+            ...tutorialCoords.dungeon,
             latitudeDelta: 0.005,
             longitudeDelta: 0.005
           }, 1500);
@@ -238,10 +227,10 @@ export default function ExploreScreen() {
       }, 1000); 
       return () => clearTimeout(zoomTimer); 
     } 
-  }, [hasSetHomeCity, tutorialProgress.currentStep, pendingMapAction]);
+  }, [hasSetHomeCity, tutorialProgress.currentStep, pendingMapAction, tutorialCoords]);
+
   useEffect(() => { if (hasSetHomeCity) { if (level >= 10 && !enrolledFaction) { setActiveDialogue(enrollmentDialogue); } else if (level >= 15 && !specialization) { setActiveDialogue(specializationDialogue); } } }, [level, enrolledFaction, specialization, hasSetHomeCity]);
 
-  // Force markers to redraw once when they change
   const [shouldTrackMarkers, setShouldTrackMarkers] = useState(true);
   useEffect(() => {
     setShouldTrackMarkers(true);
@@ -254,7 +243,7 @@ export default function ExploreScreen() {
     }
   }, [shouldTrackMarkers]);
 
-  // Resume tutorial if at narrative checkpoints and SCREEN IS FOCUSED
+  // Resume tutorial if at narrative checkpoints
   useEffect(() => {
     const checkpoints = [
       18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
@@ -262,17 +251,12 @@ export default function ExploreScreen() {
       47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60
     ];
     
-    // Step 46 (Jeff steps out) has a proximity check to Miller's Junction AND quest completion
     if (isFocused && tutorialProgress.currentStep === 46 && !tutorialProgress.isTutorialActive) {
       const activeQuest = usePlayerStore.getState().activeQuests.find(q => q.id === 'q-millers-junction-depths');
-      // Quest is considered done if it's completed OR if it's missing from the active list
       const isDungeonQuestComplete = activeQuest?.isCompleted || !activeQuest;
-      
-      const distance = getDistance(playerLocation, MILLERS_JUNCTION_DEPTHS_COORDS) * 1000;
-      console.log(`[DEBUG] Step 46 Listener - Step: ${tutorialProgress.currentStep}, Distance: ${distance.toFixed(1)}m, Quest Complete: ${isDungeonQuestComplete}`);
+      const distance = getDistance(playerLocation, tutorialCoords.dungeon) * 1000;
 
       if (distance <= 150 && isDungeonQuestComplete) {
-        console.log('[DEBUG] Step 46 TRIGGERED');
         const timer = setTimeout(() => {
           if (isFocused) updateTutorial({ isTutorialActive: true });
         }, 500);
@@ -282,81 +266,45 @@ export default function ExploreScreen() {
     }
 
     if (isFocused && !isTutorialComplete && checkpoints.includes(tutorialProgress.currentStep) && !tutorialProgress.isTutorialActive) {
-      // Add a small delay to ensure navigation has completed before resuming overlay
       const timer = setTimeout(() => {
         if (isFocused) updateTutorial({ isTutorialActive: true });
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused, isTutorialComplete]);
+  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive, isFocused, isTutorialComplete, tutorialCoords]);
 
-  // Handle step 23 (spawn tutorial enemy)
+  // Spawn tutorial enemies
   useEffect(() => {
     if (tutorialProgress.currentStep >= 22 && tutorialProgress.currentStep <= 23) {
-      // Don't re-spawn if they already exist
       if (hostileSignals?.some(s => s.id === 'tutorial-dog-signal')) return;
-      
-      // Spawn a special tutorial enemy near player (approx 100m west)
-      const dogCoords = { 
-        latitude: playerLocation.latitude, 
-        longitude: playerLocation.longitude - 0.001 
-      };
-      setHostileSignals([{
-        id: 'tutorial-dog-signal',
-        coords: dogCoords,
-        biome: BiomeType.SHATTERED_SUBURBIA,
-        type: 'Standard'
-      }]);
+      const dogCoords = { latitude: playerLocation.latitude, longitude: playerLocation.longitude - 0.001 };
+      setHostileSignals([{ id: 'tutorial-dog-signal', coords: dogCoords, biome: BiomeType.SHATTERED_SUBURBIA, type: 'Standard' }]);
     }
   }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
 
-  // Handle step 35 (spawn 5 tutorial dogs)
   useEffect(() => {
     if (tutorialProgress.currentStep >= 33 && tutorialProgress.currentStep <= 35) {
-      // Don't re-spawn if they already exist
       if (hostileSignals?.some(s => s.id === 'tutorial-dog-multi-0')) return;
-
-      const offsets = [
-        { lat: 0.00225, lon: 0 },
-        { lat: -0.00225, lon: 0 },
-        { lat: 0, lon: 0.00225 },
-        { lat: 0, lon: -0.00225 },
-        { lat: 0.0015, lon: 0.0015 }
-      ];
-      
+      const offsets = [ { lat: 0.00225, lon: 0 }, { lat: -0.00225, lon: 0 }, { lat: 0, lon: 0.00225 }, { lat: 0, lon: -0.00225 }, { lat: 0.0015, lon: 0.0015 } ];
       const newSignals = offsets.map((off, i) => ({
         id: `tutorial-dog-multi-${i}`,
-        coords: { 
-          latitude: playerLocation.latitude + off.lat, 
-          longitude: playerLocation.longitude + off.lon 
-        },
+        coords: { latitude: playerLocation.latitude + off.lat, longitude: playerLocation.longitude + off.lon },
         biome: BiomeType.SHATTERED_SUBURBIA,
         type: 'Standard' as const
       }));
-
       setHostileSignals(newSignals);
-      
       if (mapRef.current) {
-        setTimeout(() => {
-          mapRef.current?.fitToCoordinates([
-            playerLocation, 
-            ...newSignals.map(s => s.coords)
-          ], {
-            edgePadding: { top: 400, right: 400, bottom: 400, left: 400 },
-            animated: true,
-          });
-        }, 500);
+        setTimeout(() => { mapRef.current?.fitToCoordinates([playerLocation, ...newSignals.map(s => s.coords)], { edgePadding: { top: 400, right: 400, bottom: 400, left: 400 }, animated: true }); }, 500);
       }
     }
   }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
 
   const handleRegionChange = async (region: any) => {
     setMapRegion(region);
-
     if (!hasSetHomeCity) return;
     const coords = { latitude: region.latitude, longitude: region.longitude };
     let resolvedName = BoundaryService.getSuburbAtPoint(coords);
-    if (!resolvedName) { try { const result = await reverseGeocode(coords); if (result) resolvedName = result.suburb; } catch (e) { console.error("Geocoding failed during region change", e); } }
+    if (!resolvedName) { try { const result = await reverseGeocode(coords); if (result) resolvedName = result.suburb; } catch (e) { console.error("Geocoding failed", e); } }
     if (resolvedName) {
       setCurrentSuburb(resolvedName);
       const feature = BoundaryService.getSuburbFeature(resolvedName);
@@ -366,8 +314,6 @@ export default function ExploreScreen() {
       } else { setCurrentSuburbPolygon(null); }
     }
   };
-
-  const hideScanner = !isTutorialComplete;
 
   const homeCityHoles = useMemo(() => { if (!homeCityName) return []; const feature = BoundaryService.getSuburbFeature(homeCityName); if (!feature || !feature.geometry) return []; if (feature.geometry.type === 'Polygon') { return [feature.geometry.coordinates[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))]; } if (feature.geometry.type === 'MultiPolygon') { return feature.geometry.coordinates.map((poly: any) => poly[0].map((coord: number[]) => ({ longitude: coord[0], latitude: coord[1] }))); } return []; }, [homeCityName]);
   const biomeColors = useMemo(() => { return { fill: 'rgba(212, 212, 216, 0.25)', stroke: 'rgba(6, 182, 212, 0.8)' }; }, []);
@@ -401,7 +347,6 @@ export default function ExploreScreen() {
       return;
     }
 
-    // Disable generic suburb zone cards until the tutorial is complete
     if (!isTutorialComplete) return;
 
     setIsGeocoding(true);
@@ -424,20 +369,20 @@ export default function ExploreScreen() {
 
   const handleEnterAction = async () => {
     if (!selectedZone) return;
-    if (selectedZone.suburb === "MILLERS JUNCTION DEPTHS") {
+    if (selectedZone.isDungeon) {
       const distance = getDistance(playerLocation, selectedZone.coords) * 1000;
-      if (distance <= 100) {
-        useDungeonStore.getState().enterDungeon("MILLERS JUNCTION DEPTHS");
+      if (distance <= 150) {
+        useDungeonStore.getState().enterDungeon(selectedZone.suburb);
         router.replace('/(tabs)/dungeon');
         setSelectedZone(null);
       } else {
-        setErrorNotification({ title: "Signal Lost", message: "You must be within 100m of the depths entrance to descend." });
+        setErrorNotification({ title: "Signal Lost", message: "You must be within 150m of the depths entrance to descend." });
       }
       return;
     }
-    if (selectedZone.suburb === "ALTONA GATE SETTLEMENT") {
+    if (selectedZone.isSettlement) {
       const distance = getDistance(playerLocation, selectedZone.coords) * 1000;
-      if (distance <= 100) {
+      if (distance <= 150) {
         router.push('/(tabs)/settlement');
         setSelectedZone(null);
       } else {
@@ -456,6 +401,7 @@ export default function ExploreScreen() {
       return;
     }
     if (selectedZone.isHostile) {
+      useBehaviourStore.getState().recordAction('INITIATE_ENCOUNTER');
       if (selectedZone.signalId === 'tutorial-dog-signal') {
         initiateCombat('Small Mutated Dog', 30, usePlayerStore.getState().hp, usePlayerStore.getState().maxHp, usePlayerStore.getState().mana, usePlayerStore.getState().maxMana, selectedZone.signalId, 1.0, selectedZone.biome);
       } else if (selectedZone.signalId?.startsWith('tutorial-dog-multi')) {
@@ -469,6 +415,7 @@ export default function ExploreScreen() {
     } else {
       const { discoveredZones } = usePlayerStore.getState();
       if (!discoveredZones[selectedZone.suburb]) {
+        useBehaviourStore.getState().recordAction('EXPLORE_NEW_ZONE');
         setIsGeocoding(true);
         const wikiData = await WikipediaService.getSuburbSummary(selectedZone.suburb);
         const fallback = "The Imaginum is unusually dense here.";
@@ -494,24 +441,18 @@ export default function ExploreScreen() {
 
   return (
     <View className="flex-1 bg-zinc-950">
-      {/* Map Info Bar (Below Status Bar) */}
       <View className="flex-row justify-between items-center px-4 h-12 bg-transparent z-[110]">
-        {/* Left: Live Time */}
         <View className="flex-1 flex-row items-center">
           <Text className="text-zinc-400 font-mono text-[10px] uppercase">
             {currentTime.toLocaleTimeString('en-GB', { hour12: false })}
           </Text>
         </View>
-
-        {/* Center: Location */}
         <View className="flex-[2] items-center justify-center flex-row">
           <MapPinIcon size={12} color="#06b6d4" className="mr-1.5" />
           <Text className="text-white font-bold text-[10px] uppercase tracking-[4px]" numberOfLines={1}>
             {currentSuburb || homeCityName || "Fracture Zone"}, AU
           </Text>
         </View>
-
-        {/* Right: Weather & Temp */}
         <View className="flex-1 flex-row items-center justify-end">
           <View className="items-end mr-2">
             <Text className="text-zinc-200 font-black text-[10px] uppercase leading-tight">
@@ -522,9 +463,7 @@ export default function ExploreScreen() {
               <Text className="text-zinc-400 font-mono text-[8px] font-bold">
                 {(() => {
                   const celsius = getTemperatureForSuburb(currentSuburb || homeCityName || "Altona North");
-                  return settings.tempUnit === 'Celsius' 
-                    ? `${celsius}°C` 
-                    : `${Math.round((celsius * 9/5) + 32)}°F`;
+                  return settings.tempUnit === 'Celsius' ? `${celsius}°C` : `${Math.round((celsius * 9/5) + 32)}°F`;
                 })()}
               </Text>
             </View>
@@ -533,157 +472,45 @@ export default function ExploreScreen() {
         </View>
       </View>
 
-      {/* Full screen Sonar Ripple */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none" className="items-center justify-center z-[100]">
-        <Animated.View 
-          style={[
-            { 
-              width: 300, 
-              height: 300, 
-              borderRadius: 150, 
-              borderColor: 'rgba(6, 182, 212, 0.5)', 
-              backgroundColor: 'rgba(6, 182, 212, 0.1)' 
-            },
-            animatedSonarStyle
-          ]} 
-        />
+        <Animated.View style={[{ width: 300, height: 300, borderRadius: 150, borderColor: 'rgba(6, 182, 212, 0.5)', backgroundColor: 'rgba(6, 182, 212, 0.1)' }, animatedSonarStyle ]} />
       </View>
       <TransitView />
       {showDiscovery && selectedZone && <DiscoveryOverlay suburb={selectedZone.suburb} fracturedTitle={getProceduralZone(selectedZone.suburb).loreName} onComplete={() => setShowDiscovery(false)} />}
       <QuestTracker />
       <View className="absolute bottom-10 right-6 z-50">
-        <TouchableOpacity 
-          onPress={handleRecenter} 
-          activeOpacity={0.6}
-          className="bg-zinc-900/80 border border-zinc-700 w-12 h-12 rounded-2xl items-center justify-center shadow-lg active:scale-95"
-        >
-          <Focus size={20} color="#e4e4e7" />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={handleRecenter} activeOpacity={0.6} className="bg-zinc-900/80 border border-zinc-700 w-12 h-12 rounded-2xl items-center justify-center shadow-lg active:scale-95"><Focus size={20} color="#e4e4e7" /></TouchableOpacity>
       </View>
-      <MapView 
-        ref={mapRef} 
-        provider={PROVIDER_GOOGLE} 
-        style={StyleSheet.absoluteFillObject} 
-        initialRegion={{ latitude: playerLocation.latitude, longitude: playerLocation.longitude, latitudeDelta: 0.02, longitudeDelta: 0.02 }} 
-        onRegionChange={setMapRegion} 
-        onRegionChangeComplete={handleRegionChange} 
-        customMapStyle={fantasyMapStyle} 
-        scrollEnabled={!isTutorialRestricted}
-        zoomEnabled={!isTutorialRestricted}
-        rotateEnabled={!isTutorialRestricted}
-        pitchEnabled={!isTutorialRestricted}
-        onPress={(e) => {
-          if (isTutorialRestricted) return;
-          handleMapPress(e);
-        }}
-      >
-        {currentSuburbPolygon && <Polygon coordinates={currentSuburbPolygon} fillColor={biomeColors.fill} strokeColor={biomeColors.stroke} strokeWidth={4} zIndex={1} />}
-        {(level < 10 && tutorialProgress.currentStep >= 36) && <Polygon coordinates={WORLD_BOUNDARY} holes={homeCityHoles} fillColor="rgba(0, 0, 0, 0.7)" strokeColor="transparent" strokeWidth={0} tappable={false} zIndex={2} />}
-        
-        {tutorialMarker && (
-          <React.Fragment key="tutorial-marker">
-            <Marker coordinate={tutorialMarker.coords} anchor={{ x: 0.5, y: 0.5 }} zIndex={60} tracksViewChanges={true} onPress={(e) => { e.stopPropagation(); setSelectedZone({ suburb: "Glowing Blue Orb", biome: BiomeType.SHATTERED_SUBURBIA, faction: FactionType.IRON_CONSORTIUM, description: "A floating sphere of pure Imaginum energy. It seems to be responding to your presence.", coords: tutorialMarker.coords, isHostile: false, isTutorialMarker: true }); }}>
-              <View style={markerStyles.container}>
-                <Animated.View 
-                  style={[
-                    { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(34, 211, 238, 0.4)', position: 'absolute' },
-                    animatedTutorialPulse
-                  ]} 
-                />
-                <View className="w-6 h-6 bg-cyan-400/20 rounded-full items-center justify-center border-2 border-cyan-400 shadow-lg shadow-cyan-400">
-                  <Compass size={14} color="#22d3ee" className="animate-pulse" />
-                </View>
-              </View>
-            </Marker>
-          </React.Fragment>
-        )}
+      
+      <FractureMap
+        mapRef={mapRef}
+        playerLocation={playerLocation}
+        isTutorialRestricted={isTutorialRestricted}
+        currentSuburbPolygon={currentSuburbPolygon}
+        biomeColors={biomeColors}
+        level={level}
+        homeCityHoles={homeCityHoles}
+        WORLD_BOUNDARY={WORLD_BOUNDARY}
+        tutorialMarker={tutorialMarker}
+        tutorialProgress={tutorialProgress}
+        MILLERS_JUNCTION_DEPTHS_COORDS={tutorialCoords.dungeon}
+        ALTONA_GATE_COORDS={tutorialCoords.settlement}
+        hostileSignals={hostileSignals}
+        handleMapPress={handleMapPress}
+        handleRegionChange={handleRegionChange}
+        setMapRegion={setMapRegion}
+        setSelectedZone={setSelectedZone}
+        animatedTutorialPulse={animatedTutorialPulse}
+        shouldTrackMarkers={shouldTrackMarkers}
+        fantasyMapStyle={fantasyMapStyle}
+        markerStyles={markerStyles}
+        activeZoneContext={activeZoneContext}
+      />
 
-        {tutorialProgress.currentStep >= 41 && (
-          <Marker 
-            coordinate={MILLERS_JUNCTION_DEPTHS_COORDS} 
-            anchor={{ x: 0.5, y: 0.5 }} 
-            zIndex={70} 
-            tracksViewChanges={true} 
-            onPress={(e) => { 
-              e.stopPropagation(); 
-              setSelectedZone({ 
-                suburb: "MILLERS JUNCTION DEPTHS", 
-                biome: BiomeType.SHATTERED_SUBURBIA, 
-                faction: FactionType.IRON_CONSORTIUM, 
-                description: "The buildings are crumbling, and a dark wide pit leads deep underground. The air here is heavy with resonance.", 
-                coords: MILLERS_JUNCTION_DEPTHS_COORDS, 
-                isHostile: false,
-                isDungeon: true
-              }); 
-            }}
-          >
-            <View style={markerStyles.container}>
-              <View className="w-8 h-8 bg-purple-900/40 rounded-full items-center justify-center border-2 border-purple-500 shadow-lg shadow-purple-500">
-                <Flame size={18} color="#a855f7" />
-              </View>
-            </View>
-          </Marker>
-        )}
-
-        {(isTutorialComplete || tutorialProgress.currentStep >= 58) && (
-          <Marker 
-            coordinate={ALTONA_GATE_COORDS} 
-            anchor={{ x: 0.5, y: 0.5 }} 
-            zIndex={70} 
-            tracksViewChanges={shouldTrackMarkers}
-            onPress={(e) => { 
-              e.stopPropagation(); 
-              setSelectedZone({ 
-                suburb: "ALTONA GATE SETTLEMENT", 
-                biome: BiomeType.SHATTERED_SUBURBIA, 
-                faction: FactionType.NEO_TECHNOCRATS, 
-                description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
-                coords: ALTONA_GATE_COORDS, 
-                isHostile: false,
-                isSettlement: true
-              }); 
-            }}
-          >
-            <View style={markerStyles.container}>
-              <View className="w-8 h-8 bg-emerald-900/40 rounded-full items-center justify-center border-2 border-emerald-500 shadow-lg shadow-emerald-500">
-                <Home size={18} color="#10b981" />
-              </View>
-            </View>
-          </Marker>
-        )}
-
-        <Marker coordinate={playerLocation} anchor={{ x: 0.5, y: 0.5 }} zIndex={50} tracksViewChanges={tutorialProgress.currentStep < 58 ? true : shouldTrackMarkers}><View style={markerStyles.container}><View className="w-7 h-7 bg-cyan-500/20 rounded-full items-center justify-center border-2 border-cyan-400"><View className="w-3 h-3 bg-cyan-400 rounded-full" /></View></View></Marker>
-        {(hostileSignals || []).filter(s => !s.respawnAt).map((signal) => {
-          const isTutorialEnemy = signal.id.startsWith('tutorial-dog');
-          if (isTutorialRestricted && !isTutorialEnemy) return null;
-          return (
-            <React.Fragment key={signal.id}>
-              <Marker 
-                coordinate={signal.coords} 
-                anchor={{ x: 0.5, y: 0.5 }} 
-                zIndex={isTutorialEnemy ? 100 : (signal.type === 'Boss' ? 30 : 20)} 
-                tracksViewChanges={true} 
-                onPress={(e) => { if (isTutorialRestricted && !isTutorialEnemy) return; e.stopPropagation(); handleMapPress({ nativeEvent: { coordinate: signal.coords } } as any); }}
-              >
-                <View style={markerStyles.container}>
-                  <View className={`w-5 h-5 rounded-full items-center justify-center border-2 ${signal.type === 'Boss' ? 'bg-purple-500/20 border-purple-500' : 'bg-red-500/20 border-red-500/40'}`}>
-                    {signal.type === 'Boss' ? <Skull size={12} color="#a855f7" /> : <Activity size={10} color="#ef4444" />}
-                  </View>
-                </View>
-              </Marker>
-            </React.Fragment>
-          );
-        })}
-      </MapView>
-
-      {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : getProceduralZone(selectedZone.suburb).loreName} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} isSettlement={selectedZone.isSettlement} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
-        if (isInSettlement) {
-          setErrorNotification({ title: "Link Blocked", message: "The Aether-Link is currently synchronized to local Enclave protocols. You must exit the settlement perimeter before jumping." });
-          return;
-        }
-        if (tutorialProgress.currentStep < 58 && !selectedZone.isTutorialMarker && selectedZone.suburb !== "MILLERS JUNCTION DEPTHS" && selectedZone.suburb !== "ALTONA GATE SETTLEMENT") {
-          setErrorNotification({ title: "Link Locked", message: "The Aether-Link is currently synchronized to tutorial objectives only." });
-          return;
+      {selectedZone && <ZoneCard suburb={selectedZone.suburb} loreName={selectedZone.isBoss ? "CRITICAL ANOMALY" : (selectedZone.isDungeon || selectedZone.isSettlement ? selectedZone.suburb : getProceduralZone(selectedZone.suburb).loreName)} description={selectedZone.description} coords={selectedZone.coords} isHostile={selectedZone.isHostile} isDungeon={selectedZone.isDungeon} isSettlement={selectedZone.isSettlement} onClose={() => setSelectedZone(null)} onExplore={handleEnterAction} onFastTravel={(duration) => { 
+        if (isInSettlement) { setErrorNotification({ title: "Link Blocked", message: "The Aether-Link is currently synchronized to local Enclave protocols. You must exit the settlement perimeter before jumping." }); return; }
+        if (tutorialProgress.currentStep < 58 && !selectedZone.isTutorialMarker && !selectedZone.isDungeon && !selectedZone.isSettlement) {
+          setErrorNotification({ title: "Link Locked", message: "The Aether-Link is currently synchronized to tutorial objectives only." }); return;
         }
         startTravel(selectedZone.suburb, selectedZone.coords, duration); setSelectedZone(null); 
       }} />}

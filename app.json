@@ -25,10 +25,17 @@
       "package": "com.anonymous.aeternisv5"
     },
     "web": {
+      "bundler": "metro",
+      "output": "server",
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      [
+        "expo-router",
+        {
+          "origin": "http://localhost:8081"
+        }
+      ]
     ]
   }
 }

@@ -4,6 +4,7 @@ import MapView, { PROVIDER_GOOGLE, Marker, Polygon } from 'react-native-maps';
 import { Compass, Flame, Home, Skull, Activity } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 import { BiomeType, FactionType } from '../utils/BiomeMapper';
+import { ActiveZoneContext } from '../utils/usePlayerStore';
 
 interface FractureMapProps {
   mapRef: React.RefObject<MapView>;
@@ -27,6 +28,8 @@ interface FractureMapProps {
   shouldTrackMarkers: boolean;
   fantasyMapStyle: any;
   markerStyles: any;
+  activeZoneContext: ActiveZoneContext | null;
+  isTutorialComplete: boolean;
 }
 
 const FractureMap = ({
@@ -51,6 +54,8 @@ const FractureMap = ({
   shouldTrackMarkers,
   fantasyMapStyle,
   markerStyles,
+  activeZoneContext,
+  isTutorialComplete,
 }: FractureMapProps) => {
   return (
     <MapView 
@@ -91,7 +96,7 @@ const FractureMap = ({
         </React.Fragment>
       )}
 
-      {tutorialProgress.currentStep >= 41 && (
+      {(tutorialProgress.currentStep >= 41 || isTutorialComplete) && (
         <Marker 
           coordinate={MILLERS_JUNCTION_DEPTHS_COORDS} 
           anchor={{ x: 0.5, y: 0.5 }} 
@@ -100,10 +105,10 @@ const FractureMap = ({
           onPress={(e) => { 
             e.stopPropagation(); 
             setSelectedZone({ 
-              suburb: "MILLERS JUNCTION DEPTHS", 
+              suburb: activeZoneContext?.dungeon.name || "MILLERS JUNCTION DEPTHS", 
               biome: BiomeType.SHATTERED_SUBURBIA, 
               faction: FactionType.IRON_CONSORTIUM, 
-              description: "The buildings are crumbling, and a dark wide pit leads deep underground. The air here is heavy with resonance.", 
+              description: activeZoneContext?.dungeon.theme || "The buildings are crumbling, and a dark wide pit leads deep underground.", 
               coords: MILLERS_JUNCTION_DEPTHS_COORDS, 
               isHostile: false,
               isDungeon: true
@@ -118,7 +123,7 @@ const FractureMap = ({
         </Marker>
       )}
 
-      {(tutorialProgress.currentStep >= 58 || !tutorialProgress.isTutorialActive) && (
+      {(tutorialProgress.currentStep >= 57 || isTutorialComplete) && (
         <Marker 
           coordinate={ALTONA_GATE_COORDS} 
           anchor={{ x: 0.5, y: 0.5 }} 
@@ -127,7 +132,7 @@ const FractureMap = ({
           onPress={(e) => { 
             e.stopPropagation(); 
             setSelectedZone({ 
-              suburb: "ALTONA GATE SETTLEMENT", 
+              suburb: activeZoneContext?.primarySettlement.name || "ALTONA GATE SETTLEMENT", 
               biome: BiomeType.SHATTERED_SUBURBIA, 
               faction: FactionType.NEO_TECHNOCRATS, 
               description: "A bustling enclave of survivors. Warm lights and the smell of ozone fill the air. A place of relative safety.", 
