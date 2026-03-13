@@ -245,9 +245,10 @@ export default function ExploreScreen() {
 
   // Resume tutorial if at narrative checkpoints
   useEffect(() => {
+    // Exclude interaction steps (21, 31, 32, 42) to prevent auto-resume while user is on map
     const checkpoints = [
-      18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 
-      31, 32, 33, 34, 36, 37, 38, 39, 40, 42, 44, 45, 46,
+      18, 19, 20, 22, 24, 25, 26, 27, 28, 29, 30, 
+      33, 34, 36, 37, 38, 39, 40, 44, 45, 46,
       47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60
     ];
     
@@ -275,15 +276,17 @@ export default function ExploreScreen() {
 
   // Spawn tutorial enemies
   useEffect(() => {
-    if (tutorialProgress.currentStep >= 22 && tutorialProgress.currentStep <= 23) {
+    // Step 21: First Dog Encounter
+    if (tutorialProgress.currentStep >= 21 && tutorialProgress.currentStep < 22) {
       if (hostileSignals?.some(s => s.id === 'tutorial-dog-signal')) return;
       const dogCoords = { latitude: playerLocation.latitude, longitude: playerLocation.longitude - 0.001 };
       setHostileSignals([{ id: 'tutorial-dog-signal', coords: dogCoords, biome: BiomeType.SHATTERED_SUBURBIA, type: 'Standard' }]);
     }
-  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
+  }, [tutorialProgress.currentStep]);
 
   useEffect(() => {
-    if (tutorialProgress.currentStep >= 33 && tutorialProgress.currentStep <= 35) {
+    // Step 31: Dog Pack Encounter (Was 33)
+    if (tutorialProgress.currentStep >= 31 && tutorialProgress.currentStep < 33) {
       if (hostileSignals?.some(s => s.id === 'tutorial-dog-multi-0')) return;
       const offsets = [ { lat: 0.00225, lon: 0 }, { lat: -0.00225, lon: 0 }, { lat: 0, lon: 0.00225 }, { lat: 0, lon: -0.00225 }, { lat: 0.0015, lon: 0.0015 } ];
       const newSignals = offsets.map((off, i) => ({
@@ -297,7 +300,7 @@ export default function ExploreScreen() {
         setTimeout(() => { mapRef.current?.fitToCoordinates([playerLocation, ...newSignals.map(s => s.coords)], { edgePadding: { top: 400, right: 400, bottom: 400, left: 400 }, animated: true }); }, 500);
       }
     }
-  }, [tutorialProgress.currentStep, tutorialProgress.isTutorialActive]);
+  }, [tutorialProgress.currentStep]);
 
   const handleRegionChange = async (region: any) => {
     setMapRegion(region);

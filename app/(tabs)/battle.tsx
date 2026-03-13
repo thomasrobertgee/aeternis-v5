@@ -250,10 +250,10 @@ export default function BattleScreen() {
           const quest = latestQuests.find(q => q.id === 'q-tutorial-dogs');
           if (quest && quest.currentCount >= quest.targetCount) {
             useBehaviourStore.getState().recordAction('COMPLETE_FIRST_QUEST');
-            updateTutorial({ currentStep: 36 }); // Narrative checkpoint: "You collapse..."
+            updateTutorial({ currentStep: 33, isTutorialActive: true }); // Narrative checkpoint: "You collapse..."
           }
         } else {
-          updateTutorial({ currentStep: 24 }); // Narrative checkpoint: "After finally defeating..."
+          updateTutorial({ currentStep: 22, isTutorialActive: true }); // Narrative checkpoint: "After finally defeating..."
         }
         
         setTimeout(() => {

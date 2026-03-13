@@ -232,11 +232,11 @@ const TUTORIAL_STEPS: TutorialStep[] = [
   },
   {
     text: "As you look around, you can see more mutated dogs in the shadows, circling you from a distance. You also notice a small screen has appeared in your vision, titled 'QUEST'.",
-    choices: [{ label: "Read the quest details", isQuestTrigger: true, nextStep: 32 }],
+    choices: [{ label: "Read the quest details", isQuestTrigger: true, nextStep: 31 }],
     icon: <Scroll size={32} color="#f59e0b" />
   },
   {
-    text: "Really? Five more dogs? Prepare for battle—engage them on the map to survive.",
+    text: "", // Redundant step
     choices: [],
     icon: <Skull size={32} color="#ef4444" />
   },
@@ -535,6 +535,13 @@ const TutorialView = () => {
           rewardGold: 5,
         });
       }
+
+      if (currentStep === 31) {
+        // Immediately hide to show pack on map
+        updateTutorial({ currentStep: 31, isTutorialActive: false });
+        return;
+      }
+
       setHeroTab('Quests');
       updateTutorial({ isTutorialActive: false, currentStep: choice.nextStep });
       router.replace('/(tabs)/character');
@@ -597,7 +604,8 @@ const TutorialView = () => {
       learnSkill(skill);
       setIsTyping(true);
       setDisplayedText("");
-      updateTutorial({ currentStep: 21 });
+      // Immediately hide to show dog on map
+      updateTutorial({ currentStep: 21, isTutorialActive: false });
       return;
     }
 

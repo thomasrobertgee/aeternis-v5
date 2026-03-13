@@ -4,6 +4,23 @@ This document provides a chronological history of requests, features, and bug fi
 
 ---
 
+## [Current Open Bugs]
+*   *(No active bugs reported)*
+
+---
+
+## [Resolution History]
+*   **Tutorial Interaction Loop (Steps 21, 31, 32)** (Resolved March 11, 2026):
+    *   *Bug*: Tutorial overlay would re-open immediately after being hidden for map interaction because those steps were included in the `explore.tsx` auto-resume `checkpoints`. Additionally, some steps were redundant or skipped narrative blocks.
+    *   *Fix*:
+        1.  Modified `TutorialView.tsx` to set `isTutorialActive: false` immediately upon weapon selection (Step 20) and quest acceptance (Step 31).
+        2.  Updated `explore.tsx` to remove Steps 21, 31, and 32 from the auto-resume `checkpoints`, preventing the loop.
+        3.  Updated `explore.tsx` to trigger enemy spawning at Steps 21 and 31.
+        4.  Updated `battle.tsx` to correctly target Step 22 after the first dog and Step 33 after the pack, ensuring the exhaustion narrative is shown before proceeding.
+        5.  Cleared redundant text in Step 32 ("Really? Five more dogs?") as Step 31 already establishes the encounter.
+
+---
+
 ## [March 10, 2026] - Dynamic World & Starting Selection
 
 ### **Features**

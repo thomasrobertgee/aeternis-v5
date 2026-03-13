@@ -29,6 +29,7 @@ Welcome to the **Aeternis: Odyssey** repository. This document serves as the pri
 - [x] **Starting Location Selection with global support.**
 - [x] Turn-based Combat Engine with AI turns.
 - [x] **Adaptive Tutorial Narrative (Relative coordinate placement).**
+- [x] **Tutorial Interaction Loop & Narrative Step Refactor.**
 - [x] Instanced Dungeon & Settlement systems.
 - [x] Web/ESM Compatibility fixes.
 - [x] **Gemini API Stable Integration (gemini-flash-latest).**
@@ -43,4 +44,4 @@ Welcome to the **Aeternis: Odyssey** repository. This document serves as the pri
 *   Map markers for hostile signals may jitter slightly during high-speed travel transitions.
 
 ---
-*Last Updated: March 10, 2026 (Dynamic World Sync)*
+*Last Updated: March 11, 2026 (Tutorial Logic Sync)*

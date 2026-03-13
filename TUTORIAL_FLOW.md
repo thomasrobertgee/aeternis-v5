@@ -28,16 +28,21 @@ This document outlines the adaptive onboarding sequence in the Fracture. All coo
     *   [interact with screen] -> Step 18
 *   **Step 18-19**: Mutated Dog Encounter.
 *   **Step 20**: **Weapon Choice** (Stick/Door/Rocks).
-*   **Step 21**: Interaction Point. Tutorial hides. Player engages **Small Mutated Dog** on map.
+    *   [choose weapon] -> **Tutorial hides**. Player engages **Small Mutated Dog** on map at **Step 21**.
+*   **Step 21**: Interaction Point (Hidden). Player defeats Dog.
+    *   [victory] -> Step 22.
+*   **Step 22**: "After finally defeating..."
 
 ## 4. Rewards & Quests
 *   **Step 23-26**: Post-battle loot discovery (Aetium Crystal).
 *   **Step 27**: Reception of first Aetium.
+*   **Step 30**: "You hear another 'ping'..."
 *   **Step 31**: **Quest System Manifests**.
-    *   [read quest details] -> Step 32
-*   **Step 32**: Interaction Point. Tutorial hides. Player defeats 5 Dogs on map.
-
-## 5. The Depths (Instance)
+    *   [read quest details] -> **Tutorial hides**. Player defeats 5 Dogs on map at **Step 31**.
+*   **Step 33**: Interaction Point (Hidden). Player defeats 5 Dogs.
+    *   [victory] -> Step 33 ("You collapse...").
+*   **Step 33**: "You collapse on the ground..."
+*   **Step 34**: "You hear another 'ding'..."
 *   **Step 35-37**: Marketplace unlock and Dungeon discovery.
 *   **Step 38**: **Dungeon Quest** for `{dungeon}` starts.
 *   **Step 40**: Arrival at `{dungeon}` entrance.

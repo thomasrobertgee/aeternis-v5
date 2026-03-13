@@ -58,7 +58,19 @@ Manages instanced roguelite runs.
 *   **Adaptive Coordinates**: Tutorial objectives (The Orb, Miller's Junction, Altona Gate) are no longer hardcoded to Altona North but are placed relative to the player's chosen starting coordinates.
 *   **Interaction-Gated Progression**: Specific steps (21, 32, 41) hide the tutorial overlay to force map or dungeon interaction before the narrative continues.
 
-## 4. Completed Milestones
+## 4. Development Standards
+
+### 4.1 Bug-Tracking & Resolution Workflow
+To ensure stability and referenceable fixes, all identified bugs follow this mandatory lifecycle:
+1.  **Identification**: Bug is reported and immediately added to `changelog.md` under the **[Current Open Bugs]** section.
+2.  **Tracking**: The bug remains in the "Open" section and is NOT marked as resolved until the developer explicitly verifies the fix in the live environment.
+3.  **Resolution**: Once verified, the bug is moved to the **[Resolution History]** section of `changelog.md`.
+4.  **Documentation**: The resolution entry must include:
+    *   The root cause (why it was happening).
+    *   The specific technical fix (what was changed).
+    *   Any secondary fixes or narrative alignments performed.
+
+## 5. Completed Milestones
 - [x] **Starting Location Selection with dynamic search.**
 - [x] **Wikipedia-driven procedural zone synthesis.**
 - [x] **Dynamic Tutorial Placement (relocates objectives based on start point).**
